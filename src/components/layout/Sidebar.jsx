@@ -90,7 +90,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </Link>
             <button
               onClick={onClose}
-              className="p-1 bg-blue-200 dark:bg-gray-900 text-secondary-500 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-200 lg:hidden"
+              className="p-1 bg-white dark:bg-gray-900 hover:bg-white text-blue-600 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-200 lg:hidden"
             >
               <X className="h-6 w-6" />
             </button>

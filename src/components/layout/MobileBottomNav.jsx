@@ -157,8 +157,8 @@ const MobileBottomNav = ({ toggleSidebar, toggleNotifications }) => {
       animate="visible"
       className="fixed bottom-0 left-0 right-0 z-40"
     >
-      <div className={`px-2 py-3 shadow-lg rounded-t-xl ${darkMode ? 'bottom-nav-dark' : 'bottom-nav-light'}`}>
-        <div className="flex justify-around items-center">
+      <div className={`px-2 py-3 bg-slate-100 bg-opacity-95 dark:bg-opacity-95 text-black shadow-black shadow-lg rounded-t-xl dark:bg-slate-800`}>
+        <div className="flex justify-around blur-none items-center">
           {/* Main navigation items */}
           {navItems.map((item, index) => (
             <div 
