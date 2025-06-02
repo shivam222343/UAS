@@ -16,9 +16,16 @@ import QRCode from 'qrcode.react';
 import { Download, QrCode } from 'lucide-react';
 
 const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
+  // State for loading status
   const [loading, setLoading] = useState(true);
+  
+  // State for error messages
   const [error, setError] = useState('');
+  
+  // State for attendance list
   const [attendanceList, setAttendanceList] = useState([]);
+  
+  // State for attendance statistics
   const [attendanceStats, setAttendanceStats] = useState({
     present: 0,
     absent: 0,
@@ -30,43 +37,40 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
   const [qrValue, setQrValue] = useState('');
   const [sessionCode, setSessionCode] = useState('');
   
+  // Get current user from auth context
   const { currentUser } = useAuth();
   
-  // This counter prevents infinite loops by limiting fetch attempts
+  // Counter to prevent infinite fetch loops
   const [fetchAttempts, setFetchAttempts] = useState(0);
 
+  // Fetch attendance data when meeting ID changes
   useEffect(() => {
     if (meeting && meeting.id && fetchAttempts < 3) {
-      console.log(`Fetching attendance data (attempt ${fetchAttempts + 1})`);
       setLoading(true);
       setFetchAttempts(prev => prev + 1);
       fetchAttendanceData();
     }
-  }, [meeting?.id]); // Only depends on meeting ID, not any data that changes during fetch
+  }, [meeting?.id]);
 
+  // Function to fetch attendance data
   const fetchAttendanceData = async () => {
-    console.log('Starting attendance data fetch for meeting:', meeting?.id);
     setError('');
     
     if (!meeting || !clubId) {
-      console.error('Meeting or clubId is missing:', meeting);
       setError('Invalid meeting data');
       setLoading(false);
       return;
     }
 
     try {
-      // Create a snapshot of current meeting data to prevent state changes during fetch
+      // Create a snapshot of current meeting data
       const meetingData = {...meeting};
       
       // Fetch all club members
       const membersRef = collection(db, 'clubs', clubId, 'members');
       const membersSnapshot = await getDocs(membersRef);
       
-      console.log(`Found ${membersSnapshot.size} members in club`);
-      
       if (membersSnapshot.empty) {
-        console.log('No members found in this club');
         setAttendanceList([]);
         setAttendanceStats({
           present: 0,
@@ -77,32 +81,26 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
         return;
       }
       
-      // Create a batch processing approach to handle members in smaller groups
+      // Process members in batches
       const membersList = membersSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      // Process members in batches to prevent overloading
       const batchSize = 5;
       const attendanceData = [];
       
       for (let i = 0; i < membersList.length; i += batchSize) {
         const batch = membersList.slice(i, i + batchSize);
         
-        // Process each member in the current batch
         const batchPromises = batch.map(async (member) => {
           const userId = member.userId || member.id;
           
-          if (!userId) {
-            console.warn('Member missing userId:', member);
-            return null;
-          }
+          if (!userId) return null;
           
           try {
             const userDoc = await getDoc(doc(db, 'users', userId));
             
-            // Create a user record whether the document exists or not
             let userData = {
               id: userId,
               name: 'Unknown User',
@@ -115,7 +113,6 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
               userData.name = docData.displayName || member.displayName || `User ${userId.substring(0, 6)}`;
               userData.email = docData.email || member.email || 'No email available';
             } else {
-              // Use member data as fallback
               userData.name = member.displayName || `User ${userId.substring(0, 6)}`;
               userData.email = member.email || 'No email available';
             }
@@ -135,8 +132,6 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
         const batchResults = await Promise.all(batchPromises);
         attendanceData.push(...batchResults.filter(item => item !== null));
       }
-
-      console.log(`Successfully processed ${attendanceData.length} attendance records`);
 
       // Calculate attendance stats
       const presentCount = attendanceData.filter(user => user.present).length;
@@ -158,12 +153,13 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
     }
   };
 
-  // Reset and try again
+  // Function to retry fetching data
   const retryFetch = () => {
-    setFetchAttempts(0); // Reset the counter
-    fetchAttendanceData(); // Try again
+    setFetchAttempts(0);
+    fetchAttendanceData();
   };
 
+  // Function to handle attendance submission
   const handleSubmitAttendance = async () => {
     try {
       if (!meeting || !meeting.id || !clubId) {
@@ -171,7 +167,11 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
         return;
       }
       
-      // Convert attendance list to object with user IDs as keys
+      // Check if attendance was already marked
+      const meetingDoc = await getDoc(doc(db, 'clubs', clubId, 'meetings', meeting.id));
+      const wasAlreadyMarked = meetingDoc.data()?.attendanceMarked || false;
+      
+      // Convert attendance list to attendees object
       const attendeesObject = {};
       attendanceList.forEach(user => {
         if (user.present) {
@@ -179,7 +179,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
         }
       });
       
-      // Update the meeting with attendance
+      // Update meeting document
       await updateDoc(doc(db, 'clubs', clubId, 'meetings', meeting.id), {
         attendees: attendeesObject,
         attendanceMarked: true,
@@ -187,10 +187,12 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
         attendanceMarkedBy: currentUser.uid
       });
       
-      // Track missed meetings and send warning emails if needed
-      await updateMissedMeetingCount(clubId, meeting.id, attendeesObject);
+      // Update missed meeting counts (only if not already marked)
+      if (!wasAlreadyMarked) {
+        await updateMissedMeetingCount(clubId, meeting.id, attendeesObject);
+      }
       
-      // Add attendance record to each present user's profile
+      // Update attended meetings for present users
       for (const user of attendanceList) {
         if (user.present) {
           try {
@@ -201,7 +203,6 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
               const userData = userDoc.data();
               const attendedMeetings = userData.attendedMeetings || [];
               
-              // Check if meeting is already in user's attended meetings
               if (!attendedMeetings.some(m => m.meetingId === meeting.id)) {
                 await updateDoc(userRef, {
                   attendedMeetings: [...attendedMeetings, {
@@ -216,31 +217,24 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
             }
           } catch (userError) {
             console.error(`Error updating attendance for user ${user.id}:`, userError);
-            // Continue with other users even if one fails
           }
         }
       }
 
-      if (onSuccess) {
-        onSuccess('Attendance marked successfully');
-      }
-      
-      if (onClose) {
-        onClose();
-      }
+      if (onSuccess) onSuccess('Attendance marked successfully');
+      if (onClose) onClose();
     } catch (err) {
       console.error('Failed to update attendance:', err);
       setError('Failed to update attendance: ' + err.message);
     }
   };
 
+  // Function to generate QR code
   const handleGenerateQRCode = async () => {
     try {
-      // Create a unique session code
       const code = Math.random().toString(36).substring(2, 10).toUpperCase();
       setSessionCode(code);
       
-      // Create QR data with meeting ID and session code
       const qrData = {
         meetingId: meeting.id,
         sessionCode: code,
@@ -248,17 +242,14 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
         timestamp: Date.now()
       };
       
-      // Convert to JSON string for QR code
       const qrString = JSON.stringify(qrData);
       setQrValue(qrString);
       
-      // Update the meeting with the active session code
       await updateDoc(doc(db, 'clubs', clubId, 'meetings', meeting.id), {
         activeSessionCode: code,
         sessionStartTime: serverTimestamp()
       });
       
-      // Show the QR modal
       setShowQrModal(true);
     } catch (err) {
       console.error('Error generating QR code:', err);
@@ -266,6 +257,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
     }
   };
 
+  // Function to download QR code
   const downloadQRCode = () => {
     const canvas = document.getElementById('attendance-qr-code');
     if (canvas) {
@@ -282,10 +274,12 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
     }
   };
 
+  // Function to close QR modal
   const closeQrModal = () => {
     setShowQrModal(false);
   };
 
+  // Loading state UI
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
@@ -303,6 +297,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
     );
   }
 
+  // Main component UI
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <motion.div 
@@ -310,6 +305,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
         animate={{ scale: 1, opacity: 1 }}
         className="bg-white dark:bg-gray-800 rounded-lg p-6 w-[800px] max-h-[80vh] overflow-y-auto"
       >
+        {/* Header section */}
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Mark Attendance</h3>
           <div>
@@ -318,6 +314,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
           </div>
         </div>
         
+        {/* Meeting details */}
         <div className="mb-4 flex flex-wrap gap-2">
           <span className="text-gray-500 text-sm">Date: </span>
           <span className="font-medium mr-4">{meeting.date}</span>
@@ -325,6 +322,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
           <span className="font-medium">{meeting.time}</span>
         </div>
         
+        {/* Error display */}
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
             {error}
@@ -337,7 +335,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
           </div>
         )}
         
-        {/* Add QR Code Generation Button */}
+        {/* QR Code button */}
         <div className="mb-4">
           <button
             onClick={handleGenerateQRCode}
@@ -348,7 +346,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
           </button>
         </div>
         
-        {/* Attendance Statistics */}
+        {/* Attendance statistics */}
         <div className="grid grid-cols-3 gap-4 mb-6 mt-2">
           <div className="bg-green-50 p-3 rounded-lg text-center">
             <p className="text-sm text-green-700">Present</p>
@@ -364,7 +362,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
           </div>
         </div>
         
-        {/* Attendance Chart */}
+        {/* Attendance chart */}
         <div className="mb-6 h-48">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -389,6 +387,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
           </ResponsiveContainer>
         </div>
         
+        {/* Attendance list */}
         <div className="space-y-4 mt-6 max-h-80 overflow-y-auto">
           {attendanceList.length > 0 ? (
             attendanceList.map(user => (
@@ -408,7 +407,6 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
                       );
                       setAttendanceList(updatedList);
                       
-                      // Update stats
                       const presentCount = updatedList.filter(u => u.present).length;
                       const totalCount = updatedList.length;
                       const percentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
@@ -433,6 +431,7 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
           )}
         </div>
         
+        {/* Action buttons */}
         <div className="mt-6 flex justify-end space-x-2">
           <button 
             onClick={onClose}
@@ -511,4 +510,4 @@ const AttendanceMarker = ({ meeting, clubId, onClose, onSuccess }) => {
   );
 };
 
-export default AttendanceMarker; 
+export default AttendanceMarker;

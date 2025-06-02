@@ -225,7 +225,7 @@ export default function SignUp() {
       >
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Create an account</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Join the attendance tracking system</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Join Team Mavericks!</p>
         </div>
 
         {error && (

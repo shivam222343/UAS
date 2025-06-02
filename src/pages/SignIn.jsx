@@ -92,7 +92,7 @@ const SignIn = () => {
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="w-full max-w-md p-8 bg-white dark:bg-secondary-800 rounded-xl shadow-card">
+      <div className="w-[90vw] max-w-md p-8 bg-white dark:bg-secondary-800 rounded-xl shadow-card">
         <h1 className="text-2xl font-bold mb-6 text-center text-secondary-900 dark:text-white">Sign In</h1>
         
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}

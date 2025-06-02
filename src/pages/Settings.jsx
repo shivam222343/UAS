@@ -14,6 +14,8 @@ import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import Loader from '../components/Loader';
 
+
+
 const settingsSections = [
   {
     id: 'profile',

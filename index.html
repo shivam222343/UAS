@@ -1,28 +1,65 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- 1. Meta Tags -->
+    <!-- Basic Meta Tags -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Real-time notification panel built with React and Firebase." />
     <meta name="theme-color" content="#0f172a" />
+    <meta name="google-site-verification" content="iPSgPKINwbhi8y9cL14dKz7s10G2bPoPY7gT4SdLqCk" />
 
-    <!-- 2. Favicon and Logo -->
+    <!-- Default Meta (Fallback if not overridden by React Helmet) -->
+    <title>Team Mavericks | KITCOEK Kolhapur</title>
+    <meta name="description" content="Official technical club of KIT College of Engineering Kolhapur. Join us for workshops, hackathons, and tech events." />
+    <meta name="keywords" content="Team Mavericks, KITCOEK, KitcoeK Kolhapur, engineering club, central clubs Kitcoek, Team Mavericks Attendance, UAS, technical club, Kolhapur events" />
+
+    <!-- Open Graph / Facebook (Default) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://yourwebsiteurl.com" />
+    <meta property="og:title" content="Team Mavericks | KITCOEK Kolhapur" />
+    <meta property="og:description" content="Official technical club of KIT College of Engineering Kolhapur" />
+    <meta property="og:image" content="https://yourwebsiteurl.com/logo.png" />
+
+    <!-- Twitter (Default) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://yourwebsiteurl.com" />
+    <meta name="twitter:title" content="Team Mavericks | KITCOEK Kolhapur" />
+    <meta name="twitter:description" content="Official technical club of KIT College of Engineering Kolhapur" />
+    <meta name="twitter:image" content="https://yourwebsiteurl.com/logo.png" />
+
+    <!-- Canonical URL (Default) -->
+    <link rel="canonical" href="https://yourwebsiteurl.com" />
+
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="apple-touch-icon" href="/logo.svg" />
 
-    <!-- 3. Title -->
-    <title>Universal Attendance System</title>
+    <!-- Preload Critical Assets -->
+    <link rel="preload" href="/src/main.jsx" as="script" />
+    <link rel="preload" href="/logo.svg" as="image" />
 
-    <!-- 4. Fonts (optional: Google Fonts or custom) -->
-    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" /> -->
+    <!-- Organization Schema (Default) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Team Mavericks",
+      "url": "https://yourwebsiteurl.com",
+      "logo": "https://yourwebsiteurl.com/logo.png",
+      "sameAs": [
+        "https://www.instagram.com/yourprofile",
+        "https://www.facebook.com/yourpage"
+      ],
+      "parentOrganization": {
+        "@type": "CollegeOrUniversity",
+        "name": "KIT College of Engineering, Kolhapur",
+        "url": "https://kitcoek.in"
+      }
+    }
+    </script>
   </head>
 
   <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-    <!-- 5. React App Root -->
     <div id="root"></div>
-
-    <!-- 6. Main Script -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

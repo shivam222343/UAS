@@ -78,15 +78,13 @@ const Sidebar = ({ isOpen, onClose }) => {
             <Link to="/" className="flex items-center">
               <img
                 className="h-8 w-auto rounded-full"
-                src="/logo.svg"
+                src="/logo.png"
                 alt="Attendance System"
               />
-              <span className="ml-2 text-xl font-semibold text-primary-500 dark:text-primary-400">
-               UAS 
+              <span className="ml-2 text-xl font-semibold text-blue-700 dark:text-primary-400">
+              Mavericks
               </span>
-              <span className="ml-2 mt-[6px] text-xs font-semibold text-primary-500 dark:text-primary-400">
-              Team Mavericks
-              </span>
+             
             </Link>
             <button
               onClick={onClose}

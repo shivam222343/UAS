@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../services/firebase';
-import NotificationPanel from '../NotificationPanel';
+
 
 import {
   Menu,
@@ -50,18 +50,18 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
       console.error('Failed to log out', error);
     }
   };
-  
+
   // Fetch only unread notification count
   useEffect(() => {
     if (!currentUser) return;
-    
+
     const notificationsRef = collection(db, 'users', currentUser.uid, 'notifications');
     const q = query(notificationsRef, where('read', '==', false));
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setUnreadCount(snapshot.docs.length);
     });
-    
+
     return () => unsubscribe();
   }, [currentUser]);
 
@@ -86,17 +86,30 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
         animate={{ y: 0 }}
         className="fixed top-0 left-0 right-0 z-40 bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700 shadow-sm"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto pr-4 sm:px-1 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
+           <div className="flex items-center ">
+             <div className="flex items-center">
               <button
                 onClick={toggleSidebar}
-                className="p-2 rounded-lg text-secondary-800 bg-transparent dark:bg-gray-900 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
+                className="p-2 rounded-lg text-secondary-800 bg-transparent  hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-200   transition-colors"
               >
                 <Menu className="h-6 w-6" />
               </button>
             </div>
 
+            <Link to="/" className="flex items-center">
+              <img
+                className="h-8 w-auto rounded-md"
+                src="/logo.png"
+                alt="Attendance System"
+              />
+              <span className="ml-2 text-xl font-semibold text-blue-700 dark:text-primary-400">
+                Mavericks
+              </span>
+
+            </Link>
+           </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
@@ -104,11 +117,10 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    location.pathname === item.href
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === item.href
                       ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                       : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </Link>
@@ -118,48 +130,45 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
-                    location.pathname === '/admin-dashboard'
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${location.pathname === '/admin-dashboard'
                       ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                       : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
-                  }`}
+                    }`}
                 >
                   <Shield className="h-4 w-4 mr-1" />
                   Admin
                 </Link>
               )}
-              
+
               {/* QR Scanner Link */}
               <Link
                 to="/scan-qr"
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
-                  location.pathname === '/qr-scanner'
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${location.pathname === '/qr-scanner'
                     ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                      : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
-                }`}
+                    : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
+                  }`}
               >
                 <Scan className="h-4 w-4 mr-1" />
                 Scanner
               </Link>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-1">
               {/* QR Scanner Icon for Mobile */}
-              
-              
+
               <button
                 onClick={toggleDarkMode}
-                className="p-2 rounded-lg  bg-blue-500 text-white hover:text-secondary-700 dark:text-white dark:hover:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
+                className="p-2 rounded-lg hover:bg-white hover:dark:bg-secondary-800 bg-white dark:bg-secondary-800"
               >
-                {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                {darkMode ? <Sun className="h-5 w-5 dark:text-blue-500 text-blue-700" /> : <Moon className="h-5 w-5 text-blue-500 bg-white dark:bg-secondary-800" />}
               </button>
 
               <div className="relative">
                 <button
                   onClick={toggleNotifications}
-                  className="p-2 rounded-lg  text-white hover:text-secondary-700 dark:text-white dark:hover:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white hover:dark:bg-secondary-800 bg-white dark:bg-secondary-800"
                 >
-                  <Bell className="h-5 w-5" />
+                  <Bell className="h-5 w-5 text-blue-700 dark:text-blue-500" />
                   {unreadCount > 0 && (
                     <span className="absolute top-1 right-1 h-4 w-4 flex items-center justify-center bg-red-500 text-white text-xs rounded-full">{unreadCount}</span>
                   )}
@@ -169,7 +178,7 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center space-x-2 p-2 bg-gray-100 dark:bg-gray-900 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
+                  className="flex ml-2 items-center space-x-2 p-2 bg-gray-100 dark:bg-gray-900 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
                 >
                   <img
                     className="h-8 w-8 rounded-full"
@@ -186,34 +195,36 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                       exit={{ opacity: 0, y: 10 }}
                       className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-800 rounded-xl shadow-card border border-secondary-200 dark:border-secondary-700"
                     >
-                      <div className="py-1 flex gap-1 flex-col justify-center items-center pb-2">
+                      <div className="py-1 flex gap-1 flex-col justify-start items-start pb-2">
                         <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                           <p className="text-sm font-medium text-gray-900 dark:text-white">{currentUser?.displayName || 'User'}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentUser?.email}</p>
                         </div>
                         <Link
                           to="/profile"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="flex items-start px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => setIsProfileOpen(false)}
                         >
-                          <User className="h-4 w-4 mr-2" />
+                          <User className="h-4 w-4 mr-2 mt-[2px]" />
                           Your Profile
                         </Link>
                         <Link
                           to="/settings"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="flex items-start px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => setIsProfileOpen(false)}
                         >
-                          <Settings className="h-4 w-4 mr-2" />
+                          <Settings className="h-4 w-4 mr-2 mt-[2px]" />
                           Settings
                         </Link>
-                        <button
+                       <div className='w-full flex justify-start items-start px-4 py-2'>
+                         <button
                           onClick={handleLogout}
-                          className="flex items-center bg-red-100 text-red-500 w-full text-left px-2 max-w-[80%] py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="flex items-start bg-red-100  w-full text-left px-2 max-w-[80%] py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                           <LogOut className="h-4 w-4 mr-2" />
                           Sign out
                         </button>
+                       </div>
                       </div>
                     </motion.div>
                   )}
@@ -237,11 +248,10 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`flex items-center px-3 py-2 rounded-lg text-base font-medium transition-colors ${
-                      location.pathname === item.href
+                    className={`flex items-center px-3 py-2 rounded-lg text-base font-medium transition-colors ${location.pathname === item.href
                         ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                         : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
-                    }`}
+                      }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <item.icon className="h-5 w-5 mr-3" />
@@ -253,11 +263,10 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                 {isAdmin && (
                   <Link
                     to="/admin-dashboard"
-                    className={`flex items-center px-3 py-2 rounded-lg text-base font-medium transition-colors ${
-                      location.pathname === '/admin-dashboard'
+                    className={`flex items-center px-3 py-2 rounded-lg text-base font-medium transition-colors ${location.pathname === '/admin-dashboard'
                         ? 'text-primary-500  dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                         : 'text-secondary-600  hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
-                    }`}
+                      }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Shield className="h-5 w-5 mr-3" />
