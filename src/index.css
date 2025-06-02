@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+:root {
+    font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+    color: theme('colors.secondary.800');
+    background-color: theme('colors.secondary.100');
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+  .dark {
+    color: theme('colors.secondary.100');
+    background-color: theme('colors.secondary.900');
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+  h1, h2, h3, h4, h5, h6 {
+    color: theme('colors.secondary.800');
+    font-weight: 600;
+  }
+
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: theme('colors.secondary.100');
+  }
+
+  a {
+    color: theme('colors.primary.500');
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+  }
+
+  a:hover {
+    color: theme('colors.primary.600');
+}
+
+button {
+    border-radius: theme('borderRadius.lg');
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+    background-color: theme('colors.primary.500');
+    color: white;
+  cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+    background-color: theme('colors.primary.600');
+}
+
+button:focus,
+button:focus-visible {
+    outline: 2px solid theme('colors.primary.500');
+    outline-offset: 2px;
+}
+
+  input, select, textarea {
+    border-radius: theme('borderRadius.lg');
+    border: 1px solid theme('colors.secondary.200');
+    padding: 0.6em 1em;
+    font-size: 1em;
+    transition: all 0.2s ease-in-out;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid theme('colors.primary.500');
+    outline-offset: 2px;
+    border-color: theme('colors.primary.500');
+  }
+
+  .dark input, .dark select, .dark textarea {
+    background-color: theme('colors.secondary.800');
+    border-color: theme('colors.secondary.700');
+    color: theme('colors.secondary.100');
+  }
+
+  /* Custom Scrollbar Styling */
+  /* For Webkit browsers (Chrome, Safari, etc.) */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: theme('colors.blue.300');
+    border-radius: 20px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: theme('colors.blue.400');
+  }
+
+  /* For Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.blue.300') transparent;
+  }
+
+  /* For custom scrollable elements with dark theme */
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: theme('colors.blue.500');
+  }
+
+  .dark * {
+    scrollbar-color: theme('colors.blue.500') transparent;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white dark:bg-secondary-800 rounded-xl shadow-card p-4;
+  }
+
+  .btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600 transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-100 dark:bg-secondary-700 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-600 transition-colors;
+  }
+}

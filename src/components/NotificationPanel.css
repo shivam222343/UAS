@@ -1,0 +1,137 @@
+/* NotificationPanel Styles */
+
+/* Base styles for notification panel */
+.notification-panel {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dark .notification-panel {
+  background-color: #1f2937; /* dark mode background */
+}
+
+/* Desktop panel - small horizontal rectangle positioned below notification icon */
+.desktop-panel {
+  top: 4rem; /* Position below the navbar */
+  right: 1rem;
+  width: 360px;
+  height: 400px; /* Fixed height to create a small rectangle */
+  max-height: 70vh;
+  border-radius: 0.5rem;
+  max-width: calc(100% - 2rem);
+}
+
+/* Mobile panel - covers bottom 3/4 of screen with full width */
+.mobile-panel {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 75vh; /* 3/4 of viewport height */
+  border-radius: 1rem 1rem 0 0;
+  max-height: calc(100vh - 4rem); /* Ensure it doesn't go off screen */
+}
+
+/* For vertically scrollable content area */
+.notification-content {
+  scrollbar-width: thin;
+  scrollbar-color: #93c5fd transparent; /* light blue color from blue-300 */
+  overflow-y: auto;
+  overflow-x: hidden; /* Ensure horizontal scrolling is disabled */
+  flex: 1; /* Let it take remaining space */
+  max-height: unset; /* Remove fixed height */
+  padding-bottom: env(safe-area-inset-bottom); /* iOS safe area support */
+}
+
+/* Make notification items take full width in all views */
+.notification-content > div {
+  width: 100%;
+}
+
+/* Custom scrollbar styles */
+.notification-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notification-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notification-content::-webkit-scrollbar-thumb {
+  background-color: #93c5fd; /* light blue color from blue-300 */
+  border-radius: 20px;
+  border: transparent;
+}
+
+/* Dark mode scrollbar */
+.dark .notification-content {
+  scrollbar-color: #3b82f6 transparent; /* blue-500 for dark mode */
+}
+
+.dark .notification-content::-webkit-scrollbar-thumb {
+  background-color: #3b82f6; /* blue-500 for dark mode */
+}
+
+/* Animation for notification appearance */
+@keyframes slideIn {
+  from {
+    transform: translateY(20%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Enhanced notification item styling */
+.notification-content .p-3 {
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.notification-content .p-3:hover {
+  transform: translateY(-2px);
+}
+
+/* Delete confirmation animation */
+.notification-content .bg-red-50,
+.notification-content .dark\:bg-red-900\/20 {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Hover effects for notification items */
+.notification-panel > div > div:nth-child(2) > div > div {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.notification-panel > div > div:nth-child(2) > div > div:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+} 

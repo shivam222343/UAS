@@ -1,0 +1,110 @@
+/* Bottom Nav Animation Effects */
+.bottom-nav-icon {
+  position: relative;
+  z-index: 1;
+  transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Icon wrapper for active animations */
+.icon-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Add shimmer effect to active icons */
+.icon-wrapper::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.bottom-nav-item:has(.bottom-nav-icon[style*="color:"]) .icon-wrapper::after {
+  opacity: 1;
+}
+
+/* Floating effect on hover */
+.bottom-nav-item:hover .bottom-nav-icon {
+  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.07)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.06));
+}
+
+/* Ripple effect when clicking */
+.bottom-nav-ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 0.6s ease-out;
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Enhanced icon color transition animation */
+@keyframes iconColorPop {
+  0% {
+    transform: scale(1);
+    filter: saturate(100%);
+  }
+  50% {
+    transform: scale(1.2);
+    filter: saturate(150%) brightness(110%);
+  }
+  100% {
+    transform: scale(1);
+    filter: saturate(100%);
+  }
+}
+
+.bottom-nav-item:has(.bottom-nav-icon[style*="color:"]) .bottom-nav-icon {
+  animation: iconColorPop 0.5s ease-out;
+}
+
+/* Gradient background for light/dark themes */
+.bottom-nav-light {
+  background: #ffffff;
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(229, 231, 235, 0.5);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.bottom-nav-dark {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.85) 0%, rgba(17, 24, 39, 0.95) 100%);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(55, 65, 81, 0.5);
+}
+
+/* Label slide-in animation */
+.bottom-nav-label-enter {
+  transform: translateY(10px);
+  opacity: 0;
+}
+
+.bottom-nav-label-enter-active {
+  transform: translateY(0);
+  opacity: 1;
+  transition: opacity 200ms, transform 200ms;
+}
+
+.bottom-nav-label-exit {
+  opacity: 1;
+}
+
+.bottom-nav-label-exit-active {
+  transform: translateY(10px);
+  opacity: 0;
+  transition: opacity 150ms, transform 150ms;
+} 

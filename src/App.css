@@ -1,0 +1,77 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* Custom Scrollbar for overflow-y elements */
+.overflow-y-auto,
+[class*="overflow-y-auto"] {
+  scrollbar-width: thin;
+  scrollbar-color: #93c5fd transparent; /* light blue color from blue-300 */
+}
+
+.overflow-y-auto::-webkit-scrollbar,
+[class*="overflow-y-auto"]::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track,
+[class*="overflow-y-auto"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb,
+[class*="overflow-y-auto"]::-webkit-scrollbar-thumb {
+  background-color: #93c5fd;
+  border-radius: 20px;
+}
+
+/* Dark theme scrollbar styling */
+.dark .overflow-y-auto,
+.dark [class*="overflow-y-auto"] {
+  scrollbar-color: #3b82f6 transparent; /* blue-500 for dark mode */
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-thumb,
+.dark [class*="overflow-y-auto"]::-webkit-scrollbar-thumb {
+  background-color: #3b82f6;
+}
