@@ -88,28 +88,25 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
       >
         <div className="max-w-7xl mx-auto pr-4 sm:px-1 lg:px-8">
           <div className="flex justify-between h-16">
-           <div className="flex items-center ">
-             <div className="flex items-center">
-              <button
-                onClick={toggleSidebar}
-                className="p-2 rounded-lg text-secondary-800 bg-transparent  hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-200   transition-colors"
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-            </div>
+            <div className="flex items-center md:hidden ">
+              <div className="flex items-center">
+                <button
+                  onClick={toggleSidebar}
+                  className="p-2 rounded-lg text-secondary-800 bg-transparent  hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-200   transition-colors"
+                >
+                  <Menu className="h-6 w-6" />
+                </button>
+              </div>
 
-            <Link to="/" className="flex items-center">
-              <img
-                className="h-8 w-auto rounded-md"
-                src="/logo.png"
-                alt="Attendance System"
-              />
-              <span className="ml-2 text-xl font-semibold text-blue-700 dark:text-primary-400">
-                Mavericks
+              <Link to="/" className="flex items-center">
+               
+                <span className="ml-2 text-lg font-semibold text-blue-700 flex gap-1 dark:text-primary-400">
+             <span className='font-semibold text-md text-blue-700 dark:text-primary-400'>Team</span>
+             <span className='font-semibold text-md text-blue-700 dark:text-primary-400'>Mavericks</span>
               </span>
 
-            </Link>
-           </div>
+              </Link>
+            </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
@@ -118,8 +115,8 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                   key={item.name}
                   to={item.href}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === item.href
-                      ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                      : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
+                    ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                    : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
                     }`}
                 >
                   {item.name}
@@ -131,8 +128,8 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                 <Link
                   to="/admin"
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${location.pathname === '/admin-dashboard'
-                      ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                      : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
+                    ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                    : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
                     }`}
                 >
                   <Shield className="h-4 w-4 mr-1" />
@@ -144,8 +141,8 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
               <Link
                 to="/scan-qr"
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${location.pathname === '/qr-scanner'
-                    ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                    : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
+                  ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                  : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
                   }`}
               >
                 <Scan className="h-4 w-4 mr-1" />
@@ -216,15 +213,15 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                           <Settings className="h-4 w-4 mr-2 mt-[2px]" />
                           Settings
                         </Link>
-                       <div className='w-full flex justify-start items-start px-4 py-2'>
-                         <button
-                          onClick={handleLogout}
-                          className="flex items-start bg-red-100  w-full text-left px-2 max-w-[80%] py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Sign out
-                        </button>
-                       </div>
+                        <div className='w-full flex justify-start items-start px-4 py-2'>
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-start bg-red-100  w-full text-left px-2 max-w-[80%] py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Sign out
+                          </button>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -249,8 +246,8 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                     key={item.name}
                     to={item.href}
                     className={`flex items-center px-3 py-2 rounded-lg text-base font-medium transition-colors ${location.pathname === item.href
-                        ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                        : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
+                      ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                      : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
                       }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -264,8 +261,8 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                   <Link
                     to="/admin-dashboard"
                     className={`flex items-center px-3 py-2 rounded-lg text-base font-medium transition-colors ${location.pathname === '/admin-dashboard'
-                        ? 'text-primary-500  dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                        : 'text-secondary-600  hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
+                      ? 'text-primary-500  dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                      : 'text-secondary-600  hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
                       }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >

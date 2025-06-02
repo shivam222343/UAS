@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import { collection, getDocs, query, where, orderBy, limit, getDoc, doc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  Calendar, 
-  Users, 
-  Clock, 
+import {
+  Calendar,
+  Users,
+  Clock,
   TrendingUp,
   AlertCircle,
   AlertTriangle,
@@ -22,6 +22,117 @@ import {
   ResponsiveContainer,
   Tooltip
 } from 'recharts';
+import { Link } from 'react-router-dom';
+
+const greetings = {
+  morning: [
+    "Good morning, Mavericks! Time to crush it like a boss! 💥",
+    "Wake up, wake up! The world needs your magic today! ✨",
+    "Rise and shine, Mavericks! Coffee in one hand, confidence in the other! ☕😎",
+    "Top of the morning to the Mavericks! Let's make today legendary! 🏆",
+    "Morning, Mavericks! Ready to slay the day? 🔥",
+    "Sun's up, Mavericks! So are your dreams—go chase 'em! 🌞",
+    "Good morning! Don't hit snooze on greatness! ⏰",
+    "Hey Mavericks, did you bring your A-game today? Let's see it! 🎯",
+    "Morning MVPs! Time to turn ideas into action! 🚀",
+    "Up and at 'em, Mavericks! Today’s challenges are just fun puzzles! 🧩",
+    "Shoutout to the Mavericks waking up already winning! 🏅",
+    "Sun’s out, fun’s out! Let’s make this morning epic! 🌞🎉",
+    "Mornings are for Mavericks who hustle before the world wakes! 💪",
+    "Good morning, legends! Time to write your success story today! 📖",
+    "Wakey wakey, eggs and victory! 🥚🏆",
+    "Morning Mavericks! Got your superhero cape on? Let’s fly! 🦸‍♂️🦸‍♀️",
+    "New day, new goals, same fierce Mavericks! ⚔️",
+    "Morning vibes for Mavericks who mean business! 💼",
+    "Rise like a Maverick phoenix from the coffee ashes! ☕🔥",
+    "Hey Mavericks, time to shake the world awake! 🌍✨",
+    "Sun’s shining, Mavericks grinding! Let’s go! 🌅💥",
+    "Good morning! Let's make this day so good, yesterday gets jealous! 😎",
+    "Mavericks, ready to conquer before breakfast? Let’s do it! 🥐🚀",
+    "Happy morning to the coolest Mavericks in town! 😎👊",
+  ],
+
+  afternoon: [
+    "Good afternoon, Mavericks! Keep rocking that hustle! 🤘",
+    "Hey Mavericks, time to refuel with some good vibes and snacks! 🍎😄",
+    "Afternoon alert! Mavericks still winning, still grinning! 😁",
+    "Keep calm and power through, Mavericks! Afternoon’s your playground! 🎢",
+    "Afternoon, Mavericks! Ready for a productivity power-up? ⚡",
+    "Hey Mavericks, is it snack o’clock yet? Stay energized! 🍪🚀",
+    "Afternoon sunshine to our unstoppable Mavericks! ☀️🔥",
+    "Halfway through the day, Mavericks — still killing it! 💪",
+    "Mavericks, let's turn this afternoon into a masterpiece! 🎨",
+    "Good afternoon! Keep those brains buzzing, Mavericks! 🧠✨",
+    "Mavericks in action: powering through the day like champs! 🏆",
+    "Afternoon, Mavericks! The day’s not over till you say so! 🕒",
+    "Take a deep breath, Mavericks — and keep crushing goals! 🌬️💥",
+    "Hey Mavericks, remember: naps are for quitters! Just kidding, take a quick one! 😴😉",
+    "Afternoon Mavericks, your vibe attracts your tribe! Keep it lit! 🔥",
+    "Hello Mavericks! Time for an afternoon pep talk: You’ve got this! 🙌",
+    "Mavericks, coffee’s good, but your passion’s better! ☕❤️",
+    "Afternoon roll call! Who’s ready to smash some tasks? 📝🔥",
+    "Keep your spirits high and your coffee higher, Mavericks! ☕🚀",
+    "Mavericks, every afternoon is a fresh chance to shine brighter! ✨",
+    "Afternoon vibes: Mavericks making waves and taking names! 🌊✍️",
+    "Halfway through, Mavericks — let’s make the rest of the day count! ⏳",
+    "Hey Mavericks, your afternoon hustle is legendary! Keep it up! 🏅",
+    "Afternoon champs, keep your eyes on the prize and your feet on the ground! 🎯",
+    "Mavericks, you’re the reason the afternoon rocks! 🎸😄",
+  ],
+
+  evening: [
+    "Good evening, Mavericks! Time to kick back and relax like royalty! 👑",
+    "Evening Mavericks! Did you win the day? Either way, celebrate! 🎉",
+    "Sunset salute to our amazing Mavericks! You crushed it! 🌇🔥",
+    "Evening vibes! Time to recharge your superhero powers! 🦸‍♂️⚡",
+    "Hey Mavericks, time to unwind and share your epic stories! 📖✨",
+    "Mavericks, the stars are out — just like your brilliance! 🌟",
+    "Good evening! Time for some well-earned Maverick chill time! 😎🍹",
+    "Evening, Mavericks! Let’s toast to a day well conquered! 🥂",
+    "Mavericks, don’t just count stars — be one! ✨",
+    "Evening! Hope your day was as awesome as you are, Mavericks! 💫",
+    "Sunset and Mavericks — the perfect combo! 🌅🔥",
+    "Time to swap your hustle hat for a chill cap, Mavericks! 🧢😌",
+    "Evening Mavericks, let your mind relax and your dreams get wild! 🌙💭",
+    "Cheers to Mavericks who hustle by day and dream big by night! 🍻",
+    "Mavericks, the day’s done — now time to plot tomorrow’s victory! 🗺️",
+    "Good evening! Even Mavericks need to Netflix and chill sometimes! 📺😄",
+    "Sun’s down, Mavericks — time to let your awesomeness glow! 🌃✨",
+    "Evening, team! May your relaxation be as fierce as your work ethic! 🔥",
+    "Mavericks, you earned this evening’s peace and quiet! Enjoy it! 🌌",
+    "Good evening! Remember, even legends need rest! 🛌",
+    "Mavericks, the night is young and so is your potential! Go dream big! 🌠",
+    "Time to wind down, Mavericks. Your future self thanks you! 🙏",
+    "Evening cheers to the boldest Mavericks in the galaxy! 🌟🚀",
+    "Mavericks, rest well so you can rise and shine even brighter tomorrow! 🌞",
+  ],
+
+  night: [
+    "Good night, Mavericks! Dream big, rest well! 🌙💤",
+    "Mavericks, the stars are watching — make sure you’re dreaming of greatness! ✨",
+    "Sleep tight, Mavericks! Tomorrow’s another chance to be awesome! 😴🔥",
+    "Night, Mavericks! Don’t let the bedbugs steal your creativity! 🛏️🐞",
+    "Mavericks, recharge your brain — it’s time to power up! ⚡💤",
+    "Good night! May your dreams be as epic as your hustle! 🌌💫",
+    "Rest easy, Mavericks! You’ve earned your place among the stars! 🌟",
+    "Sleep like a Maverick — fierce and unbreakable! 🛌🦁",
+    "Nighty night, Mavericks! See you at the top tomorrow! 🏔️",
+    "Dream on, Mavericks! Tomorrow is your canvas! 🎨🌙",
+    "Good night! Even Mavericks need their beauty sleep! 💅😴",
+    "Mavericks, close your eyes and open your mind to amazing dreams! 🌠",
+    "Sleep well, champions! The world awaits your next move! 🏆",
+    "Mavericks, rest now so you can rule tomorrow! 👑",
+    "Good night! Let your dreams do the heavy lifting tonight! 🌛💪",
+    "Mavericks, the night is your friend — recharge and rise! 🌙✨",
+    "Sleep tight! Remember, the best ideas come after a good rest! 💡😴",
+    "Mavericks, drift into dreams and wake up ready to conquer! 🌌🚀",
+    "Good night! Your dreams are the blueprint for tomorrow’s success! 📐🌟",
+    "Rest well, Mavericks! Tomorrow’s adventures await! 🌄",
+    "Night, Mavericks! May your sleep be deep and your dreams wild! 🌙🌪️",
+    "Mavericks, even heroes need their downtime! Recharge those powers! 🦸‍♀️💤",
+    "Sleep tight, sleep right — Mavericks’ motto for greatness! 💤🔥",
+  ],
+};
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -30,6 +141,10 @@ export default function Dashboard() {
     totalMembers: 0,
     attendanceRate: 0
   });
+
+  const [greeting, setGreeting] = useState('');
+  const [currentISTTime, setCurrentISTTime] = useState('');
+
   const [recentMeetings, setRecentMeetings] = useState([]);
   const [approvedAbsences, setApprovedAbsences] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,20 +177,73 @@ export default function Dashboard() {
     }
   }, [selectedClub]);
 
+  const name = currentUser.displayName;
+
+  //greeting based on time of day
+  // Get current time in IST (UTC+5:30)
+  const getCurrentIST = () => {
+    const now = new Date();
+    // Convert local time to UTC
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    // IST is UTC + 5:30
+    const ISTTime = new Date(utc + (5.5 * 60 * 60 * 1000));
+
+    return {
+      hours: ISTTime.getHours(),
+      minutes: ISTTime.getMinutes(),
+      timeString: ISTTime.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata' // Ensures it's formatted in IST
+      })
+    };
+  };
+
+  // Get random greeting based on time of day
+  const getRandomGreeting = () => {
+    const { hours } = getCurrentIST();
+    let timeOfDay;
+
+    if (hours >= 5 && hours < 12) timeOfDay = 'morning';
+    else if (hours >= 12 && hours < 17) timeOfDay = 'afternoon';
+    else if (hours >= 17 && hours < 21) timeOfDay = 'evening';
+    else timeOfDay = 'night';
+
+    const messages = greetings[timeOfDay];
+    return messages[Math.floor(Math.random() * messages.length)];
+  };
+
+  // Update time and greeting
+  const updateGreeting = () => {
+    const istTime = getCurrentIST();
+    setCurrentISTTime(istTime.timeString);
+    setGreeting(getRandomGreeting());
+  };
+
+  // Initialize and update every minute
+  useEffect(() => {
+    updateGreeting();
+    const interval = setInterval(updateGreeting, 60000);
+    return () => clearInterval(interval);
+  }, [])
+
+
+
   const fetchUserClubs = async () => {
     try {
       // Fetch user's clubs
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
       const userClubsData = userDoc.data()?.clubsJoined || {};
-      
+
       // Store club IDs for warnings display
       setUserClubIds(Object.keys(userClubsData));
-      
+
       if (Object.keys(userClubsData).length === 0) {
         setLoading(false);
         return;
       }
-      
+
       // Fetch all clubs details
       const clubsDetails = [];
       for (const clubId of Object.keys(userClubsData)) {
@@ -88,9 +256,9 @@ export default function Dashboard() {
           });
         }
       }
-      
+
       setUserClubs(clubsDetails);
-      
+
       // Set the first club as selected by default
       if (clubsDetails.length > 0) {
         setSelectedClub(clubsDetails[0].id);
@@ -107,7 +275,7 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch all clubs
       const clubsRef = collection(db, 'clubs');
       const clubsSnapshot = await getDocs(clubsRef);
@@ -115,13 +283,13 @@ export default function Dashboard() {
         id: doc.id,
         ...doc.data()
       }));
-      
+
       let allMeetings = [];
       let memberCount = 0;
-      
+
       // Get the selected club
       const clubId = selectedClub;
-      
+
       // Fetch club's meetings
       const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
       const meetingsSnapshot = await getDocs(meetingsRef);
@@ -131,40 +299,40 @@ export default function Dashboard() {
         clubName: clubsList.find(club => club.id === clubId)?.name || 'Unknown Club',
         ...doc.data()
       }));
-      
+
       // Add all meetings to the list
       allMeetings = [...allMeetings, ...clubMeetings];
-      
+
       // Count members in this club
       const membersRef = collection(db, 'clubs', clubId, 'members');
       const membersSnapshot = await getDocs(membersRef);
       memberCount += membersSnapshot.size;
-      
+
       // Calculate statistics
       const totalMeetings = allMeetings.length;
       const upcomingMeetings = allMeetings.filter(m => m.status === 'upcoming').length;
       const totalMembers = memberCount;
-      
+
       // Calculate attendance rate
       let totalAttendance = 0;
       let attendanceCount = 0;
-      
+
       for (const meeting of allMeetings) {
         if (meeting.attendanceMarked) {
           const attendeeCount = meeting.attendees ? Object.keys(meeting.attendees).length : 0;
           const membersRef = collection(db, 'clubs', meeting.clubId, 'members');
           const membersSnapshot = await getDocs(membersRef);
           const memberCount = membersSnapshot.size;
-          
+
           if (memberCount > 0) {
             totalAttendance += (attendeeCount / memberCount) * 100;
             attendanceCount++;
           }
         }
       }
-      
-      const attendanceRate = attendanceCount > 0 
-        ? Math.round(totalAttendance / attendanceCount) 
+
+      const attendanceRate = attendanceCount > 0
+        ? Math.round(totalAttendance / attendanceCount)
         : 0;
 
       // Sort meetings by date (newest first)
@@ -173,7 +341,7 @@ export default function Dashboard() {
         const dateB = new Date(`${b.date} ${b.time}`);
         return dateB - dateA;
       });
-      
+
       // Get recent meetings (5 most recent)
       const recentMeetingsList = allMeetings.slice(0, 5);
 
@@ -195,27 +363,27 @@ export default function Dashboard() {
   const fetchApprovedAbsences = async () => {
     try {
       if (!currentUser) return;
-      
+
       const clubId = selectedClub;
       let allApprovedAbsences = [];
-      
+
       const clubDoc = await getDoc(doc(db, 'clubs', clubId));
       const clubName = clubDoc.exists() ? clubDoc.data().name : 'Unknown Club';
-      
+
       // Get all meetings for this club
       const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
       const meetingsSnapshot = await getDocs(meetingsRef);
-      
+
       // For each meeting, check for approved absences for this user
       for (const meetingDoc of meetingsSnapshot.docs) {
         const meetingId = meetingDoc.id;
         const meetingData = meetingDoc.data();
-        
+
         // Check absences collection for this meeting
         const absencesRef = collection(db, 'clubs', clubId, 'meetings', meetingId, 'absences');
         const q = query(absencesRef, where('userId', '==', currentUser.uid), where('status', '==', 'approved'));
         const absencesSnapshot = await getDocs(q);
-        
+
         if (!absencesSnapshot.empty) {
           // User has an approved absence for this meeting
           absencesSnapshot.forEach(absenceDoc => {
@@ -233,12 +401,12 @@ export default function Dashboard() {
           });
         }
       }
-      
+
       // Sort by date (most recent first)
       allApprovedAbsences.sort((a, b) => {
         return new Date(b.date) - new Date(a.date);
       });
-      
+
       setApprovedAbsences(allApprovedAbsences);
     } catch (err) {
       console.error('Error fetching approved absences:', err);
@@ -248,35 +416,35 @@ export default function Dashboard() {
   const fetchUserAttendanceStats = async () => {
     try {
       if (!currentUser || !selectedClub) return;
-      
+
       const clubId = selectedClub;
-      
+
       // Get all meetings for the club
       const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
       const meetingsSnapshot = await getDocs(meetingsRef);
       const totalMeetings = meetingsSnapshot.size;
-      
+
       // Initialize statistics
       let attended = 0;
       let missed = 0;
       let approved = 0;
       let unauthorized = 0;
-      
+
       // Process each meeting
       for (const meetingDoc of meetingsSnapshot.docs) {
         const meetingId = meetingDoc.id;
         const meetingData = meetingDoc.data();
-        
+
         // Check attendance record
         if (meetingData.attendees && meetingData.attendees[currentUser.uid]) {
           attended++;
         } else {
           missed++;
-          
+
           // Check if absence was approved
           const absenceRef = doc(db, 'clubs', clubId, 'meetings', meetingId, 'absences', currentUser.uid);
           const absenceDoc = await getDoc(absenceRef);
-          
+
           if (absenceDoc.exists() && absenceDoc.data().status === 'approved') {
             approved++;
           } else {
@@ -284,14 +452,14 @@ export default function Dashboard() {
           }
         }
       }
-      
+
       // Pie chart data
       const pieChartData = [
         { name: 'Attended', value: attended },
         { name: 'Unauthorized Absences', value: unauthorized },
         { name: 'Approved Absences', value: approved }
       ];
-      
+
       setUserAttendanceStats({
         totalMeetings,
         attended,
@@ -299,12 +467,14 @@ export default function Dashboard() {
         approved,
         unauthorized
       });
-      
+
       setAttendancePieData(pieChartData);
     } catch (err) {
       console.error('Error fetching user attendance stats:', err);
     }
   };
+
+
 
   if (loading) {
     return (
@@ -329,14 +499,47 @@ export default function Dashboard() {
       exit={{ opacity: 0, y: -20 }}
       className="p-1"
     >
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8">
-        <h1 className="text-3xl font-bold mb-4 md:mb-0 dark:text-white">Dashboard</h1>
-        
+      <div className="flex flex-col md:flex-row md:items-center mb-8">
+        <div className=' md:justify-between flex flex-col md:flex-row md:items-center mb-8'>
+          <div className="text-center md:min-w-80 mb-6">
+          <h1 className="text-2xl font-bold mb-1 text-blue-600 dark:text-blue-400">
+            Welcome back, <br /><span className="font-extrabold">{name}</span>
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {currentISTTime} • Indian Standard Time
+          </p>
+        </div>
+
+        {/* Greeting Card */}
+        <div className="w-full md:max-w-[900px] p-1 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 shadow-lg">
+          <div className="p-6 rounded-lg backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border border-blue-200 dark:border-gray-700">
+            <div className="flex flex-col items-center justify-center">
+              {/* Greeting Text */}
+              <h2 className="text-2xl font-medium text-center mb-3 text-blue-800 dark:text-blue-100">
+                {greeting}
+              </h2>
+
+              {/* Decorative Divider */}
+              <div className="w-24 h-1 rounded-full my-2 bg-blue-300/50 dark:bg-blue-400/30"></div>
+
+              {/* Time Period Emoji */}
+              <div className="text-4xl mt-2 text-yellow-500 dark:text-yellow-300">
+                {greeting.includes('morning') ? '🌄' :
+                  greeting.includes('afternoon') ? '☀️' :
+                    greeting.includes('evening') ? '🌇' : '🌙'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        </div>
+
+
         {/* Club Selector */}
         {userClubs.length > 1 && (
           <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm">
-            <select 
-              value={selectedClub} 
+            <select
+              value={selectedClub}
               onChange={(e) => setSelectedClub(e.target.value)}
               className="w-full md:w-64 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -351,7 +554,11 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
+       <div className='h-16 w-full  mb-5 md:mb-5 flex items-center justify-center  bg-transparent border-t-2 border-b-2 border-blue-200'>
+          <span className='text-blue-500 font-semibold text-xl'>Dashboard</span>
+       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        
         <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
           <div className="flex items-center">
             <div className="p-3 bg-blue-100 rounded-full">
@@ -405,7 +612,7 @@ export default function Dashboard() {
       {selectedClub && (
         <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <h2 className="text-2xl font-bold mb-6 dark:text-white">My Attendance Stats</h2>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Stats Cards */}
             <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -417,7 +624,7 @@ export default function Dashboard() {
                 <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">{userAttendanceStats.totalMeetings}</p>
                 <p className="text-sm text-blue-600 dark:text-blue-300">meetings</p>
               </div>
-              
+
               <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                 <div className="flex items-center mb-2">
                   <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
@@ -425,12 +632,12 @@ export default function Dashboard() {
                 </div>
                 <p className="text-3xl font-bold text-green-700 dark:text-green-400">{userAttendanceStats.attended}</p>
                 <p className="text-sm text-green-600 dark:text-green-300">
-                  {userAttendanceStats.totalMeetings > 0 
-                    ? `${Math.round((userAttendanceStats.attended / userAttendanceStats.totalMeetings) * 100)}%` 
+                  {userAttendanceStats.totalMeetings > 0
+                    ? `${Math.round((userAttendanceStats.attended / userAttendanceStats.totalMeetings) * 100)}%`
                     : '0%'}
                 </p>
               </div>
-              
+
               <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
                 <div className="flex items-center mb-2">
                   <Clock className="w-5 h-5 text-yellow-500 mr-2" />
@@ -439,7 +646,7 @@ export default function Dashboard() {
                 <p className="text-3xl font-bold text-yellow-700 dark:text-yellow-400">{userAttendanceStats.approved}</p>
                 <p className="text-sm text-yellow-600 dark:text-yellow-300">absences</p>
               </div>
-              
+
               <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
                 <div className="flex items-center mb-2">
                   <XCircle className="w-5 h-5 text-red-500 mr-2" />
@@ -449,7 +656,7 @@ export default function Dashboard() {
                 <p className="text-sm text-red-600 dark:text-red-300">unauthorized</p>
               </div>
             </div>
-            
+
             {/* Pie Chart */}
             <div className="lg:col-span-2">
               <h3 className="text-lg font-semibold mb-4 dark:text-white">Attendance Breakdown</h3>
@@ -491,7 +698,7 @@ export default function Dashboard() {
         <p className="text-gray-600 dark:text-gray-400 mb-6">
           The following members have missed 3 or more consecutive meetings in their clubs and have been notified:
         </p>
-        
+
         {userClubIds.length > 0 ? (
           <div className="space-y-6">
             {selectedClub ? (
@@ -518,7 +725,7 @@ export default function Dashboard() {
         <h2 className="text-xl dark:text-white font-semibold mb-4">Recent Meetings</h2>
         <div className="space-y-4">
           {recentMeetings.map(meeting => (
-            <div 
+            <div
               key={meeting.id}
               className="flex items-center justify-between p-1 flex-wrap gap-2 md:p-4 border dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
             >
@@ -538,19 +745,19 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  meeting.status === 'upcoming' 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
-                    : meeting.status === 'cancelled'
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${meeting.status === 'upcoming'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                  : meeting.status === 'cancelled'
                     ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                }`}>
+                  }`}>
                   {meeting.status.charAt(0).toUpperCase() + meeting.status.slice(1)}
                 </span>
                 <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">
                   {meeting.attendees ? Object.keys(meeting.attendees).length : 0} attendees
                 </span>
               </div>
+             
             </div>
           ))}
 
@@ -560,19 +767,21 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+            <Link to="/meetings"> <div  className='w-full mt-2 h-auto flex justify-end text-blue-500 underline'>view all</div></Link>
+
       </div>
 
       {/* Approved Absences Section */}
       {approvedAbsences.length > 0 && (
         <div className="bg-white mt-5 dark:bg-gray-800 rounded-lg shadow p-6">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
-            <AlertTriangle className="mr-2 text-amber-500" /> 
+            <AlertTriangle className="mr-2 text-amber-500" />
             Approved Absences
           </h2>
-          
+
           <div className="space-y-4">
             {approvedAbsences.map(absence => (
-              <div 
+              <div
                 key={absence.id}
                 className="border-l-4 border-amber-500 pl-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-r-md"
               >

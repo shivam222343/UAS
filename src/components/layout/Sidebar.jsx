@@ -81,8 +81,9 @@ const Sidebar = ({ isOpen, onClose }) => {
                 src="/logo.png"
                 alt="Attendance System"
               />
-              <span className="ml-2 text-xl font-semibold text-blue-700 dark:text-primary-400">
-              Mavericks
+              <span className="ml-2 text-lg font-semibold text-blue-700 flex gap-1 dark:text-primary-400">
+             <span className='font-semibold text-md text-blue-700 dark:text-primary-400'>Team</span>
+             <span className='font-semibold text-md text-blue-700 dark:text-primary-400'>Mavericks</span>
               </span>
              
             </Link>
