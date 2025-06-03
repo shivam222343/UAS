@@ -17,6 +17,7 @@ import AdminDashboard from './pages/AdminDashboard';
 
 // Import global styles
 import './styles/Forms.css';
+import Mavericks from './pages/Mavericks';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -80,6 +81,7 @@ const App = () => {
               <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<Settings />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="about-teammavericks" element={<Mavericks />} />
               
               {/* QR Code Routes */}
               <Route 

@@ -13,6 +13,7 @@ import {
   CalendarClock,
   QrCode,
   Scan,
+  BadgeInfo ,
   Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,6 +37,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Mark Attendance', href: '/scan-qr', icon: Scan },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Profile', href: '/profile', icon: User },
+    { name: 'Mavericks Corner', href: '/about-teammavericks', icon: BadgeInfo  },
   ];
 
   const handleLogout = async () => {
