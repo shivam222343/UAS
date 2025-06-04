@@ -81,7 +81,7 @@ const App = () => {
               <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<Settings />} />
               <Route path="profile" element={<Profile />} />
-              <Route path="about-teammavericks" element={<Mavericks />} />
+              <Route path="about" element={<Mavericks />} />
               
               {/* QR Code Routes */}
               <Route 

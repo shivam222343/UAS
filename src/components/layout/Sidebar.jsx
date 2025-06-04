@@ -37,7 +37,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Mark Attendance', href: '/scan-qr', icon: Scan },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Mavericks Corner', href: '/about-teammavericks', icon: BadgeInfo  },
+    { name: 'Mavericks Corner', href: '/about', icon: BadgeInfo  },
   ];
 
   const handleLogout = async () => {
@@ -55,6 +55,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
  
 
+
   return (
     <>
       {/* Mobile backdrop */}
@@ -69,6 +70,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     />
   )}
 </AnimatePresence>
+
+
 
 
       {/* Sidebar */}

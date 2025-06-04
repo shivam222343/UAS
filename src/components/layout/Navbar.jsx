@@ -51,7 +51,6 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
     }
   };
 
-  console.log(currentUser);
   
 
   // Fetch only unread notification count

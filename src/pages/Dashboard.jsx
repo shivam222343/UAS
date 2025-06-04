@@ -559,6 +559,7 @@ export default function Dashboard() {
        </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         
+        <Link to="/meetings" className="hover:scale-105 transition-transform duration-200">
         <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
           <div className="flex items-center">
             <div className="p-3 bg-blue-100 rounded-full">
@@ -570,7 +571,9 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        </Link>
 
+        <Link to="/meetings" className="hover:scale-105 transition-transform duration-200">
         <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
           <div className="flex items-center">
             <div className="p-3 bg-green-100 rounded-full">
@@ -582,7 +585,9 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        </Link>
 
+        <Link to="/members"  className="hover:scale-105 transition-transform duration-200">
         <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
           <div className="flex items-center">
             <div className="p-3 bg-purple-100 rounded-full">
@@ -594,7 +599,9 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        </Link>
 
+        <Link to="/analytics" className="hover:scale-105 transition-transform duration-200">
         <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
           <div className="flex items-center">
             <div className="p-3 bg-yellow-100 rounded-full">
@@ -606,6 +613,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        </Link>
       </div>
 
       {/* User Attendance Stats */}
@@ -668,6 +676,7 @@ export default function Dashboard() {
                         data={attendancePieData}
                         cx="50%"
                         cy="50%"
+                        labelPosition="inside"
                         labelLine={false}
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                         outerRadius={80}
@@ -734,7 +743,7 @@ export default function Dashboard() {
                 <div className="text-sm dark:text-white text-gray-500 flex items-center gap-2">
                   <span>{meeting.date} at {meeting.time}</span>
                   <span>•</span>
-                  <span className="font-medium text-blue-600 dark:text-blue-400">{meeting.clubName}</span>
+                 <Link to="/about"> <span className="font-medium text-blue-600 dark:text-blue-400">{meeting.clubName}</span></Link>
                 </div>
                 <div className="text-xs dark:text-white text-gray-500 mt-1">
                   {meeting.mode === 'offline' ? (

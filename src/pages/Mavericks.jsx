@@ -11,14 +11,20 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import Team from '../components/layout/Team';
 
 const Mavericks = () => {
   const [currentPage, setCurrentPage] = useState(0);
 
+
+
+
+
+
   const pages = [
     {
       id: 'about',
-      icon: <BookOpen size={20} />,
+      icon: <BookOpen size={28} />,
       title: 'About Team Mavericks',
       content: (
         <div className="space-y-6">
@@ -53,12 +59,12 @@ const Mavericks = () => {
     },
     {
       id: 'events',
-      icon: <Calendar size={20} />,
+      icon: <Calendar size={28} />,
       title: 'Our Events',
       content: (
         <div className="space-y-8">
           <div className="text-center py-4 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-700 dark:to-gray-800 rounded-lg">
-            <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400">Learning with Fun</h3>
+            <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400">Learn with Fun</h3>
             <p className="text-gray-600 dark:text-gray-400">For the Students, By the Students!</p>
           </div>
           
@@ -90,7 +96,8 @@ const Mavericks = () => {
                 color: 'from-red-500 to-red-600'
               }
             ].map((event, index) => (
-              <motion.div
+              <a href="https://teammavericks.org/ourEvents.html">
+                <motion.div
                 key={event.name}
                 whileHover={{ y: -5 }}
                 className={`bg-gradient-to-br ${event.color} p-1 rounded-lg shadow-lg`}
@@ -100,6 +107,7 @@ const Mavericks = () => {
                   <p className="text-gray-700 dark:text-gray-300">{event.description}</p>
                 </div>
               </motion.div>
+              </a>
             ))}
           </div>
         </div>
@@ -107,7 +115,7 @@ const Mavericks = () => {
     },
     {
       id: 'achievements',
-      icon: <Trophy size={20} />,
+      icon: <Trophy size={28} />,
       title: 'Achievements',
       content: (
         <div className="space-y-6">
@@ -145,7 +153,7 @@ const Mavericks = () => {
     },
     {
       id: 'outreach',
-      icon: <Globe size={20} />,
+      icon: <Globe size={28} />,
       title: 'Community Outreach',
       content: (
         <div className="space-y-6">
@@ -194,7 +202,7 @@ const Mavericks = () => {
   };
 
   return (
-   <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-6">
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-6">
       {/* Navigation Bar */}
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
@@ -232,24 +240,26 @@ const Mavericks = () => {
       </motion.div>
 
       {/* Page Content */}
-      <motion.div
-        key={currentPage}
-        initial={{ opacity: 0, x: currentPage > pages.findIndex(p => p.id === pages[currentPage].id) ? 50 : -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: currentPage > pages.findIndex(p => p.id === pages[currentPage].id) ? -50 : 50 }}
+     <motion.div
+        key={pages[currentPage].id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8"
-      >
+        className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-10">
+          <div className="bg-white dark:bg-gray-800 duration-200 rounded-xl shadow-md p-6 mb-8">
         <h2 className="text-2xl md:text-3xl font-bold mb-6 flex items-center justify-center">
-          {pages[currentPage].icon}
-          <span className="ml-2">{pages[currentPage].title}</span>
+          <div className='p-1 '>
+            {pages[currentPage].icon}
+          </div>
+          <span className="ml-2 text-left">{pages[currentPage].title}</span>
         </h2>
         
         {pages[currentPage].content}
-      </motion.div>
+     </div>
+        </motion.div>
 
       {/* Page Indicator */}
-      <div className="flex justify-center items-center space-x-2">
+      <div className="flex mt-5 justify-center mb-10 items-center space-x-2">
         {pages.map((_, index) => (
           <button
             key={index}
@@ -259,6 +269,8 @@ const Mavericks = () => {
           />
         ))}
       </div>
+      {/* Team Section */}
+      <Team />
     </div>
   );
 };

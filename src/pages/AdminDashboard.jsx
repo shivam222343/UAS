@@ -116,7 +116,7 @@ const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
-console.log('Current User:', currentUser);
+
 
   // State for absence request modal
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
