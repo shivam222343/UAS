@@ -260,7 +260,7 @@ const CalendarView = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="p-1"
+      className="p-2"
     >
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8">
         <h1 className="text-3xl font-bold mb-4 md:mb-0 dark:text-white">Calendar</h1>

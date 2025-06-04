@@ -17,7 +17,7 @@ import {
   Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-
+import { useEffect } from 'react';
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { currentUser, logout, userRole } = useAuth();
@@ -53,20 +53,23 @@ const Sidebar = ({ isOpen, onClose }) => {
     !item.adminOnly || (item.adminOnly && isAdmin)
   );
 
+ 
+
   return (
     <>
       {/* Mobile backdrop */}
-      <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-          exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-secondary-900 bg-opacity-50 lg:hidden z-40"
-          onClick={onClose}
-        />
-      )}
-      </AnimatePresence>
+    <AnimatePresence>
+  {isOpen && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 0.5 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-secondary-900 bg-opacity-50 lg:hidden z-40"
+      onClick={onClose}
+    />
+  )}
+</AnimatePresence>
+
 
       {/* Sidebar */}
       <div

@@ -494,12 +494,12 @@ export default function Dashboard() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="p-1"
-    >
-      <div className="flex flex-col md:flex-row md:items-center mb-8">
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  exit={{ opacity: 0, y: -20 }}
+  className="px-4 py-1" // Changed from p-1 to px-4 py-1 for better mobile padding
+>
+      <div className="flex  flex-col md:flex-row md:items-center mb-8">
         <div className=' md:justify-between flex flex-col md:flex-row md:items-center mb-8'>
           <div className="text-center md:min-w-80 mb-6">
           <h1 className="text-2xl font-bold mb-1 text-blue-600 dark:text-blue-400">

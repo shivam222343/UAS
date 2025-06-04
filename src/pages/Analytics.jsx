@@ -278,7 +278,7 @@ export default function Analytics() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="p-1"
+      className="p-2"
     >
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">My Analytics</h1>

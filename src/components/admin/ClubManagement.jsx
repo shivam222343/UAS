@@ -449,7 +449,7 @@ const ClubManagement = () => {
       {isAccessKeyModalOpen && selectedClub && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setIsAccessKeyModalOpen(false)}></div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl p-6 relative z-10 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-[90vw] max-w-2xl p-6 relative z-10 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
               Access Keys for {selectedClub.name}
             </h3>
@@ -501,12 +501,12 @@ const ClubManagement = () => {
               )}
             </div>
             
-            <div className="mb-4">
+            <div className="mb-4 ">
               <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Access Keys</h4>
               {accessKeys.length === 0 ? (
                 <p className="text-gray-500 dark:text-gray-400 text-center py-4">No access keys available</p>
               ) : (
-                <div className="border rounded-lg overflow-hidden">
+                <div className="border overflow-x-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-blue-100 rounded-lg overflow-hidden">
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>

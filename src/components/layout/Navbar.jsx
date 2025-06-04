@@ -51,6 +51,9 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
     }
   };
 
+  console.log(currentUser);
+  
+
   // Fetch only unread notification count
   useEffect(() => {
     if (!currentUser) return;
@@ -88,7 +91,7 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
       >
         <div className="max-w-7xl mx-auto pr-4 sm:px-1 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center md:hidden ">
+            <div className="flex items-center lg:hidden ">
               <div className="flex items-center">
                 <button
                   onClick={toggleSidebar}
@@ -109,7 +112,7 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex ml-96 items-center space-x-4">
+            <div className="hidden lg:flex lg:ml-96 items-center space-x-4">
               {navigation.map((item) => (
                 <Link
                   key={item.name}

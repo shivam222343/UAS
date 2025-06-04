@@ -194,7 +194,7 @@ const Mavericks = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-6">
+   <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-6">
       {/* Navigation Bar */}
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
@@ -204,7 +204,7 @@ const Mavericks = () => {
         <div className="flex items-center space-x-2">
           <button 
             onClick={() => navigate('prev')}
-            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-500 hover:text-white"
+            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700  text-gray-700 dark:text-gray-300  hover:bg-blue-500 hover:text-white"
             title="Previous"
           >
             <ChevronLeft size={20} />
@@ -214,7 +214,7 @@ const Mavericks = () => {
             <button
               key={page.id}
               onClick={() => setCurrentPage(index)}
-              className={`p-2 rounded-full ${currentPage === index ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+              className={`p-2 rounded-full ${currentPage === index ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:text-white dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
               title={page.title}
             >
               {page.icon}

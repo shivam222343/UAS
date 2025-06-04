@@ -330,8 +330,8 @@ const AttendanceChart = ({ clubId }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-0">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 lg:p-3 ">
+      <div className="flex p-1 justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Attendance Analytics</h2>
         
         <button 
@@ -345,39 +345,39 @@ const AttendanceChart = ({ clubId }) => {
       
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-blue-50 p-4 rounded-lg">
+        <div className="bg-blue-50  dark:bg-blue-900 p-4 rounded-lg">
           <div className="flex items-center mb-2">
             <Clock className="w-5 h-5 text-blue-500 mr-2" />
-            <h3 className="text-lg font-semibold dark:text-blue-800 text-blue-800">Meetings</h3>
+            <h3 className="text-lg font-semibold dark:text-blue-500 text-blue-800">Meetings</h3>
           </div>
           <p className="text-3xl font-bold text-blue-700">{attendanceData.overview.totalMeetings}</p>
           <p className="text-sm text-blue-600">total meetings</p>
         </div>
         
-        <div className="bg-green-50 p-4 rounded-lg">
+        <div className="bg-green-50 dark:bg-green-900 p-4 rounded-lg">
           <div className="flex items-center mb-2">
             <Users className="w-5 h-5 text-green-500 mr-2" />
-            <h3 className="text-lg font-semibold dark:text-green-800 text-green-800">Members</h3>
+            <h3 className="text-lg font-semibold dark:text-green-500 text-green-800">Members</h3>
           </div>
           <p className="text-3xl font-bold text-green-700">{attendanceData.overview.totalMembers}</p>
-          <p className="text-sm dark:text-green-600 text-green-600">total members</p>
+          <p className="text-sm dark:text-green-500 text-green-600">total members</p>
         </div>
         
-        <div className="bg-purple-50 p-4 rounded-lg">
+        <div className="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg">
           <div className="flex items-center mb-2">
             <CheckCircle className="w-5 h-5 text-purple-500 mr-2" />
-            <h3 className="text-lg font-semibold dark:text-purple-800 text-purple-800">Attendance</h3>
+            <h3 className="text-lg font-semibold dark:text-purple-500 text-purple-800">Attendance</h3>
           </div>
           <p className="text-3xl font-bold text-purple-700">{attendanceData.overview.averageAttendance}%</p>
           <p className="text-sm text-purple-600">average attendance</p>
         </div>
         
-        <div className="bg-yellow-50 p-4 rounded-lg">
+        <div className="bg-yellow-50  dark:bg-yellow-900 p-4 rounded-lg">
           <div className="flex items-center mb-2">
             <AlertTriangle className="w-5 h-5 text-yellow-500 mr-2" />
-            <h3 className="text-lg font-semibold dark:text-yellow-800 text-yellow-800">Low Attendance</h3>
+            <h3 className="text-lg font-semibold dark:text-yellow-500 text-yellow-800">Low Attendance</h3>
           </div>
-          <p className="text-3xl font-bold text-yellow-700">{attendanceData.overview.lowAttendanceMembers.length}</p>
+          <p className="text-3xl font-bold dark:text-yellow-700 text-yellow-700">{attendanceData.overview.lowAttendanceMembers.length}</p>
           <p className="text-sm text-yellow-600">members below 60%</p>
         </div>
       </div>
@@ -480,17 +480,17 @@ const AttendanceChart = ({ clubId }) => {
       {attendanceData.overview.lowAttendanceMembers.length > 0 && (
         <div className="mb-8">
           <h3 className="text-lg dark:text-white font-semibold mb-4">Members with Low Attendance</h3>
-          <div className="bg-yellow-50 dark:text-white p-4 rounded-lg">
+          <div className="bg-yellow-50 dark:bg-yellow-900 dark:text-white p-4 rounded-lg">
             <ul className="divide-y divide-yellow-200">
               {attendanceData.overview.lowAttendanceMembers.map(member => (
                 <li key={member.id} className="py-3 flex-wrap flex justify-between items-center">
                   <div>
-                    <p className="font-medium text-black">{member.name}</p>
-                    <p className="text-sm text-gray-600">{member.email}</p>
+                    <p className="font-medium dark:text-white text-black">{member.name}</p>
+                    <p className="text-sm dark:text-gray-200 text-gray-600">{member.email}</p>
                   </div>
                   <div className="text-right w-full">
-                    <p className="text-lg font-bold text-yellow-700">{member.rate}%</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-lg font-bold dark:text-yellow-200 text-yellow-700">{member.rate}%</p>
+                    <p className="text-sm dark:text-gray-200 text-gray-600">
                       {member.attended} / {member.total} meetings
                     </p>
                   </div>

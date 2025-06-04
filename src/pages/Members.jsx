@@ -60,8 +60,6 @@ export default function Members() {
         }
       }
 
-      console.log("User club IDs found:", userClubIds);
-
       // Get details for each club
       const clubsData = [];
       for (const clubId of userClubIds) {

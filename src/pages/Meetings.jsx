@@ -216,7 +216,7 @@ export default function Meetings() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="container mx-auto p-1"
+      className="container mx-auto p-2"
     >
       <h1 className="text-3xl font-bold mb-6">Meetings</h1>
       

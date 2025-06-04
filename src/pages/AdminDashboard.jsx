@@ -405,12 +405,15 @@ console.log('Current User:', currentUser);
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewMeeting(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const { name, value } = e.target;
+  setNewMeeting((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+
+ 
 
   // Update the MeetingModal component to have horizontal layout and blue borders
   const MeetingModal = () => (
@@ -519,7 +522,8 @@ console.log('Current User:', currentUser);
                   <option value="Food Court">Food Court</option>
                   <option value="Library">Library</option>
                   <option value="North Enclave">North Enclave</option>
-                  <option value="Biotech">Biotech</option>
+                   <option value="Classroom">Biotech</option>
+                    <option value="Other">Other</option>
                 </select>
               </div>
             ) : (
@@ -540,6 +544,22 @@ console.log('Current User:', currentUser);
               </div>
             )}
           </div>
+
+           {/* Location name - Conditional */}
+          {newMeeting.mode === 'offline' && newMeeting.location === 'Other' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Location Name</label>
+              <input
+                type="text"
+                name="locationname"
+                value={newMeeting.locationname}
+                onChange={handleInputChange}
+                className="w-full border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                placeholder="enter location name"
+                required
+              />
+            </div>
+          )}
           
           {/* Classroom Number - Conditional */}
           {newMeeting.mode === 'offline' && newMeeting.location === 'Classroom' && (
@@ -556,6 +576,7 @@ console.log('Current User:', currentUser);
               />
             </div>
           )}
+         
           
           {/* Description with quick fill */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -757,9 +778,9 @@ console.log('Current User:', currentUser);
         <h2 className="text-2xl font-bold">Club Meetings</h2>
         <button
           onClick={() => setShowMeetingModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center"
+          className="px-2 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center"
         >
-          <Plus className="w-5 h-5 mr-1" /> Create Meeting
+          <Plus className="w-4 h-5 mr-1 font-bold" /> Create Meeting
         </button>
       </div>
 
@@ -994,56 +1015,50 @@ console.log('Current User:', currentUser);
       )}
       
       {/* Admin Dashboard Tabs */}
-      <div className="mb-8 flex justify-center items-center">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-7">
-            <button
-              className={` px-3 border-b-2 mb-2 font-medium text-sm ${
-                activeTab === 'meetings' 
-                ? 'dark:text-white hover:text-white hover:bg-gray-400 dark:bg-gray-800 bg-gray-100 text-black' 
-                  : 'dark:text-white hover:text-white hover:bg-gray-400 text-gray-500 dark:bg-gray-800 bg-gray-100'
-              }`}
-              onClick={() => setActiveTab('meetings')}
-            >
-              <Calendar className="w-5 h-5 inline mr-1" />
-              <div className="hidden md:block"> Meetings</div>
-            </button>
-            <button
-              className={` px-3 border-b-2 mb-2 font-medium text-sm ${
-                activeTab === 'clubs' 
-                  ? 'dark:text-white hover:text-white hover:bg-gray-400 dark:bg-gray-800 bg-gray-100 text-black' 
-                  : 'dark:text-white hover:text-white hover:bg-gray-400 text-gray-500 dark:bg-gray-800 bg-gray-100'
-              }`}
-              onClick={() => setActiveTab('clubs')}
-            >
-              <Users className="w-5 h-5 inline mr-1" />
-              <div className="hidden md:block"> Clubs</div>
-            </button>
-            <button
-              className={` px-3 border-b-2 mb-2  font-medium text-sm ${
-                activeTab === 'members' 
-        ? 'dark:text-white hover:text-white hover:bg-gray-400 dark:bg-gray-800 bg-gray-100 text-black' 
-                  : 'dark:text-white hover:text-white hover:bg-gray-400 text-gray-500 dark:bg-gray-800 bg-gray-100'
-              }`}
-              onClick={() => setActiveTab('members')}
-            >
-              <User className="w-5 h-5 inline mr-1" />
-              <div className="hidden md:block"> Members</div>
-            </button>
-            <button
-              className={` px-3 border-b-2 mb-2 font-medium text-sm ${
-                activeTab === 'analytics' 
-               ? 'dark:text-white hover:text-white hover:bg-gray-400 dark:bg-gray-800 bg-gray-100 text-black' 
-                  : 'dark:text-white hover:text-white hover:bg-gray-400 text-gray-500 dark:bg-gray-800 bg-gray-100'
-              }`}
-              onClick={() => setActiveTab('analytics')}
-            >
-              <BarChart2 className="w-5 h-5 inline mr-1" />
-              <div className="hidden md:block"> Analysis</div>
-            </button>
-          </nav>
-          </div>
-        </div>
+   <motion.div
+  initial={{ y: -20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ duration: 0.3 }}
+  className="flex justify-center mb-8 sticky top-0 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-2 rounded-xl shadow-md"
+>
+  <nav className="flex items-center gap-1 lg:gap-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl px-2 py-1 shadow-inner">
+    {[
+      { key: 'meetings', icon: <Calendar className="w-5 h-5 mr-1" />, label: 'Meetings', color: 'bg-blue-600' },
+      { key: 'clubs', icon: <Users className="w-5 h-5 mr-1" />, label: 'Clubs', color: 'bg-purple-600' },
+      { key: 'members', icon: <User className="w-5 h-5 mr-1" />, label: 'Members', color: 'bg-green-600' },
+      { key: 'analytics', icon: <BarChart2 className="w-5 h-5 mr-1" />, label: 'Analysis', color: 'bg-orange-600' },
+    ].map(({ key, icon, label, color }) => {
+      const isActive = activeTab === key;
+      return (
+        <motion.button
+          key={key}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setActiveTab(key)}
+          className={`relative px-4 py-2 font-medium text-sm rounded-full transition-all duration-200 flex items-center justify-center
+            ${isActive
+              ? `${color} text-white shadow-lg ml-1`
+              : 'bg-white hover:bg-blue-100 dark:bg-blue-800 dark:hover:bg-blue-700 text-blue-500 dark:text-blue-300'}
+          `}
+        >
+          {icon}
+          {/* Show label always if active, else only on md+ screens */}
+          <motion.span
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: isActive || window.innerWidth >= 768 ? 1 : 0, x: isActive ? 0 : -8 }}
+            className={`ml-2 ${
+              isActive ? '' : 'hidden md:inline-block'
+            } whitespace-nowrap transition-opacity duration-200`}
+          >
+            {label}
+          </motion.span>
+        </motion.button>
+      );
+    })}
+  </nav>
+</motion.div>
+
+
         
       {/* Content based on active tab */}
       {activeTab === 'meetings' && renderMeetings()}
@@ -1064,12 +1079,12 @@ console.log('Current User:', currentUser);
       {/* Analytics Section */}
       {activeTab === 'analytics' && (
         <div className="mt-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-            <h2 className="text-xl dark:text-white dark:bg-gray-800 font-bold text-secondary-900 mb-6">Club Analytics</h2>
+          <div className="bg-white p-2 dark:bg-gray-800 rounded-xl shadow lg:p-6">
+            <h2 className="text-xl dark:text-white ml-2 dark:bg-gray-800 font-bold text-secondary-900 mb-6">Club Analytics</h2>
             
             {/* Club Selection Dropdown */}
             <div className="mb-6">
-              <label htmlFor="analyticsClub" className="block bg-white dark:bg-gray-800 dark:text-white text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="analyticsClub" className="block bg-white ml-2 dark:bg-gray-800 dark:text-white text-sm font-medium text-gray-700 mb-2">
                 Select Club for Analysis
               </label>
               <select
