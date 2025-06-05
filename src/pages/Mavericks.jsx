@@ -202,7 +202,7 @@ const Mavericks = () => {
   };
 
   return (
-  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-6">
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 ">
       {/* Navigation Bar */}
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
@@ -245,8 +245,8 @@ const Mavericks = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-10">
-          <div className="bg-white dark:bg-gray-800 duration-200 rounded-xl shadow-md p-6 mb-8">
+        className="bg-white dark:bg-gray-800 lg:p-6 md:p-4 rounded-lg shadow-md mb-10">
+          <div className="bg-white dark:bg-gray-800 duration-200 rounded-xl shadow-md md:p-6 p-2 mb-8">
         <h2 className="text-2xl md:text-3xl font-bold mb-6 flex items-center justify-center">
           <div className='p-1 '>
             {pages[currentPage].icon}
