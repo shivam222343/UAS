@@ -585,7 +585,7 @@ export default function Dashboard() {
               <div className='flex'><Link to="/info"><div className='mt-2'>  <Info/></div></Link>
             <button
               onClick={onClose}
-              className="text-blue-500 bg-transparent hover:text-black"
+              className="text-blue-500 bg-transparent hover:bg-transparent hover:text-blue-900"
             >
               <X className="w-5 h-5" />
             </button></div>
