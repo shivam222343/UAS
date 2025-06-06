@@ -12,8 +12,8 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-    BadgeInfo,
-    Info,
+  BadgePlus,
+  Info,
   Plus,
   X
 } from 'lucide-react';
@@ -29,6 +29,7 @@ import {
 } from 'recharts';
 import { Link } from 'react-router-dom';
 import AccessKey from './AccessKey';
+import ClubCard from './Clubcard';
 
 const greetings = {
   morning: [
@@ -174,7 +175,7 @@ export default function Dashboard() {
       setDontShowAgain(true);
     }
   }, []);
-  const changeVal = ()=>{
+  const changeVal = () => {
     setDontShowAgain(false);
     setShowJoinClubPopup(true);
     console.log("Change value called, dontShowAgain:", dontShowAgain);
@@ -200,19 +201,19 @@ export default function Dashboard() {
       const keyFromUrl = urlParams.get('accessKey');
       const keyFromStorage = localStorage.getItem('clubAccessKey');
       const accessKey = keyFromUrl || keyFromStorage;
-      
+
       if (!accessKey) {
         console.log("No stored access key found");
         return;
       }
-      
+
       console.log("Found stored access key, validating...");
       await validateKeyAndJoinClub(accessKey);
-      
+
       if (keyFromStorage) {
         localStorage.removeItem('clubAccessKey');
       }
-      
+
       if (keyFromUrl) {
         const newUrl = window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
@@ -221,56 +222,56 @@ export default function Dashboard() {
       console.error("Error checking stored access key:", err);
     }
   };
-  
+
   const validateKeyAndJoinClub = async (accessKey) => {
     try {
       console.log("Validating access key:", accessKey);
-      
+
       const keysRef = collection(db, 'accessKeys');
       const q = query(keysRef, where('key', '==', accessKey.trim()));
       const querySnapshot = await getDocs(q);
-      
+
       if (querySnapshot.empty) {
         console.error('Invalid access key');
         return false;
       }
-      
+
       const keyDoc = querySnapshot.docs[0];
       const keyData = keyDoc.data();
-      
+
       if (keyData.used) {
         console.error('This access key has already been used');
         return false;
       }
-      
+
       if (keyData.expiry && new Date(keyData.expiry) < new Date()) {
         console.error('This access key has expired');
         return false;
       }
-      
+
       const clubId = keyData.clubId;
       if (!clubId) {
         console.error('Access key is not associated with any club');
         return false;
       }
-      
+
       const clubDoc = await getDoc(doc(db, 'clubs', clubId));
       if (!clubDoc.exists()) {
         console.error('The club associated with this key no longer exists');
         return false;
       }
-      
+
       const clubName = clubDoc.data().name;
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
       const userData = userDoc.data();
-      
+
       if (userData.clubsJoined && userData.clubsJoined[clubId]) {
         console.log(`User is already a member of ${clubName}`);
         return false;
       }
-      
+
       console.log(`Joining club: ${clubName}`);
-      
+
       await updateDoc(doc(db, 'clubs', clubId, 'members', currentUser.uid), {
         userId: currentUser.uid,
         displayName: userData.displayName || 'Unknown User',
@@ -278,26 +279,26 @@ export default function Dashboard() {
         role: 'member',
         joinedAt: serverTimestamp()
       });
-      
+
       await updateDoc(doc(db, 'users', currentUser.uid), {
         [`clubsJoined.${clubId}`]: {
           joinedAt: serverTimestamp(),
           role: 'member'
         }
       });
-      
+
       await updateDoc(doc(db, 'accessKeys', keyDoc.id), {
         used: true,
         usedBy: currentUser.uid,
         usedAt: serverTimestamp()
       });
-      
+
       console.log(`Successfully joined ${clubName}!`);
-      
+
       setTimeout(() => {
         window.location.reload();
       }, 1500);
-      
+
       return true;
     } catch (err) {
       console.error('Error validating key and joining club:', err);
@@ -582,16 +583,21 @@ export default function Dashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
             <h2 className="text-xl font-bold dark:text-white">Join a Club</h2>
-              <div className='flex'><Link to="/info"><div className='mt-2'>  <Info/></div></Link>
-            <button
-              onClick={onClose}
-              className="text-blue-500 bg-transparent hover:bg-transparent hover:text-blue-900"
-            >
-              <X className="w-5 h-5" />
-            </button></div>
+            <div className='flex'><Link to="/info"><div className='mt-2'>  <Info /></div></Link>
+              <button
+                onClick={onClose}
+                className="text-blue-500 bg-transparent hover:bg-transparent hover:text-blue-900"
+              >
+                <X className="w-5 h-5" />
+              </button></div>
           </div>
-          <div className="p-4">
+          <div className='w-full h-ato flex justify-center items-center'>
+            {selectedClub && <div className="p-4">
+            <ClubCard />
+          </div>}
+          {!selectedClub && <div className="p-4">
             <AccessKey />
+          </div>}
           </div>
           <div className="p-4 border-t dark:border-gray-700 flex items-center justify-between">
             <div className="flex items-center">
@@ -625,7 +631,7 @@ export default function Dashboard() {
       </div>
     );
   }
-  
+
   if (loading && userClubIds.length === 0 && !dontShowAgain) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -945,19 +951,52 @@ export default function Dashboard() {
         </div>
       )}
 
-      {showJoinClubPopup && !selectedClub && dontShowAgain == false && (
+      {showJoinClubPopup && dontShowAgain == false && (
         <JoinClubPopup onClose={() => setShowJoinClubPopup(false)} />
       )}
 
-      { !selectedClub&& (
+      {(
         <button
           onClick={() => changeVal()}
-          className="fixed bottom-20 right-6 p-4 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-40"
+          className="fixed bottom-20 right-6 p-4  text-white rounded-full shadow-lg  focus:outline-none  focus:ring-offset-2 focus:ring-blue-500 z-40"
           aria-label="Join a club"
         >
-          <Plus className="w-6 h-6" />
+          <div className="relative h-12 w-12 flex items-center justify-center">
+            {/* Chatbot Icon */}
+            <div className={`absolute h-full w-full rounded-full flex items-center justify-center `}>
+              <div className='text-3xl font-bold'><BadgePlus />
+              </div>
+            </div>
+
+            {/* Water Drop Waves */}
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={`absolute h-full w-full rounded-full border-2`}
+                style={{
+                  animation: `wave 3s ease-out infinite`,
+                  animationDelay: `${i * 1}s`,
+                }}
+              />
+            ))}
+
+            {/* CSS for the animation */}
+            <style>{`
+        @keyframes wave {
+          0% {
+            transform: scale(1);
+            opacity: 0.7;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+        }
+      `}</style>
+          </div>
         </button>
       )}
     </motion.div>
   );
 }
+
