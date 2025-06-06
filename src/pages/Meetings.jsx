@@ -198,7 +198,7 @@ export default function Meetings() {
     fetchUserAbsenceRequests();
   };
 
-  if (loading) {
+  if (loading && selectedClub) {
     return (
       <motion.div 
         initial={{ opacity: 0 }}
