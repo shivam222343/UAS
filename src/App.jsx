@@ -18,7 +18,7 @@ import AdminDashboard from './pages/AdminDashboard';
 // Import global styles
 import './styles/Forms.css';
 import Mavericks from './pages/Mavericks';
-import Info from './components/layout/info';
+import Info from './components/layout/Info';
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { currentUser } = useAuth();
