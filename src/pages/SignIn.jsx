@@ -39,6 +39,8 @@ const SignIn = () => {
           photoURL: user.photoURL || null,
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
+          isOnline: true, // Custom field
+          lastSeen: serverTimestamp(),
           role: 'member'
         });
       } else {

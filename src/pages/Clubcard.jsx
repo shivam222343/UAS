@@ -21,7 +21,7 @@ const ClubCard = () => {
         <div className="w-[60px] h-[60px] overflow-hidden bg-white rounded-full mx-auto mb-3 flex items-center justify-center shadow-md">
         <img src={logo} alt="Logo" />
         </div>
-        <h3 className="text-xl font-semibold m-0 text-white">Welcome {}!</h3>
+        <h3 className="text-xl font-semibold m-0 text-white">Welcome to the Team Mavericks!</h3>
       </div>
 
       {/* Status */}
@@ -41,7 +41,7 @@ const ClubCard = () => {
         <motion.button
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
-          className="bg-gradient-to-br from-pink-400 to-pink-200 dark:from-pink-600 dark:to-pink-400 text-white font-semibold text-base px-6 py-2.5 rounded-full shadow-md flex items-center justify-center gap-2 mx-auto"
+          className="bg-gradient-to-br from-blue-600 to-blue-400 dark:from-blue-600 dark:to-blue-400 text-white font-semibold text-base px-6 py-2.5 rounded-full shadow-md flex items-center justify-center gap-2 mx-auto"
         >
           <Plus size={18} />
           Join Another Club

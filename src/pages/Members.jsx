@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { collection, getDocs, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, UserCheck, Calendar, Search, Shield, Users } from 'lucide-react';
+import { User, Mail, UserCheck, Calendar, Search, Shield, Users, Eye } from 'lucide-react';
 import Loader from '../components/Loader';
 
 export default function Members() {
@@ -120,6 +120,9 @@ export default function Members() {
             totalMeetings: 0
           };
         }
+
+        console.log("users data: ", userDoc.data());
+
 
         const userData = userDoc.data();
 
@@ -245,40 +248,95 @@ export default function Members() {
               </h2>
             </div>
 
-            <ul className="divide-y divide-gray-200  dark:divide-gray-700">
+
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
               {filteredMembers.map((member) => (
-                <li key={member.id} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <li
+                  key={member.uid || member.id}
+                  className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
                   <div className="flex items-center">
                     <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0">
                       <img
-                        src={member.photoURL || `https://ui-avatars.com/api/?name=${member.displayName || 'User'}&background=0A66C2&color=fff`}
+                        src={
+                          member.photoURL ||
+                          `https://ui-avatars.com/api/?name=${member.displayName || 'User'}&background=0A66C2&color=fff`
+                        }
                         alt={member.displayName || 'User profile'}
                         className="h-full w-full object-cover"
                       />
                     </div>
                     <div className="ml-4 flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">{member.displayName || 'Unnamed User'}</h3>
-                        <span className={`px-2 py-1 text-xs rounded-full ${member.role === 'admin' ? 'bg-red-100 text-red-800' :
-                            member.role === 'subadmin' ? 'bg-orange-100 text-orange-800' :
-                              'bg-green-100 text-green-800'
-                          }`}>
-                          {member.role}
-                        </span>
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className='w-full h-auto flex justify-between items-center'>
+                          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                            {member.displayName || 'Unnamed User'}
+                          </h3>
+                          <div className='min-w-20 flex items-center justify-end gap-2'>
+                            
+                            <span
+                              className={`px-2 py-1 text-xs rounded-full ${member.isOnline === true
+                                ? 'bg-transperent font-semibold text-green-500'
+                                : member.isOnline === false
+                                  ? 'bg-transperent font-semibold text-gray-600 dark:text-gray-300'
+                                  : 'bg-transperent font-semibold text-yellow-600'
+                                }`}
+                            >
+                              {member.isOnline === true
+                                ? 'Online'
+                                : member.isOnline === false
+                                  ? 'Offline'
+                                  : ' '}
+                            </span>
+                            <span
+                              className={`px-2 py-1 text-xs rounded-full ${member.role === 'admin'
+                                ? 'bg-red-100 text-red-800'
+                                : member.role === 'subadmin'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-green-100 text-green-800'
+                                }`}
+                            >
+                              {member.role || 'member'}
+                            </span>
+                          </div>
+                        </div>
+
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1">
                         <Mail className="h-4 w-4 mr-1" />
-                        {member.email}
+                        {member.email || 'No email'}
                       </p>
-                      <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center">
                         <Calendar className="h-4 w-4 mr-1" />
-                        Joined: {member.memberSince ? member.memberSince.toLocaleDateString() : 'Unknown'}
+                        Joined:{" "}
+                        {member.createdAt
+                          ? new Date(member.createdAt.seconds * 1000).toLocaleDateString()
+                          : ' '}
                       </div>
+
+                      <span
+                        className={`flex items-center text-sm rounded-full ${member.isOnline === true
+                            ? 'bg-transparent font-semibold text-green-500'
+                            : member.isOnline === false
+                              ? 'bg-transparent font-semibold text-gray-600 dark:text-gray-300'
+                              : 'bg-transparent font-semibold text-yellow-600'
+                          }`}
+                      >
+                     {
+                      member.isOnline !== true &&    <Eye className="h-4 w-4 mr-1" />
+                     }
+                        {member.isOnline === false
+                          ? member.lastSeen
+                            ? `Last seen: ${new Date(member.lastSeen.seconds * 1000).toLocaleString()}`
+                            : 'Offline'
+                          : ''}
+                      </span>
                     </div>
                   </div>
                 </li>
               ))}
             </ul>
+
           </div>
         ) : (
           <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg">

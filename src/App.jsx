@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -14,18 +15,23 @@ import CalendarView from './pages/CalendarView';
 import QRGenerator from './pages/QRGenerator';
 import QRScanner from './pages/QRScanner';
 import AdminDashboard from './pages/AdminDashboard';
-
-// Import global styles
-import './styles/Forms.css';
 import Mavericks from './pages/Mavericks';
 import Info from './components/layout/Info';
+
+import './styles/Forms.css';
+
+// Firebase
+import { auth, db } from './services/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { currentUser } = useAuth();
   return currentUser ? children : <Navigate to="/signin" />;
 };
 
-// Public Route Component (redirects to dashboard if already authenticated)
+// Public Route Component
 const PublicRoute = ({ children }) => {
   const { currentUser } = useAuth();
   return !currentUser ? children : <Navigate to="/dashboard" />;
@@ -34,13 +40,68 @@ const PublicRoute = ({ children }) => {
 // Admin Route Component
 const AdminRoute = ({ children }) => {
   const { currentUser, userRole } = useAuth();
-  // Allow access only if user is logged in and has admin or subadmin role
-  return currentUser && (userRole === 'admin' || userRole === 'subadmin') 
-    ? children 
+  return currentUser && (userRole === 'admin' || userRole === 'subadmin')
+    ? children
     : <Navigate to="/dashboard" />;
 };
 
 const App = () => {
+  useEffect(() => {
+    let uid;
+    let userRef;
+    let intervalId;
+
+    const setOnlineStatus = async (status) => {
+      if (userRef) {
+        await updateDoc(userRef, {
+          isOnline: status,
+          lastSeen: serverTimestamp(),
+        });
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        setOnlineStatus(false);
+      } else if (document.visibilityState === 'visible') {
+        setOnlineStatus(true);
+      }
+    };
+
+    const handlePageUnload = () => {
+      setOnlineStatus(false);
+    };
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        uid = user.uid;
+        userRef = doc(db, 'users', uid);
+
+        // Set online on load
+        await setOnlineStatus(true);
+
+        // Listen for tab visibility
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('beforeunload', handlePageUnload);
+        window.addEventListener('pagehide', handlePageUnload);
+
+        // Ping every 20s
+        intervalId = setInterval(() => {
+          setOnlineStatus(true);
+        }, 20000);
+      }
+    });
+
+    return () => {
+      if (userRef) setOnlineStatus(false);
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handlePageUnload);
+      window.removeEventListener('pagehide', handlePageUnload);
+      unsubscribeAuth();
+    };
+  }, []);
+
   return (
     <Router>
       <ThemeProvider>
@@ -83,30 +144,30 @@ const App = () => {
               <Route path="profile" element={<Profile />} />
               <Route path="about" element={<Mavericks />} />
               <Route path="info" element={<Info />} />
-              
+
               {/* QR Code Routes */}
-              <Route 
-                path="generate-qr" 
+              <Route
+                path="generate-qr"
                 element={
                   <AdminRoute>
                     <QRGenerator />
                   </AdminRoute>
-                } 
+                }
               />
               <Route path="scan-qr" element={<QRScanner />} />
-              
-              {/* Admin Route */}
-              <Route 
-                path="admin" 
+
+              {/* Admin Dashboard */}
+              <Route
+                path="admin"
                 element={
                   <AdminRoute>
                     <AdminDashboard />
                   </AdminRoute>
-                } 
+                }
               />
             </Route>
 
-            {/* Catch all route */}
+            {/* Catch-all Route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
