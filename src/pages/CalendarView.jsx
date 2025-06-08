@@ -273,12 +273,12 @@ const CalendarView = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <div className=" bg-gray-700 text-gray-800 dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div className=" bg-blue-500 text-gray-950 dark:bg-gray-800 rounded-lg shadow-md p-6">
             <Calendar
               onChange={handleDateClick}
               value={value}
               tileContent={tileContent}
-              className={`calendar-container  bg-gray-700 text-gray-800 dark:bg-gray-800 ${darkMode ? 'dark' : ''}`}
+              className={`calendar-container  bg-blue-500 text-gray-800 dark:bg-gray-800 ${darkMode ? 'dark' : ''}`}
             />
           </div>
           

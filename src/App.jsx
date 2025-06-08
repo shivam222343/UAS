@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+// src/App.jsx
+import React, { useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -20,24 +21,21 @@ import Info from './components/layout/Info';
 
 import './styles/Forms.css';
 
-// Firebase
-import { auth, db } from './services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { Toaster, toast } from 'react-hot-toast';
+import { startPresenceTracking } from './services/presence';
+import { startPresenceListener } from './services/presenceListener';
 
-// Protected Route Component
+// ✅ Route protection
 const ProtectedRoute = ({ children }) => {
   const { currentUser } = useAuth();
   return currentUser ? children : <Navigate to="/signin" />;
 };
 
-// Public Route Component
 const PublicRoute = ({ children }) => {
   const { currentUser } = useAuth();
   return !currentUser ? children : <Navigate to="/dashboard" />;
 };
 
-// Admin Route Component
 const AdminRoute = ({ children }) => {
   const { currentUser, userRole } = useAuth();
   return currentUser && (userRole === 'admin' || userRole === 'subadmin')
@@ -45,95 +43,56 @@ const AdminRoute = ({ children }) => {
     : <Navigate to="/dashboard" />;
 };
 
+// ✅ ToastQueue component inside App
+const ToastQueue = () => {
+  const [queue, setQueue] = useState([]);
+  const isShowing = useRef(false);
+
+  useEffect(() => {
+    if (queue.length > 0 && !isShowing.current) {
+      isShowing.current = true;
+      const { message, duration = 3000 } = queue[0];
+
+      toast(message, {
+        duration,
+        onClose: () => {
+          setQueue((prev) => prev.slice(1)); // remove first toast
+          isShowing.current = false;
+        }
+      });
+    }
+  }, [queue]);
+
+  // Expose global function to add toast to queue
+  window.showToast = (msg, duration) => {
+    setQueue((prev) => [...prev, { message: msg, duration }]);
+  };
+
+  return null;
+};
+
 const App = () => {
   useEffect(() => {
-    let uid;
-    let userRef;
-    let intervalId;
-
-    const setOnlineStatus = async (status) => {
-      if (userRef) {
-        await updateDoc(userRef, {
-          isOnline: status,
-          lastSeen: serverTimestamp(),
-        });
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        setOnlineStatus(false);
-      } else if (document.visibilityState === 'visible') {
-        setOnlineStatus(true);
-      }
-    };
-
-    const handlePageUnload = () => {
-      setOnlineStatus(false);
-    };
-
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        uid = user.uid;
-        userRef = doc(db, 'users', uid);
-
-        // Set online on load
-        await setOnlineStatus(true);
-
-        // Listen for tab visibility
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('beforeunload', handlePageUnload);
-        window.addEventListener('pagehide', handlePageUnload);
-
-        // Ping every 20s
-        intervalId = setInterval(() => {
-          setOnlineStatus(true);
-        }, 20000);
-      }
-    });
-
-    return () => {
-      if (userRef) setOnlineStatus(false);
-      clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handlePageUnload);
-      window.removeEventListener('pagehide', handlePageUnload);
-      unsubscribeAuth();
-    };
+    startPresenceTracking();
+    const unsubscribe = startPresenceListener();
+    return () => unsubscribe && unsubscribe();
   }, []);
 
   return (
     <Router>
       <ThemeProvider>
         <AuthProvider>
+          {/* ✅ Toast system */}
+          <Toaster position="top-right" />
+          <ToastQueue />
+
           <Routes>
             {/* Public Routes */}
-            <Route
-              path="/signin"
-              element={
-                <PublicRoute>
-                  <SignIn />
-                </PublicRoute>
-              }
-            />
-            <Route
-              path="/signup"
-              element={
-                <PublicRoute>
-                  <SignUp />
-                </PublicRoute>
-              }
-            />
+            <Route path="/signin" element={<PublicRoute><SignIn /></PublicRoute>} />
+            <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
 
             {/* Protected Routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
+            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="members" element={<Members />} />
@@ -144,30 +103,12 @@ const App = () => {
               <Route path="profile" element={<Profile />} />
               <Route path="about" element={<Mavericks />} />
               <Route path="info" element={<Info />} />
-
-              {/* QR Code Routes */}
-              <Route
-                path="generate-qr"
-                element={
-                  <AdminRoute>
-                    <QRGenerator />
-                  </AdminRoute>
-                }
-              />
+              <Route path="generate-qr" element={<AdminRoute><QRGenerator /></AdminRoute>} />
               <Route path="scan-qr" element={<QRScanner />} />
-
-              {/* Admin Dashboard */}
-              <Route
-                path="admin"
-                element={
-                  <AdminRoute>
-                    <AdminDashboard />
-                  </AdminRoute>
-                }
-              />
+              <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             </Route>
 
-            {/* Catch-all Route */}
+            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>

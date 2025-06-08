@@ -10,6 +10,7 @@ import Loader from '../components/Loader';
 export default function Meetings() {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [timeoutReached, setTimeoutReached] = useState(false);
   const [error, setError] = useState('');
   const [userClubs, setUserClubs] = useState([]);
   const [selectedClub, setSelectedClub] = useState('');
@@ -24,6 +25,15 @@ export default function Meetings() {
   const [showAbsentMembers, setShowAbsentMembers] = useState(false);
   const [absentMembers, setAbsentMembers] = useState({});
   const [clubMembers, setClubMembers] = useState({});
+
+  useEffect(() => {
+    // Set a timeout for 10 seconds to show loading
+    const loadingTimeout = setTimeout(() => {
+      setTimeoutReached(true);
+    }, 10000);
+
+    return () => clearTimeout(loadingTimeout);
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
@@ -101,6 +111,8 @@ export default function Meetings() {
     } catch (err) {
       setError('Failed to fetch user clubs: ' + err.message);
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -134,11 +146,11 @@ export default function Meetings() {
       });
       
       setMeetings(meetingsList);
-      setLoading(false);
     } catch (err) {
       setError('Failed to fetch meetings: ' + err.message);
-      setLoading(false);
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -198,7 +210,65 @@ export default function Meetings() {
     fetchUserAbsenceRequests();
   };
 
-  if (loading) {
+  const fetchClubMembers = async (clubId) => {
+    try {
+      const membersRef = collection(db, 'clubs', clubId, 'members');
+      const membersSnapshot = await getDocs(membersRef);
+      
+      const members = {};
+      membersSnapshot.docs.forEach(doc => {
+        members[doc.id] = {
+          id: doc.id,
+          ...doc.data(),
+          displayName: doc.data().displayName || 'Unknown User'
+        };
+      });
+      
+      setClubMembers(members);
+    } catch (err) {
+      console.error('Error fetching club members:', err);
+    }
+  };
+
+  const fetchAbsentMembers = async (meetingId) => {
+    try {
+      if (!selectedClub || !meetingId) return;
+      
+      // Get all approved absence requests for this meeting
+      const absencesRef = collection(db, 'clubs', selectedClub, 'meetings', meetingId, 'absences');
+      const q = query(absencesRef, where('status', '==', 'approved'));
+      const absencesSnapshot = await getDocs(q);
+      
+      const absences = {};
+      absencesSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        absences[data.userId] = {
+          id: doc.id,
+          ...data,
+          reason: data.reason || 'No reason provided'
+        };
+      });
+      
+      setAbsentMembers(prev => ({
+        ...prev,
+        [meetingId]: absences
+      }));
+    } catch (err) {
+      console.error('Error fetching absent members:', err);
+    }
+  };
+
+  const toggleAbsentMembers = async (meetingId) => {
+    // If we're showing absent members and don't have them loaded yet, fetch them
+    if (!absentMembers[meetingId]) {
+      await fetchAbsentMembers(meetingId);
+    }
+    
+    setShowAbsentMembers(prev => !prev);
+  };
+
+  // Show loading state for maximum 10 seconds
+  if (loading && !timeoutReached) {
     return (
       <motion.div 
         initial={{ opacity: 0 }}
@@ -211,6 +281,7 @@ export default function Meetings() {
     );
   }
 
+  // After timeout, show the page even if data is still loading
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -293,10 +364,8 @@ export default function Meetings() {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h2 className="text-xl font-semibold dark:text-white">{meeting.name}</h2>
-                    {/* Delete button can go here if needed */}
                   </div>
                   
-                  {/* Description below heading */}
                   <div className="flex items-start text-gray-600 dark:text-gray-300 mb-4">
                     <FileText className="w-5 h-5 mr-2 mt-1 flex-shrink-0" />
                     <p className="text-sm">{meeting.description}</p>
@@ -312,7 +381,6 @@ export default function Meetings() {
                       <span>{meeting.time}</span>
                     </div>
                     
-                    {/* Meeting Mode - Online/Offline */}
                     <div className="flex dark:text-white items-center text-gray-600">
                       {meeting.mode === 'offline' ? (
                         <>
@@ -330,7 +398,6 @@ export default function Meetings() {
                       )}
                     </div>
                     
-                    {/* Absence Request Status if exists */}
                     {userAbsenceRequests[meeting.id] && (
                       <div className={`mt-2 px-3 py-2 rounded-md text-sm ${
                         userAbsenceRequests[meeting.id].status === 'approved' 
@@ -352,7 +419,6 @@ export default function Meetings() {
                     )}
                   </div>
 
-                  {/* Don't show request absence button if user already has an absence request */}
                   {!userAbsenceRequests[meeting.id] && (
                     <div className="flex justify-end mt-4">
                       <button
@@ -386,10 +452,8 @@ export default function Meetings() {
                   >
                     <div className="flex justify-between items-center mb-2">
                       <h2 className="text-xl font-semibold">{meeting.name}</h2>
-                      {/* Delete button can go here if needed */}
                     </div>
                     
-                    {/* Description below heading */}
                     <div className="flex items-start dark:text-gray-300 text-gray-600 mb-4">
                       <FileText className="w-5 h-5 mr-2 mt-1 flex-shrink-0" />
                       <p className="text-sm">{meeting.description}</p>
@@ -426,10 +490,8 @@ export default function Meetings() {
                   >
                     <div className="flex justify-between items-center mb-2">
                       <h2 className="text-xl dark:text-white font-semibold">{meeting.name}</h2>
-                      {/* Delete button can go here if needed */}
                     </div>
                     
-                    {/* Description below heading */}
                     <div className="flex items-start dark:text-white text-gray-600 mb-4">
                       <FileText className="w-5 h-5 mr-2 mt-1 flex-shrink-0" />
                       <p className="text-sm dark:text-white">{meeting.description}</p>
@@ -462,60 +524,3 @@ export default function Meetings() {
     </motion.div>
   );
 }
-
-const fetchClubMembers = async (clubId) => {
-  try {
-    const membersRef = collection(db, 'clubs', clubId, 'members');
-    const membersSnapshot = await getDocs(membersRef);
-    
-    const members = {};
-    membersSnapshot.docs.forEach(doc => {
-      members[doc.id] = {
-        id: doc.id,
-        ...doc.data(),
-        displayName: doc.data().displayName || 'Unknown User'
-      };
-    });
-    
-    setClubMembers(members);
-  } catch (err) {
-    console.error('Error fetching club members:', err);
-  }
-};
-
-const fetchAbsentMembers = async (meetingId) => {
-  try {
-    if (!selectedClub || !meetingId) return;
-    
-    // Get all approved absence requests for this meeting
-    const absencesRef = collection(db, 'clubs', selectedClub, 'meetings', meetingId, 'absences');
-    const q = query(absencesRef, where('status', '==', 'approved'));
-    const absencesSnapshot = await getDocs(q);
-    
-    const absences = {};
-    absencesSnapshot.docs.forEach(doc => {
-      const data = doc.data();
-      absences[data.userId] = {
-        id: doc.id,
-        ...data,
-        reason: data.reason || 'No reason provided'
-      };
-    });
-    
-    setAbsentMembers(prev => ({
-      ...prev,
-      [meetingId]: absences
-    }));
-  } catch (err) {
-    console.error('Error fetching absent members:', err);
-  }
-};
-
-const toggleAbsentMembers = async (meetingId) => {
-  // If we're showing absent members and don't have them loaded yet, fetch them
-  if (!absentMembers[meetingId]) {
-    await fetchAbsentMembers(meetingId);
-  }
-  
-  setShowAbsentMembers(prev => !prev);
-};
