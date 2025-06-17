@@ -1,123 +1,23 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import {
-  User,
-  Bell,
-  Lock,
-  Globe,
-  Sun,
-  Moon,
-  Users,
-} from 'lucide-react';
-import { collection, query, where, getDocs, deleteDoc, doc, updateDoc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { User, Users, Check } from 'lucide-react';
+import { collection, query, where, getDocs, doc, updateDoc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import Loader from '../components/Loader';
-
-
+import { Link } from 'react-router-dom';
+import {Info} from 'lucide-react';
 
 const settingsSections = [
   {
     id: 'profile',
     title: 'Profile',
     icon: User,
-    fields: [
-      {
-        id: 'name',
-        label: 'Full Name',
-        type: 'text',
-        value: 'John Doe',
-      },
-      {
-        id: 'email',
-        label: 'Email',
-        type: 'email',
-        value: 'john@example.com',
-      },
-      {
-        id: 'phone',
-        label: 'Phone',
-        type: 'tel',
-        value: '+1 234 567 890',
-      },
-    ],
-  },
-  {
-    id: 'notifications',
-    title: 'Notifications',
-    icon: Bell,
-    fields: [
-      {
-        id: 'email_notifications',
-        label: 'Email Notifications',
-        type: 'toggle',
-        value: true,
-      },
-      {
-        id: 'push_notifications',
-        label: 'Push Notifications',
-        type: 'toggle',
-        value: true,
-      },
-      {
-        id: 'sms_notifications',
-        label: 'SMS Notifications',
-        type: 'toggle',
-        value: false,
-      },
-    ],
-  },
-  {
-    id: 'security',
-    title: 'Security',
-    icon: Lock,
-    fields: [
-      {
-        id: 'two_factor',
-        label: 'Two-Factor Authentication',
-        type: 'toggle',
-        value: false,
-      },
-      {
-        id: 'password',
-        label: 'Change Password',
-        type: 'button',
-        value: 'Change Password',
-      },
-    ],
-  },
-  {
-    id: 'appearance',
-    title: 'Appearance',
-    icon: Globe,
-    fields: [
-      {
-        id: 'theme',
-        label: 'Theme',
-        type: 'select',
-        value: 'system',
-        options: [
-          { value: 'light', label: 'Light' },
-          { value: 'dark', label: 'Dark' },
-          { value: 'system', label: 'System' },
-        ],
-      },
-      {
-        id: 'language',
-        label: 'Language',
-        type: 'select',
-        value: 'en',
-        options: [
-          { value: 'en', label: 'English' },
-          { value: 'es', label: 'Spanish' },
-          { value: 'fr', label: 'French' },
-        ],
-      },
-    ],
+    fields: [],
   },
   {
     id: 'club',
-    title: 'Club',
+    title: 'Join Club',
     icon: Users,
     fields: [],
   },
@@ -140,7 +40,6 @@ const item = {
 
 const Settings = () => {
   const [activeSection, setActiveSection] = useState('profile');
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [accessKey, setAccessKey] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -148,18 +47,12 @@ const Settings = () => {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    // Simulate loading delay
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 800);
     
     return () => clearTimeout(timer);
   }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle form submission
-  };
 
   const handleJoinClub = async (e) => {
     e.preventDefault();
@@ -174,15 +67,12 @@ const Settings = () => {
     }
 
     try {
-      // First, fetch all clubs to check each club's access keys
       const clubsRef = collection(db, 'clubs');
       const clubsSnapshot = await getDocs(clubsRef);
       
       let foundClub = null;
       let foundKeyId = null;
-      let foundKeyData = null;
       
-      // Search through each club's access keys collection
       for (const clubDoc of clubsSnapshot.docs) {
         const clubId = clubDoc.id;
         const accessKeysRef = collection(db, 'clubs', clubId, 'accessKeys');
@@ -193,7 +83,6 @@ const Settings = () => {
           const keyDoc = keysSnapshot.docs[0];
           const keyData = keyDoc.data();
           
-          // Check if the key is expired
           const expiryDate = keyData.expiresAt?.toDate();
           if (expiryDate && expiryDate < new Date()) {
             setError('This access key has expired');
@@ -203,7 +92,6 @@ const Settings = () => {
           
           foundClub = clubDoc;
           foundKeyId = keyDoc.id;
-          foundKeyData = keyData;
           break;
         }
       }
@@ -214,9 +102,7 @@ const Settings = () => {
         return;
       }
       
-      // Access key is valid, add the user to the club
       if (currentUser) {
-        // 1. Add the user to the club's members collection
         const memberRef = doc(db, 'clubs', foundClub.id, 'members', currentUser.uid);
         await setDoc(memberRef, {
           userId: currentUser.uid,
@@ -227,7 +113,6 @@ const Settings = () => {
           joinedAt: serverTimestamp()
         });
         
-        // 2. Update the user's profile to include this club
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         
@@ -235,7 +120,6 @@ const Settings = () => {
           const userData = userDoc.data();
           const clubsJoined = userData.clubsJoined || {};
           
-          // Add this club to user's clubsJoined map
           await updateDoc(userRef, {
             clubsJoined: {
               ...clubsJoined,
@@ -247,7 +131,6 @@ const Settings = () => {
           });
         }
         
-        // 3. Mark the access key as used
         const keyRef = doc(db, 'clubs', foundClub.id, 'accessKeys', foundKeyId);
         await updateDoc(keyRef, {
           isUsed: true,
@@ -255,12 +138,12 @@ const Settings = () => {
           usedAt: serverTimestamp()
         });
 
-        setSuccessMessage(`Successfully joined ${foundClub.data().name}!`);
+        setSuccessMessage(`🎉 Successfully joined ${foundClub.data().name}!`);
         setAccessKey('');
       }
     } catch (error) {
       console.error('Error joining club:', error);
-      setError('An error occurred. Please try again.');
+      setError('❌ An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -280,28 +163,25 @@ const Settings = () => {
   }
 
   return (
-    <div className="space-y-6 p-1">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-secondary-900 dark:text-white">
-          Settings
-        </h1>
-       
-      </div>
+    <div className="space-y-6 p-4 max-w-4xl mx-auto">
+      <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-8">
+        ⚙️ User Settings
+      </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar */}
         <motion.div
           variants={item}
-          className="lg:col-span-1 space-y-2"
+          className="lg:col-span-1 space-y-3"
         >
           {settingsSections.map((section) => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
                 activeSection === section.id
-                  ? 'bg-primary-50 text-primary-600 hover:bg-blue-100 duration-200 dark:bg-primary-900/20 dark:text-primary-100'
-                  : 'text-white hover:text-blue-500 bg-blue-500 hover:bg-blue-100 duration-200 bg-blue-00 dark:text-white dark:hover:bg-secondary-700/50'
+                  ? 'bg-blue-500 text-white shadow-lg '
+                  : 'bg-blue-300 text-blue-600 hover:bg-blue-400 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800'
               }`}
             >
               <section.icon className="h-5 w-5" />
@@ -317,148 +197,138 @@ const Settings = () => {
           animate="show"
           className="lg:col-span-3 space-y-6"
         >
-          {settingsSections.slice(0, 4).map((section) => (
+          {/* Profile Section */}
+          {activeSection === 'profile' && (
             <motion.div
-              key={section.id}
               variants={item}
-              className={`bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-card hover:shadow-hover transition-shadow ${
-                activeSection === section.id ? 'block' : 'hidden'
-              }`}
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg"
             >
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="flex items-center space-x-3 mb-6">
-                  <section.icon className="h-6 w-6 text-primary-500 dark:text-primary-400" />
-                  <h2 className="text-lg font-semibold text-secondary-900 dark:text-white">
-                    {section.title}
-                  </h2>
-                </div>
+              <div className="flex items-center space-x-3 mb-6">
+              
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  👤 Your Profile
+                </h2>
+              </div>
 
-                {section.fields.map((field) => (
-                  <div key={field.id} className="space-y-2">
-                    <label
-                      htmlFor={field.id}
-                      className="block text-sm font-medium text-secondary-700 dark:text-secondary-300"
-                    >
-                      {field.label}
-                    </label>
-                    {field.type === 'toggle' ? (
-                      <div className="flex items-center">
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={field.value}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            field.value
-                              ? 'bg-primary-500'
-                              : 'bg-secondary-200 dark:bg-secondary-700'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              field.value ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    ) : field.type === 'select' ? (
-                      <select
-                        id={field.id}
-                        value={field.value}
-                        className="w-full p-2 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      >
-                        {field.options.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : field.type === 'button' ? (
-                      <button
-                        type="button"
-                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                      >
-                        {field.value}
-                      </button>
-                    ) : (
-                      <input
-                        type={field.type}
-                        id={field.id}
-                        value={field.value}
-                        className="w-full p-2 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <div className="h-16 w-16 rounded-full bg-transparent dark:bg-blue-900/30 flex items-center justify-center">
+                    {currentUser?.photoURL ? (
+                      <img 
+                        src={currentUser.photoURL} 
+                        alt="Profile" 
+                        className="h-14 w-14 rounded-full object-cover"
                       />
+                    ) : (
+                      <User className="h-8 w-8 text-blue-500" />
                     )}
                   </div>
-                ))}
-
-                <div className="pt-4">
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                  >
-                    Save Changes
-                  </button>
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-800 dark:text-white">
+                      {currentUser?.displayName || 'Anonymous User'}
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {currentUser?.email}
+                    </p>
+                  </div>
                 </div>
-              </form>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">🎯 Member Since</h4>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {new Date(currentUser?.metadata.creationTime).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">🔄 Last Login</h4>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {new Date(currentUser?.metadata.lastSignInTime).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </motion.div>
-          ))}
+          )}
 
-          {/* Club section */}
-          <motion.div
-            variants={item}
-            className={`bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-card hover:shadow-hover transition-shadow ${
-              activeSection === 'club' ? 'block' : 'hidden'
-            }`}
-          >
-            <div className="flex items-center space-x-3 mb-6">
-              <Users className="h-6 w-6 text-primary-500 dark:text-primary-400" />
-              <h2 className="text-lg font-semibold text-secondary-900 dark:text-white">
-                Join a Club
-              </h2>
-            </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
-                {error}
+          {/* Club Section */}
+          {activeSection === 'club' && (
+            <motion.div
+              variants={item}
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg"
+            >
+              <div className="flex items-center space-x-3 mb-6">
+                
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  🎪 Join a Club
+                </h2>
               </div>
-            )}
 
-            {successMessage && (
-              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg">
-                {successMessage}
-              </div>
-            )}
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg flex items-center">
+                  <span className="mr-2">⚠️</span>
+                  {error}
+                </div>
+              )}
 
-            <form onSubmit={handleJoinClub} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="accessKey"
-                  className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1"
+              {successMessage && (
+                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg flex items-center">
+                  <Check className="h-5 w-5 mr-2" />
+                  {successMessage}
+                </div>
+              )}
+
+              <form onSubmit={handleJoinClub} className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="accessKey"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
+                    🔑 Enter Club Access Key
+                  </label>
+                  <input
+                    type="text"
+                    id="accessKey"
+                    value={accessKey}
+                    onChange={(e) => setAccessKey(e.target.value)}
+                    placeholder="e.g. CLUB-1234-5678"
+                    className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-70 flex items-center justify-center"
                 >
-                  Access Key
-                </label>
-                <input
-                  type="text"
-                  id="accessKey"
-                  value={accessKey}
-                  onChange={(e) => setAccessKey(e.target.value)}
-                  placeholder="Enter club access key"
-                  className="w-full p-2 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
+                  {isLoading ? (
+                    '⏳ Joining...'
+                  ) : (
+                    <>
+                      <Users className="h-5 w-5 mr-2" />
+                      Join Club
+                    </>
+                  )}
+                </button>
+              </form>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-70"
-              >
-                {isLoading ? 'Joining...' : 'Join Club'}
-              </button>
-            </form>
-          </motion.div>
+              <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <div className='flex justify-between'>
+                  <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-2">ℹ️ How to join a club</h3>
+                   <Link to="/info"><div className='mt-2 dark:text-white text-blue-500 '>  <Info /></div></Link>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  1. Get an access key from your club admin<br />
+                  2. Enter it in the field above<br />
+                  3. Click "Join Club" to become a member
+                </p>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </div>
   );
 };
 
-export default Settings; 
+export default Settings;

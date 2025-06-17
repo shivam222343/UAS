@@ -955,33 +955,33 @@ export default function Dashboard() {
         <JoinClubPopup onClose={() => setShowJoinClubPopup(false)} />
       )}
 
-      {(
-        <button
-          onClick={() => changeVal()}
-          className="fixed bottom-20 right-6 p-4  text-white rounded-full shadow-lg  focus:outline-none  focus:ring-offset-2 focus:ring-blue-500 z-40"
-          aria-label="Join a club"
-        >
-          <div className="relative h-12 w-12 flex items-center justify-center">
-            {/* Chatbot Icon */}
-            <div className={`absolute h-full w-full rounded-full flex items-center justify-center `}>
-              <div className='text-3xl font-bold'><BadgePlus />
-              </div>
-            </div>
+     {(
+  <button
+    onClick={() => changeVal()}
+    className="fixed bottom-20 right-6 p-2 bg-blue-600 text-white rounded-full shadow-lg focus:outline-none focus:ring-offset-2 focus:ring-blue-500 z-40"
+    aria-label="Join a club"
+  >
+    <div className="relative h-12 w-12 flex items-center justify-center">
+      {/* Chatbot Icon */}
+      <div className={`absolute h-full w-full rounded-full flex items-center justify-center bg-transparent`}>
+        <div className='text-3xl font-bold'><BadgePlus /></div>
+      </div>
 
-            {/* Water Drop Waves */}
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className={`absolute h-full w-full rounded-full border-2`}
-                style={{
-                  animation: `wave 3s ease-out infinite`,
-                  animationDelay: `${i * 1}s`,
-                }}
-              />
-            ))}
+      {/* Water Drop Waves */}
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className={`absolute h-full w-full rounded-full border-2 bg-transparent`}
+          style={{
+            animation: `wave 3s ease-out infinite`,
+            animationDelay: `${i * 1}s`,
+            borderColor: 'white' // Added to make waves visible
+          }}
+        />
+      ))}
 
-            {/* CSS for the animation */}
-            <style>{`
+      {/* CSS for the animation */}
+      <style>{`
         @keyframes wave {
           0% {
             transform: scale(1);
@@ -993,9 +993,9 @@ export default function Dashboard() {
           }
         }
       `}</style>
-          </div>
-        </button>
-      )}
+    </div>
+  </button>
+)}
     </motion.div>
   );
 }

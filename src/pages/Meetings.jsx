@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'framer-motion';
+import { collection, getDocs, query, where, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Calendar, Clock, Users, MapPin, Laptop, FileText, Check, X, UserX } from 'lucide-react';
+import { Calendar, Clock, Users, MapPin, Laptop, FileText, Check, X, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import AbsenceRequestModal from '../components/meetings/AbsenceRequestModal';
+import TaskModal from '../components/meetings/TaskModal';
 import Loader from '../components/Loader';
 
 export default function Meetings() {
@@ -16,22 +17,27 @@ export default function Meetings() {
   const [selectedClub, setSelectedClub] = useState('');
   const { currentUser, userProfile } = useAuth();
   
-  // State for absence request modal
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
   const [selectedMeetingForAbsence, setSelectedMeetingForAbsence] = useState(null);
   const [userAbsenceRequests, setUserAbsenceRequests] = useState({});
   
-  // Add these new state variables
   const [showAbsentMembers, setShowAbsentMembers] = useState(false);
   const [absentMembers, setAbsentMembers] = useState({});
   const [clubMembers, setClubMembers] = useState({});
 
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [selectedMeetingForTask, setSelectedMeetingForTask] = useState(null);
+  const [meetingTasks, setMeetingTasks] = useState({});
+  const [showAllTasks, setShowAllTasks] = useState({});
+
+  // New state for tasks popup
+  const [showAllTasksPopup, setShowAllTasksPopup] = useState(false);
+  const [selectedMeetingForTasksPopup, setSelectedMeetingForTasksPopup] = useState(null);
+
   useEffect(() => {
-    // Set a timeout for 10 seconds to show loading
     const loadingTimeout = setTimeout(() => {
       setTimeoutReached(true);
     }, 10000);
-
     return () => clearTimeout(loadingTimeout);
   }, []);
 
@@ -45,35 +51,23 @@ export default function Meetings() {
   useEffect(() => {
     if (selectedClub) {
       fetchMeetings(selectedClub);
-    }
-  }, [selectedClub]);
-  
-  // Add this useEffect inside the component
-  useEffect(() => {
-    if (selectedClub) {
       fetchClubMembers(selectedClub);
     }
   }, [selectedClub]);
 
   const fetchUserClubs = async () => {
     try {
-      // Fetch the clubs the user has joined - check all possible data structures
       const userDocRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userDocRef);
       const userData = userDoc.data();
       
       let clubIds = [];
       
-      // Check different possible data structures
       if (userData?.clubsJoined && Object.keys(userData.clubsJoined).length > 0) {
-        // Format: { clubId1: {data}, clubId2: {data} }
         clubIds = Object.keys(userData.clubsJoined);
       } else if (userData?.clubs && Array.isArray(userData.clubs)) {
-        // Format: ['clubId1', 'clubId2']
         clubIds = userData.clubs;
       } else {
-        // Fallback: search club members collections
-        console.log("No clubs found in user document, searching club members collections...");
         const clubsRef = collection(db, 'clubs');
         const clubsSnapshot = await getDocs(clubsRef);
         
@@ -88,7 +82,6 @@ export default function Meetings() {
       
       const clubDetails = [];
       
-      // Fetch details for each club
       for (const clubId of clubIds) {
         const clubDocRef = doc(db, 'clubs', clubId);
         const clubDoc = await getDoc(clubDocRef);
@@ -101,10 +94,8 @@ export default function Meetings() {
         }
       }
       
-      console.log("Found clubs for user:", clubDetails.length);
       setUserClubs(clubDetails);
       
-      // If there's only one club, select it automatically
       if (clubDetails.length === 1) {
         setSelectedClub(clubDetails[0].id);
       }
@@ -119,9 +110,6 @@ export default function Meetings() {
   const fetchMeetings = async (clubId) => {
     try {
       setLoading(true);
-      
-      // Get all club's meetings - we don't need to check for access key anymore,
-      // all club members should see all meetings
       const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
       const querySnapshot = await getDocs(meetingsRef);
       
@@ -131,14 +119,10 @@ export default function Meetings() {
         ...doc.data()
       }));
       
-      console.log(`Found ${meetingsList.length} meetings for club ${clubId}`);
-      
-      // Sort meetings by date and time
       meetingsList.sort((a, b) => {
         const dateA = new Date(`${a.date} ${a.time}`);
         const dateB = new Date(`${b.date} ${b.time}`);
         
-        // Put upcoming meetings first, then sort by date
         if (a.status === 'upcoming' && b.status !== 'upcoming') return -1;
         if (a.status !== 'upcoming' && b.status === 'upcoming') return 1;
         
@@ -146,6 +130,9 @@ export default function Meetings() {
       });
       
       setMeetings(meetingsList);
+      meetingsList.forEach(meeting => {
+        fetchMeetingTasks(meeting.id);
+      });
     } catch (err) {
       setError('Failed to fetch meetings: ' + err.message);
       console.error(err);
@@ -158,29 +145,23 @@ export default function Meetings() {
     try {
       if (!currentUser) return;
       
-      // Fetch user's clubs
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
       const userClubs = userDoc.data()?.clubsJoined || {};
       
       let absenceRequestsMap = {};
       
-      // For each club the user is part of, fetch meetings and check for absence requests
       for (const clubId of Object.keys(userClubs)) {
-        // Get all meetings for this club
         const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
         const meetingsSnapshot = await getDocs(meetingsRef);
         
-        // For each meeting, check if the user has an absence request
         for (const meetingDoc of meetingsSnapshot.docs) {
           const meetingId = meetingDoc.id;
           
-          // Check absences collection for this meeting
           const absencesRef = collection(db, 'clubs', clubId, 'meetings', meetingId, 'absences');
           const q = query(absencesRef, where('userId', '==', currentUser.uid));
           const absencesSnapshot = await getDocs(q);
           
           if (!absencesSnapshot.empty) {
-            // User has an absence request for this meeting
             absenceRequestsMap[meetingId] = {
               status: absencesSnapshot.docs[0].data().status,
               requestId: absencesSnapshot.docs[0].id
@@ -193,21 +174,6 @@ export default function Meetings() {
     } catch (err) {
       console.error('Error fetching user absence requests:', err);
     }
-  };
-
-  const handleRequestAbsence = (meeting) => {
-    setSelectedMeetingForAbsence({
-      id: meeting.id,
-      clubId: selectedClub,
-      name: meeting.name
-    });
-    setShowAbsenceModal(true);
-  };
-
-  // Function to close the absence modal and refresh absence requests
-  const handleCloseAbsenceModal = () => {
-    setShowAbsenceModal(false);
-    fetchUserAbsenceRequests();
   };
 
   const fetchClubMembers = async (clubId) => {
@@ -234,7 +200,6 @@ export default function Meetings() {
     try {
       if (!selectedClub || !meetingId) return;
       
-      // Get all approved absence requests for this meeting
       const absencesRef = collection(db, 'clubs', selectedClub, 'meetings', meetingId, 'absences');
       const q = query(absencesRef, where('status', '==', 'approved'));
       const absencesSnapshot = await getDocs(q);
@@ -258,16 +223,97 @@ export default function Meetings() {
     }
   };
 
+  const fetchMeetingTasks = async (meetingId) => {
+    try {
+      if (!selectedClub || !meetingId) return;
+      
+      const tasksRef = collection(db, 'clubs', selectedClub, 'meetings', meetingId, 'tasks');
+      const tasksSnapshot = await getDocs(tasksRef);
+      
+      const tasks = {};
+      tasksSnapshot.docs.forEach(doc => {
+        tasks[doc.id] = {
+          id: doc.id,
+          ...doc.data()
+        };
+      });
+      
+      setMeetingTasks(prev => ({
+        ...prev,
+        [meetingId]: tasks
+      }));
+    } catch (err) {
+      console.error('Error fetching meeting tasks:', err);
+    }
+  };
+
+  const handleRequestAbsence = (meeting) => {
+    setSelectedMeetingForAbsence({
+      id: meeting.id,
+      clubId: selectedClub,
+      name: meeting.name
+    });
+    setShowAbsenceModal(true);
+  };
+
+  const handleCloseAbsenceModal = () => {
+    setShowAbsenceModal(false);
+    fetchUserAbsenceRequests();
+  };
+
+  const handleManageTasks = (meeting) => {
+    setSelectedMeetingForTask({
+      id: meeting.id,
+      clubId: selectedClub,
+      name: meeting.name
+    });
+    setShowTaskModal(true);
+  };
+
+  const handleCloseTaskModal = () => {
+    setShowTaskModal(false);
+    if (selectedMeetingForTask) {
+      fetchMeetingTasks(selectedMeetingForTask.id);
+    }
+  };
+
   const toggleAbsentMembers = async (meetingId) => {
-    // If we're showing absent members and don't have them loaded yet, fetch them
     if (!absentMembers[meetingId]) {
       await fetchAbsentMembers(meetingId);
     }
-    
     setShowAbsentMembers(prev => !prev);
   };
 
-  // Show loading state for maximum 10 seconds
+  const toggleShowAllTasks = (meetingId) => {
+    setShowAllTasks(prev => ({
+      ...prev,
+      [meetingId]: !prev[meetingId]
+    }));
+  };
+
+  const handleShowAllTasks = (meeting) => {
+    setSelectedMeetingForTasksPopup({
+      id: meeting.id,
+      name: meeting.name,
+      date: meeting.date
+    });
+    setShowAllTasksPopup(true);
+  };
+
+  const handleTaskStatusChange = async (meetingId, taskId, userId, isCompleted) => {
+    try {
+      const taskRef = doc(db, 'clubs', selectedClub, 'meetings', meetingId, 'tasks', taskId);
+      
+      await updateDoc(taskRef, {
+        [`completion.${userId}`]: isCompleted
+      });
+      
+      fetchMeetingTasks(meetingId);
+    } catch (err) {
+      console.error('Error updating task status:', err);
+    }
+  };
+
   if (loading && !timeoutReached) {
     return (
       <motion.div 
@@ -281,7 +327,6 @@ export default function Meetings() {
     );
   }
 
-  // After timeout, show the page even if data is still loading
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -297,7 +342,6 @@ export default function Meetings() {
         </div>
       )}
       
-      {/* Club selection dropdown */}
       <div className="mb-8">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Select Club
@@ -314,14 +358,12 @@ export default function Meetings() {
         </select>
       </div>
       
-      {/* Show message when user hasn't selected a club */}
       {!selectedClub && userClubs.length > 0 && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 text-blue-700 dark:text-blue-300 p-4 mb-6 rounded">
           <p>Please select a club to view meetings.</p>
         </div>
       )}
       
-      {/* Show message when user hasn't joined any clubs */}
       {userClubs.length === 0 && (
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
@@ -333,7 +375,6 @@ export default function Meetings() {
         </motion.div>
       )}
       
-      {/* Show message when club is selected but no meetings exist */}
       {selectedClub && meetings.length === 0 && !loading && (
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
@@ -348,10 +389,8 @@ export default function Meetings() {
         </motion.div>
       )}
       
-      {/* Meetings grid */}
       {selectedClub && meetings.length > 0 && (
         <div className="space-y-8">
-          {/* Upcoming Meetings */}
           <div>
             <h2 className="text-xl font-semibold mb-4">Upcoming Meetings</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -419,14 +458,107 @@ export default function Meetings() {
                     )}
                   </div>
 
-                  {!userAbsenceRequests[meeting.id] && (
-                    <div className="flex justify-end mt-4">
+                  <div className="flex justify-end space-x-2 mt-4">
+                    {!userAbsenceRequests[meeting.id] && (
                       <button
                         onClick={() => handleRequestAbsence(meeting)}
                         className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200"
                       >
                         Request Absence
                       </button>
+                    )}
+                    {userProfile?.role === 'admin' && (
+                      <button
+                        onClick={() => handleManageTasks(meeting)}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 flex items-center"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Tasks
+                      </button>
+                    )}
+                  </div>
+
+                  {(meetingTasks[meeting.id] && Object.keys(meetingTasks[meeting.id]).length > 0) && (
+                    <div className="mt-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                          Tasks ({Object.keys(meetingTasks[meeting.id]).length})
+                        </h3>
+                        <button 
+                          onClick={() => handleShowAllTasks(meeting)}
+                          className="text-blue-600 dark:text-blue-400 text-sm flex items-center"
+                        >
+                          <ChevronDown className="w-4 h-4 mr-1 text-white" />
+                          <div className='text-white'> Show All</div>
+                        </button>
+                      </div>
+                      
+                      <ul className="space-y-2">
+                        {Object.values(meetingTasks[meeting.id])
+                          .slice(0, 1)
+                          .map(task => (
+                          <li key={task.id} className="bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                            <div className="flex justify-between">
+                              <span className="font-medium">{task.title}</span>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{task.description}</p>
+                            
+                            {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
+                              <div className="mt-2 space-y-2">
+                                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                  Assigned Members:
+                                </h4>
+                                <ul className="space-y-1">
+                                  {Object.entries(task.assignedTo).map(([userId, isAssigned]) => {
+                                    if (!isAssigned) return null;
+                                    const member = clubMembers[userId];
+                                    if (!member) return null;
+                                    
+                                    const isAssignedToCurrentUser = userId === currentUser.uid;
+                                    const isCompleted = task.completion?.[userId] || false;
+                                    
+                                    return (
+                                      <li key={userId} className="flex items-center justify-between">
+                                        <span className="text-sm">
+                                          {member.displayName}
+                                          {isAssignedToCurrentUser && (
+                                            <span className="ml-1 text-xs text-blue-500">(You)</span>
+                                          )}
+                                        </span>
+                                        {isAssignedToCurrentUser && (
+                                          <button
+                                            onClick={() => handleTaskStatusChange(
+                                              meeting.id, 
+                                              task.id, 
+                                              userId, 
+                                              !isCompleted
+                                            )}
+                                            className={`px-2 py-0.5 rounded text-xs ${
+                                              isCompleted
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                            }`}
+                                          >
+                                            {isCompleted ? 'Completed' : 'Pending'}
+                                          </button>
+                                        )}
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            <div className="flex justify-between text-xs mt-2">
+                              {task.dueDate && (
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  Due: {task.dueDate}
+                                </span>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </div>
@@ -440,7 +572,6 @@ export default function Meetings() {
             </div>
           </div>
           
-          {/* Past Meetings */}
           {meetings.filter(m => m.status === 'past').length > 0 && (
             <div>
               <h2 className="text-xl font-semibold mb-4">Past Meetings</h2>
@@ -472,13 +603,85 @@ export default function Meetings() {
                         </div>
                       )}
                     </div>
+
+                    {(meetingTasks[meeting.id] && Object.keys(meetingTasks[meeting.id]).length > 0) && (
+                      <div className="mt-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                            Tasks ({Object.keys(meetingTasks[meeting.id]).length})
+                          </h3>
+                          <div 
+                            onClick={() => handleShowAllTasks(meeting)}
+                            className="bg-transparent text-blue-500 dark:text-blue-400 text-sm flex items-center"
+                          >
+                            <ChevronDown className="w-4 h-4 mr-1" />
+                           <div className='text-white'> Show All</div>
+                          </div>
+                        </div>
+                        
+                        <ul className="space-y-2">
+                          {Object.values(meetingTasks[meeting.id])
+                            .slice(0, 1)
+                            .map(task => (
+                            <li key={task.id} className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                              <div className="flex justify-between">
+                                <span className="font-medium">{task.title}</span>
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">{task.description}</p>
+                              
+                              {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
+                                <div className="mt-2 space-y-2">
+                                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                    Assigned Members:
+                                  </h4>
+                                  <ul className="space-y-1">
+                                    {Object.entries(task.assignedTo).map(([userId, isAssigned]) => {
+                                      if (!isAssigned) return null;
+                                      const member = clubMembers[userId];
+                                      if (!member) return null;
+                                      
+                                      const isCompleted = task.completion?.[userId] || false;
+                                      
+                                      return (
+                                        <li key={userId} className="flex items-center justify-between">
+                                          <span className="text-sm">
+                                            {member.displayName}
+                                            {userId === currentUser.uid && (
+                                              <span className="ml-1 text-xs text-blue-500">(You)</span>
+                                            )}
+                                          </span>
+                                          <span className={`px-2 py-0.5 rounded text-xs ${
+                                            isCompleted
+                                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                          }`}>
+                                            {isCompleted ? 'Completed' : 'Pending'}
+                                          </span>
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                </div>
+                              )}
+                              
+                              <div className="flex justify-between text-xs mt-2">
+                                {task.dueDate && (
+                                  <span className="text-gray-500 dark:text-gray-400">
+                                    Due: {task.dueDate}
+                                  </span>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
           )}
           
-          {/* Cancelled Meetings */}
           {meetings.filter(m => m.status === 'cancelled').length > 0 && (
             <div>
               <h2 className="text-xl font-semibold mb-4">Cancelled Meetings</h2>
@@ -486,7 +689,7 @@ export default function Meetings() {
                 {meetings.filter(m => m.status === 'cancelled').map(meeting => (
                   <div
                     key={meeting.id}
-                    className="bg-white dark:bg-gray-900 dark:text-white border-bottom border-2 border-gray-500 rounded-lg border-l-4 border-red-500 shadow-md p-6 bg-red-50"
+                    className="bg-white dark:bg-gray-900 dark:text-white border-bottom border-2 rounded-lg border-l-4 border-red-500 shadow-md p-6 "
                   >
                     <div className="flex justify-between items-center mb-2">
                       <h2 className="text-xl dark:text-white font-semibold">{meeting.name}</h2>
@@ -511,7 +714,6 @@ export default function Meetings() {
         </div>
       )}
       
-      {/* Absence Request Modal */}
       {showAbsenceModal && selectedMeetingForAbsence && (
         <AbsenceRequestModal
           isOpen={showAbsenceModal}
@@ -521,6 +723,148 @@ export default function Meetings() {
           meetingName={selectedMeetingForAbsence.name}
         />
       )}
+      
+      {showTaskModal && selectedMeetingForTask && (
+        <TaskModal
+          isOpen={showTaskModal}
+          onClose={handleCloseTaskModal}
+          meetingId={selectedMeetingForTask.id}
+          clubId={selectedMeetingForTask.clubId}
+          meetingName={selectedMeetingForTask.name}
+          clubMembers={clubMembers}
+        />
+      )}
+
+      {/* All Tasks Popup */}
+      <AnimatePresence>
+        {showAllTasksPopup && selectedMeetingForTasksPopup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
+            >
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold dark:text-white">
+                    All Tasks for {selectedMeetingForTasksPopup.name}
+                  </h3>
+                  <button 
+                    onClick={() => setShowAllTasksPopup(false)}
+                    className="text-gray-500 hover:text-gray-700 bg-transparent hover:bg-transparent dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <X className="h-6 w-6 text-blue-500 hover:text-purple-600 bg-transparent" />
+                  </button>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 mt-1">
+                  Meeting Date: {selectedMeetingForTasksPopup.date}
+                </p>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6">
+                {meetingTasks[selectedMeetingForTasksPopup.id] ? (
+                  Object.values(meetingTasks[selectedMeetingForTasksPopup.id]).length > 0 ? (
+                    <ul className="space-y-4">
+                      {Object.values(meetingTasks[selectedMeetingForTasksPopup.id]).map((task) => {
+                        // Get emoji based on task status
+                        let emoji = '📝'; // Default emoji
+                        const assignedToCurrentUser = task.assignedTo?.[currentUser.uid];
+                        const isCompleted = task.completion?.[currentUser.uid];
+                        
+                        if (assignedToCurrentUser) {
+                          emoji = isCompleted ? '✅' : '⏳';
+                        } else if (Object.values(task.completion || {}).some(c => c)) {
+                          emoji = '👍';
+                        } else if (task.dueDate && new Date(task.dueDate) < new Date()) {
+                          emoji = '⚠️';
+                        }
+
+                        return (
+                          <motion.li 
+                            key={task.id} 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4"
+                          >
+                            <div className="flex items-start">
+                              <span className="text-2xl mr-3">{emoji}</span>
+                              <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                  <h4 className="font-medium text-lg dark:text-white">{task.title}</h4>
+                                  {task.dueDate && (
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                      Due: {task.dueDate}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-gray-600 dark:text-gray-300 mt-1">{task.description}</p>
+                                
+                                {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
+                                  <div className="mt-3">
+                                    <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                      Assigned Members:
+                                    </h5>
+                                    <ul className="space-y-2">
+                                      {Object.entries(task.assignedTo).map(([userId, isAssigned]) => {
+                                        if (!isAssigned) return null;
+                                        const member = clubMembers[userId];
+                                        if (!member) return null;
+                                        
+                                        const isCompleted = task.completion?.[userId] || false;
+                                        const memberEmoji = isCompleted ? '✅' : '⌛';
+                                        
+                                        return (
+                                          <li key={userId} className="flex items-center justify-between">
+                                            <span className="text-sm dark:text-gray-200">
+                                              {memberEmoji} {member.displayName}
+                                              {userId === currentUser.uid && (
+                                                <span className="ml-1 text-xs text-blue-500">(You)</span>
+                                              )}
+                                            </span>
+                                            <span className={`px-2 py-0.5 rounded text-xs ${
+                                              isCompleted
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                            }`}>
+                                              {isCompleted ? 'Completed' : 'Pending'}
+                                            </span>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </motion.li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 dark:text-gray-400">No tasks found for this meeting</p>
+                    </div>
+                  )
+                ) : (
+                  <div className="flex justify-center py-8">
+                    <Loader size="medium" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <button
+                  onClick={() => setShowAllTasksPopup(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
