@@ -615,7 +615,7 @@ export default function Meetings() {
                             className="bg-transparent text-blue-500 dark:text-blue-400 text-sm flex items-center"
                           >
                             <ChevronDown className="w-4 h-4 mr-1" />
-                           <div className='text-white'> Show All</div>
+                           <div className='dark:text-white text-blue-500'> Show All</div>
                           </div>
                         </div>
                         
@@ -640,6 +640,7 @@ export default function Meetings() {
                                       const member = clubMembers[userId];
                                       if (!member) return null;
                                       
+                                      const isAssignedToCurrentUser = userId === currentUser.uid;
                                       const isCompleted = task.completion?.[userId] || false;
                                       
                                       return (
@@ -650,13 +651,31 @@ export default function Meetings() {
                                               <span className="ml-1 text-xs text-blue-500">(You)</span>
                                             )}
                                           </span>
-                                          <span className={`px-2 py-0.5 rounded text-xs ${
-                                            isCompleted
-                                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                          }`}>
-                                            {isCompleted ? 'Completed' : 'Pending'}
-                                          </span>
+                                          {isAssignedToCurrentUser ? (
+                                            <button
+                                              onClick={() => handleTaskStatusChange(
+                                                meeting.id, 
+                                                task.id, 
+                                                userId, 
+                                                !isCompleted
+                                              )}
+                                              className={`px-2 py-0.5 rounded text-xs ${
+                                                isCompleted
+                                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                              }`}
+                                            >
+                                              {isCompleted ? 'Completed' : 'Pending'}
+                                            </button>
+                                          ) : (
+                                            <span className={`px-2 py-0.5 rounded text-xs ${
+                                              isCompleted
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                            }`}>
+                                              {isCompleted ? 'Completed' : 'Pending'}
+                                            </span>
+                                          )}
                                         </li>
                                       );
                                     })}
@@ -811,6 +830,7 @@ export default function Meetings() {
                                         const member = clubMembers[userId];
                                         if (!member) return null;
                                         
+                                        const isAssignedToCurrentUser = userId === currentUser.uid;
                                         const isCompleted = task.completion?.[userId] || false;
                                         const memberEmoji = isCompleted ? '✅' : '⌛';
                                         
@@ -822,13 +842,31 @@ export default function Meetings() {
                                                 <span className="ml-1 text-xs text-blue-500">(You)</span>
                                               )}
                                             </span>
-                                            <span className={`px-2 py-0.5 rounded text-xs ${
-                                              isCompleted
-                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                            }`}>
-                                              {isCompleted ? 'Completed' : 'Pending'}
-                                            </span>
+                                            {isAssignedToCurrentUser ? (
+                                              <button
+                                                onClick={() => handleTaskStatusChange(
+                                                  selectedMeetingForTasksPopup.id, 
+                                                  task.id, 
+                                                  userId, 
+                                                  !isCompleted
+                                                )}
+                                                className={`px-2 py-0.5 rounded text-xs ${
+                                                  isCompleted
+                                                    ? 'bg-green-100 text-green-800 hover:text-white dark:bg-green-900 dark:text-green-200'
+                                                    : 'bg-yellow-100 text-yellow-800 hover:text-white dark:bg-yellow-900 dark:text-yellow-200'
+                                                }`}
+                                              >
+                                                {isCompleted ? 'Completed' : 'Pending'}
+                                              </button>
+                                            ) : (
+                                              <span className={`px-2 py-0.5 rounded text-xs ${
+                                                isCompleted
+                                                  ? 'bg-green-100 text-green-800  dark:bg-green-900 dark:text-green-200'
+                                                  : 'bg-yellow-100 text-yellow-800  dark:bg-yellow-900 dark:text-yellow-200'
+                                              }`}>
+                                                {isCompleted ? 'Completed' : 'Pending'}
+                                              </span>
+                                            )}
                                           </li>
                                         );
                                       })}
