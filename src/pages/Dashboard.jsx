@@ -178,8 +178,7 @@ export default function Dashboard() {
   const changeVal = () => {
     setDontShowAgain(false);
     setShowJoinClubPopup(true);
-    console.log("Change value called, dontShowAgain:", dontShowAgain);
-    console.log("Show Join Club Popup:", showJoinClubPopup);
+
   }
 
   useEffect(() => {
@@ -203,11 +202,9 @@ export default function Dashboard() {
       const accessKey = keyFromUrl || keyFromStorage;
 
       if (!accessKey) {
-        console.log("No stored access key found");
         return;
       }
 
-      console.log("Found stored access key, validating...");
       await validateKeyAndJoinClub(accessKey);
 
       if (keyFromStorage) {
@@ -225,7 +222,6 @@ export default function Dashboard() {
 
   const validateKeyAndJoinClub = async (accessKey) => {
     try {
-      console.log("Validating access key:", accessKey);
 
       const keysRef = collection(db, 'accessKeys');
       const q = query(keysRef, where('key', '==', accessKey.trim()));
@@ -257,7 +253,6 @@ export default function Dashboard() {
 
       const clubDoc = await getDoc(doc(db, 'clubs', clubId));
       if (!clubDoc.exists()) {
-        console.error('The club associated with this key no longer exists');
         return false;
       }
 
@@ -266,11 +261,9 @@ export default function Dashboard() {
       const userData = userDoc.data();
 
       if (userData.clubsJoined && userData.clubsJoined[clubId]) {
-        console.log(`User is already a member of ${clubName}`);
         return false;
       }
 
-      console.log(`Joining club: ${clubName}`);
 
       await updateDoc(doc(db, 'clubs', clubId, 'members', currentUser.uid), {
         userId: currentUser.uid,
@@ -293,7 +286,6 @@ export default function Dashboard() {
         usedAt: serverTimestamp()
       });
 
-      console.log(`Successfully joined ${clubName}!`);
 
       setTimeout(() => {
         window.location.reload();
@@ -366,7 +358,6 @@ export default function Dashboard() {
       setUserClubIds(clubIds);
 
       if (clubIds.length === 0 && !dontShowAgain) {
-        console.log("User has no clubs, showing popup");
         setShowJoinClubPopup(true);
         setLoading(false);
         return;
@@ -884,7 +875,7 @@ export default function Dashboard() {
           {recentMeetings.map(meeting => (
             <div
               key={meeting.id}
-              className="flex items-center justify-between p-1 flex-wrap gap-2 md:p-4 border dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="flex items-center justify-between p-2 flex-wrap gap-2 md:p-4 border dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <div>
                 <h3 className="font-medium">{meeting.name}</h3>

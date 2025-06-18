@@ -42,7 +42,6 @@ const JoinedClubsList = () => {
         userClubIds = userData.clubs;
       } else {
         // Fallback - fetch all clubs where user is a member
-        console.log("No clubs found in user document, searching club members collections...");
         const clubsRef = collection(db, 'clubs');
         const clubsSnapshot = await getDocs(clubsRef);
         

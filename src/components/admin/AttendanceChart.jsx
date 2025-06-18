@@ -350,7 +350,7 @@ const AttendanceChart = ({ clubId }) => {
             <Clock className="w-5 h-5 text-blue-500 mr-2" />
             <h3 className="text-lg font-semibold dark:text-blue-500 text-blue-800">Meetings</h3>
           </div>
-          <p className="text-3xl font-bold text-blue-700">{attendanceData.overview.totalMeetings}</p>
+          <p className="text-3xl font-bold dark:text-blue-200 text-blue-700">{attendanceData.overview.totalMeetings}</p>
           <p className="text-sm text-blue-600">total meetings</p>
         </div>
         
@@ -359,7 +359,7 @@ const AttendanceChart = ({ clubId }) => {
             <Users className="w-5 h-5 text-green-500 mr-2" />
             <h3 className="text-lg font-semibold dark:text-green-500 text-green-800">Members</h3>
           </div>
-          <p className="text-3xl font-bold text-green-700">{attendanceData.overview.totalMembers}</p>
+          <p className="text-3xl font-bold dark:text-green-200 text-green-700">{attendanceData.overview.totalMembers}</p>
           <p className="text-sm dark:text-green-500 text-green-600">total members</p>
         </div>
         
@@ -368,7 +368,7 @@ const AttendanceChart = ({ clubId }) => {
             <CheckCircle className="w-5 h-5 text-purple-500 mr-2" />
             <h3 className="text-lg font-semibold dark:text-purple-500 text-purple-800">Attendance</h3>
           </div>
-          <p className="text-3xl font-bold text-purple-700">{attendanceData.overview.averageAttendance}%</p>
+          <p className="text-3xl font-bold dark:text-purple-200 text-purple-700">{attendanceData.overview.averageAttendance}%</p>
           <p className="text-sm text-purple-600">average attendance</p>
         </div>
         
@@ -377,7 +377,7 @@ const AttendanceChart = ({ clubId }) => {
             <AlertTriangle className="w-5 h-5 text-yellow-500 mr-2" />
             <h3 className="text-lg font-semibold dark:text-yellow-500 text-yellow-800">Low Attendance</h3>
           </div>
-          <p className="text-3xl font-bold dark:text-yellow-700 text-yellow-700">{attendanceData.overview.lowAttendanceMembers.length}</p>
+          <p className="text-3xl font-bold  dark:text-yellow-200 text-yellow-700">{attendanceData.overview.lowAttendanceMembers.length}</p>
           <p className="text-sm text-yellow-600">members below 60%</p>
         </div>
       </div>

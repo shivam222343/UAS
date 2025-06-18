@@ -28,9 +28,9 @@ const Mavericks = () => {
       title: 'About Team Mavericks',
       content: (
         <div className="space-y-6">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-800 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold mb-3 text-blue-600 dark:text-blue-400">Who We Are</h3>
-            <p className="text-gray-700 dark:text-gray-300">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-950 p-6 rounded-lg">
+            <h3 className="text-xl font-semibold mb-3 text-blue-600 dark:text-blue-200">Who We Are</h3>
+            <p className="text-gray-700 dark:text-gray-200">
               Team Mavericks is a dynamic student organization from KIT's College of Engineering, Kolhapur. 
               Founded on August 13, 2016, we're dedicated to student development through innovative events 
               and workshops with our motto "Learning with Fun".
@@ -63,9 +63,9 @@ const Mavericks = () => {
       title: 'Our Events',
       content: (
         <div className="space-y-8">
-          <div className="text-center py-4 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-700 dark:to-gray-800 rounded-lg">
-            <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400">Learn with Fun</h3>
-            <p className="text-gray-600 dark:text-gray-400">For the Students, By the Students!</p>
+          <div className="text-center py-4 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-950 rounded-lg">
+            <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-200">Learn with Fun</h3>
+            <p className="text-gray-600 dark:text-gray-200">For the Students, By the Students!</p>
           </div>
           
           <div className="grid md:grid-cols-2 gap-6">
@@ -76,9 +76,14 @@ const Mavericks = () => {
                 color: 'from-blue-500 to-blue-600'
               },
               {
+                name: 'Verbafest',
+                description: 'Verbafest is communication event featuring Group Discussion, Debate, and Mind Saga to showcase verbal, critical, and creative skills.',
+                color: 'from-pink-300 to-pink-300'
+              },
+              {
                 name: 'INVICTA',
                 description: 'Workshop series covering web development, ethical hacking, soft skills, and mental health for all skill levels.',
-                color: 'from-purple-500 to-purple-600'
+                color: 'from-amber-500 to-amber-600'
               },
               {
                 name: 'CARNIVAL',
@@ -88,7 +93,7 @@ const Mavericks = () => {
               {
                 name: 'ARCANE',
                 description: 'Virtual treasure hunt promoting critical thinking and teamwork through challenging rounds.',
-                color: 'from-amber-500 to-amber-600'
+                color: 'from-purple-500 to-purple-600'
               },
               {
                 name: 'SCHOOL VISIT',
@@ -157,9 +162,9 @@ const Mavericks = () => {
       title: 'Community Outreach',
       content: (
         <div className="space-y-6">
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-700 dark:to-gray-800 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold mb-3 text-green-600 dark:text-green-400">School Visits</h3>
-            <p className="text-gray-700 dark:text-gray-300">
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900 dark:to-blue-950 p-6 rounded-lg">
+            <h3 className="text-xl font-semibold mb-3 text-green-600 dark:text-green-200">School Visits</h3>
+            <p className="text-gray-700 dark:text-gray-200">
               Our rural outreach program brings technology education to schools in Kolhapur district, 
               covering AI, robotics, blockchain, and career guidance through interactive workshops.
             </p>

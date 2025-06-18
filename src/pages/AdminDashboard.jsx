@@ -116,7 +116,6 @@ const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
-console.log('Current User:', currentUser);
 
   // State for absence request modal
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
@@ -958,7 +957,6 @@ console.log('Current User:', currentUser);
 
   // Handle marking attendance for a meeting
   const handleMarkAttendance = (meeting) => {
-    console.log('Marking attendance for meeting:', meeting);
     
     if (!meeting || !meeting.id) {
       console.error('Invalid meeting data:', meeting);

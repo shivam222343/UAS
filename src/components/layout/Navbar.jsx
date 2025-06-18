@@ -129,7 +129,7 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${location.pathname === '/admin-dashboard'
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${location.pathname === '/admin'
                     ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                     : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
                     }`}
@@ -142,7 +142,7 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
               {/* QR Scanner Link */}
               <Link
                 to="/scan-qr"
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${location.pathname === '/qr-scanner'
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${location.pathname === '/scan-qr'
                   ? 'text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                   : 'text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700/50'
                   }`}

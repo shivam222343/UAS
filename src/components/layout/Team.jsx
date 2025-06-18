@@ -3,8 +3,6 @@ import { Github, Linkedin, Instagram } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 
-
-
 const teamData = [
     {
     name: "Bhavesh Ahuja",
@@ -97,17 +95,21 @@ const teamData = [
     email: "shreeyadhond@gmail.com",
     img: "https://4kwallpapers.com/images/wallpapers/anime-girl-girly-2048x1536-9793.jpg"
   },
- 
+ {
+    name: "Karan Patil",
+    position: "Team Member",
+    email: "karanvpatil703@gmail.com",
+  img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"  },
   {
     name: "Veer Metri",
     position: "Team Member",
     email: "veermetri05@gmail.com",
   img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"  },
   {
-    name: "Vivek Sawant",
+    name: "Shruti Narke",
     position: "Team Member",
-    email: "viveksawant011@gmail.com",
-  img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"  },
+    email: "shrutinarke1007@gmail.com",
+    img: "https://4kwallpapers.com/images/wallpapers/anime-girl-girly-2048x1536-9793.jpg"  },
   {
     name: "Yashraj Kulgude",
     position: "Team Member",

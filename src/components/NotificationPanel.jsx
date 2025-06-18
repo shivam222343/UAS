@@ -38,7 +38,6 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
     try {
       await updateDoc(doc(db, 'users', currentUser.uid, 'notifications', id), { read: true });
     } catch (err) {
-      console.error('Error marking as read:', err);
     }
   };
 

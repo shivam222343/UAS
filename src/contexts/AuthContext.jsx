@@ -74,7 +74,6 @@ export function AuthProvider({ children }) {
         
         return userData;
       } else {
-        console.log('No user document found');
         return null;
       }
     } catch (error) {

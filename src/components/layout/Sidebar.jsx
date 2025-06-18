@@ -116,7 +116,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     onClick={onClose}
                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                     isActive
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-500 dark:text-primary-400'
+                        ? 'bg-primary-50 border-l-4 border-blue-500 rounded-l-none dark:bg-primary-900/20 text-primary-500 dark:text-primary-400'
                         : 'text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700/50 hover:text-secondary-900 dark:hover:text-secondary-200'
                   }`}
                 >

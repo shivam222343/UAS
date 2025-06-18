@@ -30,7 +30,6 @@ const SignIn = () => {
       
       if (!userSnap.exists()) {
         // Create new user document if it doesn't exist
-        console.log(`Creating new user document for ${user.uid}`);
         await setDoc(userRef, {
           uid: user.uid,
           displayName: user.displayName || email.split('@')[0] || 'User',
@@ -45,7 +44,6 @@ const SignIn = () => {
         });
       } else {
         // Update existing user's last login
-        console.log(`Updating last login for existing user ${user.uid}`);
         await updateDoc(userRef, {
           lastLogin: serverTimestamp()
         });

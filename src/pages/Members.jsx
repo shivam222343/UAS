@@ -47,7 +47,6 @@ export default function Members() {
         userClubIds = userData.clubs;
       } else {
         // Fallback - fetch all clubs where user is a member
-        console.log("No clubs found in user document, searching club members collections...");
         const clubsRef = collection(db, 'clubs');
         const clubsSnapshot = await getDocs(clubsRef);
 
@@ -73,7 +72,6 @@ export default function Members() {
         }
       }
 
-      console.log("Clubs data loaded:", clubsData.length, "clubs");
       setClubs(clubsData);
 
       // If there's only one club, select it automatically
@@ -106,7 +104,6 @@ export default function Members() {
         // Get user details
         const userDoc = await getDoc(doc(db, 'users', userId));
         if (!userDoc.exists()) {
-          console.log(`User document not found for ID: ${userId}`);
           // Return basic info from the member document if user doc doesn't exist
           return {
             id: userId,
@@ -121,7 +118,6 @@ export default function Members() {
           };
         }
 
-        console.log("users data: ", userDoc.data());
 
 
         const userData = userDoc.data();
@@ -240,9 +236,9 @@ export default function Members() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div className="border-b border-gray-200 dark:border-gray-700 px-2 py-4">
               <h2 className="text-lg font-medium text-gray-800 dark:text-white flex items-center">
-                <div className='w-16'> <Users className="h-7 w-7 mr-2 text-blue-500" /></div>
+                <div className='w-16'> <Users className="h-7 w-7 ml-4 text-blue-500" /></div>
                 <div className='text-center'> Members who joined via access key</div>
-                <span className="ml-2 text-sm bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                <span className="ml-2 text-sm mr-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-0.5 rounded-full">
                   {filteredMembers.length}
                 </span>
               </h2>

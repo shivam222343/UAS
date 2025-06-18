@@ -135,7 +135,7 @@ const Info = () => {
               <div key={index} className="flex items-center">
                 <button
                   onClick={() => setActiveStep(index)}
-                  className={`md:w-8 md:h-8 w-5 h-5 dark:bg-gray-600 dark:text-white rounded-full hover:text-white flex items-center justify-center ${activeStep === index ? 'bg-blue-600 text-white dakr:bg-blue-600 dark:text-white' : 'bg-gray-200 text-gray-600'}`}
+                  className={`md:w-8 md:h-8 w-5 h-5 dark:bg-gray-600 dark:text-white rounded-full hover:text-white flex items-center justify-center ${activeStep === index ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white' : 'bg-gray-200  text-gray-600'}`}
                 >
                   {index + 1}
                 </button>
@@ -165,7 +165,7 @@ const Info = () => {
                 </div>
                 
                 <div className="md:w-2/3">
-                  <h2 className="text-2xl font-bold dark:bg-gray-800 dark:text-white text-gray-900 mb-6">
+                  <h2 className="text-2xl font-bold dark:bg-gray-800 md:text-left text-center dark:text-white text-gray-900 mb-6">
                     {steps[activeStep].title}
                   </h2>
                   
@@ -178,7 +178,7 @@ const Info = () => {
                         transition={{ delay: index * 0.1 + 0.3 }}
                         className="flex items-start"
                       >
-                        <span className="flex-shrink-0 dark:bg-gray-800  dark:text-green-600 bg-green-100 text-green-600 p-1 rounded-full mr-3">
+                        <span className="flex-shrink-0 dark:bg-green-800  dark:text-green-200 bg-green-100 text-green-600 p-1 rounded-full mr-3">
                           <CheckCircle className="w-4 h-4" />
                         </span>
                         <span className="text-gray-700 dark:text-gray-200">{item}</span>
@@ -193,16 +193,16 @@ const Info = () => {
             <div className="flex justify-between mt-12">
               <button
                 onClick={prevStep}
-                className="flex items-center px-6 py-3 dark:bg-gray-700 dark:text-white bg-blue-600 text-white md:rounded-lg hover:bg-blue-700 transition-colorslors"
+                className="flex items-center px-6 py-3 c dark:text-white dark:bg-blue-600 bg-blue-600 text-white md:rounded-lg hover:bg-blue-700 transition-colorslors"
               >
                 <ArrowRight className="w-5 h-5 rotate-180 mr-2" />
-                Previous
+            
               </button>
               <button
                 onClick={nextStep}
-                className="flex items-center px-6 py-3 dark:bg-gray-700 dark:text-white bg-blue-600 text-white md:rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center px-6 py-3 dark:bg-blue-600 dark:text-white bg-blue-600 text-white md:rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Next
+             
                 <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </div>

@@ -108,7 +108,6 @@ export const sendWarningEmails = async (clubId, membersToWarn) => {
     for (const member of membersToWarn) {
       // In a real app, you would integrate with an email service here
       // For now, we'll just simulate sending an email and log it
-      console.log(`Sending warning email to ${member.email} for missing ${member.missedCount} consecutive meetings in ${clubName}`);
       
       // Update the member record to indicate a warning email was sent
       await updateDoc(doc(db, 'clubs', clubId, 'members', member.id), {

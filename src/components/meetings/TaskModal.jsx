@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, addDoc, doc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../services/firebase';
-import { ListTodo, Plus, Trash2, Edit, Check, X } from 'lucide-react';
+import { ListTodo, Plus, Trash2, Edit, Check, X, ArrowUpDown } from 'lucide-react';
 
 export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingName, clubMembers }) {
   const [tasks, setTasks] = useState([]);
@@ -13,6 +13,7 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
   });
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [sortAlphabetically, setSortAlphabetically] = useState(true);
 
   useEffect(() => {
     if (isOpen && meetingId) {
@@ -183,6 +184,20 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
     }));
   };
 
+  const toggleSortOrder = () => {
+    setSortAlphabetically(!sortAlphabetically);
+  };
+
+  const getSortedMembers = () => {
+    const membersArray = Object.values(clubMembers);
+    if (sortAlphabetically) {
+      return [...membersArray].sort((a, b) => 
+        a.displayName.localeCompare(b.displayName)
+      );
+    }
+    return membersArray;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -231,9 +246,18 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
             </div>
             
             <div className="mb-3">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To*</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Assign To*</label>
+                <button 
+                  onClick={toggleSortOrder}
+                  className="flex w-24 items-center text-xs text-white dark:text-blue-100 hover:underline"
+                >
+                  <ArrowUpDown className="w-3 h-3 mr-1" />
+                  {sortAlphabetically ? 'Sorted' : 'Default'}
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                {Object.values(clubMembers).map(member => (
+                {getSortedMembers().map(member => (
                   <div key={member.id} className="flex items-center">
                     <input
                       type="checkbox"

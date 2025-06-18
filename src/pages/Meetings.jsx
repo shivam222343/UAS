@@ -16,11 +16,11 @@ export default function Meetings() {
   const [userClubs, setUserClubs] = useState([]);
   const [selectedClub, setSelectedClub] = useState('');
   const { currentUser, userProfile } = useAuth();
-  
+
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
   const [selectedMeetingForAbsence, setSelectedMeetingForAbsence] = useState(null);
   const [userAbsenceRequests, setUserAbsenceRequests] = useState({});
-  
+
   const [showAbsentMembers, setShowAbsentMembers] = useState(false);
   const [absentMembers, setAbsentMembers] = useState({});
   const [clubMembers, setClubMembers] = useState({});
@@ -60,9 +60,9 @@ export default function Meetings() {
       const userDocRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userDocRef);
       const userData = userDoc.data();
-      
+
       let clubIds = [];
-      
+
       if (userData?.clubsJoined && Object.keys(userData.clubsJoined).length > 0) {
         clubIds = Object.keys(userData.clubsJoined);
       } else if (userData?.clubs && Array.isArray(userData.clubs)) {
@@ -70,7 +70,7 @@ export default function Meetings() {
       } else {
         const clubsRef = collection(db, 'clubs');
         const clubsSnapshot = await getDocs(clubsRef);
-        
+
         for (const clubDoc of clubsSnapshot.docs) {
           const memberRef = doc(db, 'clubs', clubDoc.id, 'members', currentUser.uid);
           const memberDoc = await getDoc(memberRef);
@@ -79,13 +79,13 @@ export default function Meetings() {
           }
         }
       }
-      
+
       const clubDetails = [];
-      
+
       for (const clubId of clubIds) {
         const clubDocRef = doc(db, 'clubs', clubId);
         const clubDoc = await getDoc(clubDocRef);
-        
+
         if (clubDoc.exists()) {
           clubDetails.push({
             id: clubDoc.id,
@@ -93,9 +93,9 @@ export default function Meetings() {
           });
         }
       }
-      
+
       setUserClubs(clubDetails);
-      
+
       if (clubDetails.length === 1) {
         setSelectedClub(clubDetails[0].id);
       }
@@ -112,23 +112,23 @@ export default function Meetings() {
       setLoading(true);
       const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
       const querySnapshot = await getDocs(meetingsRef);
-      
+
       const meetingsList = querySnapshot.docs.map(doc => ({
         id: doc.id,
         clubId: clubId,
         ...doc.data()
       }));
-      
+
       meetingsList.sort((a, b) => {
         const dateA = new Date(`${a.date} ${a.time}`);
         const dateB = new Date(`${b.date} ${b.time}`);
-        
+
         if (a.status === 'upcoming' && b.status !== 'upcoming') return -1;
         if (a.status !== 'upcoming' && b.status === 'upcoming') return 1;
-        
+
         return dateA - dateB;
       });
-      
+
       setMeetings(meetingsList);
       meetingsList.forEach(meeting => {
         fetchMeetingTasks(meeting.id);
@@ -144,23 +144,23 @@ export default function Meetings() {
   const fetchUserAbsenceRequests = async () => {
     try {
       if (!currentUser) return;
-      
+
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
       const userClubs = userDoc.data()?.clubsJoined || {};
-      
+
       let absenceRequestsMap = {};
-      
+
       for (const clubId of Object.keys(userClubs)) {
         const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
         const meetingsSnapshot = await getDocs(meetingsRef);
-        
+
         for (const meetingDoc of meetingsSnapshot.docs) {
           const meetingId = meetingDoc.id;
-          
+
           const absencesRef = collection(db, 'clubs', clubId, 'meetings', meetingId, 'absences');
           const q = query(absencesRef, where('userId', '==', currentUser.uid));
           const absencesSnapshot = await getDocs(q);
-          
+
           if (!absencesSnapshot.empty) {
             absenceRequestsMap[meetingId] = {
               status: absencesSnapshot.docs[0].data().status,
@@ -169,7 +169,7 @@ export default function Meetings() {
           }
         }
       }
-      
+
       setUserAbsenceRequests(absenceRequestsMap);
     } catch (err) {
       console.error('Error fetching user absence requests:', err);
@@ -180,7 +180,7 @@ export default function Meetings() {
     try {
       const membersRef = collection(db, 'clubs', clubId, 'members');
       const membersSnapshot = await getDocs(membersRef);
-      
+
       const members = {};
       membersSnapshot.docs.forEach(doc => {
         members[doc.id] = {
@@ -189,7 +189,7 @@ export default function Meetings() {
           displayName: doc.data().displayName || 'Unknown User'
         };
       });
-      
+
       setClubMembers(members);
     } catch (err) {
       console.error('Error fetching club members:', err);
@@ -199,11 +199,11 @@ export default function Meetings() {
   const fetchAbsentMembers = async (meetingId) => {
     try {
       if (!selectedClub || !meetingId) return;
-      
+
       const absencesRef = collection(db, 'clubs', selectedClub, 'meetings', meetingId, 'absences');
       const q = query(absencesRef, where('status', '==', 'approved'));
       const absencesSnapshot = await getDocs(q);
-      
+
       const absences = {};
       absencesSnapshot.docs.forEach(doc => {
         const data = doc.data();
@@ -213,7 +213,7 @@ export default function Meetings() {
           reason: data.reason || 'No reason provided'
         };
       });
-      
+
       setAbsentMembers(prev => ({
         ...prev,
         [meetingId]: absences
@@ -226,10 +226,10 @@ export default function Meetings() {
   const fetchMeetingTasks = async (meetingId) => {
     try {
       if (!selectedClub || !meetingId) return;
-      
+
       const tasksRef = collection(db, 'clubs', selectedClub, 'meetings', meetingId, 'tasks');
       const tasksSnapshot = await getDocs(tasksRef);
-      
+
       const tasks = {};
       tasksSnapshot.docs.forEach(doc => {
         tasks[doc.id] = {
@@ -237,7 +237,7 @@ export default function Meetings() {
           ...doc.data()
         };
       });
-      
+
       setMeetingTasks(prev => ({
         ...prev,
         [meetingId]: tasks
@@ -303,11 +303,11 @@ export default function Meetings() {
   const handleTaskStatusChange = async (meetingId, taskId, userId, isCompleted) => {
     try {
       const taskRef = doc(db, 'clubs', selectedClub, 'meetings', meetingId, 'tasks', taskId);
-      
+
       await updateDoc(taskRef, {
         [`completion.${userId}`]: isCompleted
       });
-      
+
       fetchMeetingTasks(meetingId);
     } catch (err) {
       console.error('Error updating task status:', err);
@@ -316,7 +316,7 @@ export default function Meetings() {
 
   if (loading && !timeoutReached) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="flex flex-col items-center justify-center h-64 mt-10"
@@ -335,13 +335,13 @@ export default function Meetings() {
       className="container mx-auto p-2"
     >
       <h1 className="text-3xl font-bold mb-6">Meetings</h1>
-      
+
       {error && (
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
           <p>{error}</p>
         </div>
       )}
-      
+
       <div className="mb-8">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Select Club
@@ -357,15 +357,15 @@ export default function Meetings() {
           ))}
         </select>
       </div>
-      
+
       {!selectedClub && userClubs.length > 0 && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 text-blue-700 dark:text-blue-300 p-4 mb-6 rounded">
           <p>Please select a club to view meetings.</p>
         </div>
       )}
-      
+
       {userClubs.length === 0 && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-6 rounded"
@@ -374,9 +374,9 @@ export default function Meetings() {
           <p>You haven't joined any clubs yet. Please join a club to view meetings.</p>
         </motion.div>
       )}
-      
+
       {selectedClub && meetings.length === 0 && !loading && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-gray-50 dark:bg-gray-800 p-8 rounded-lg text-center"
@@ -388,7 +388,7 @@ export default function Meetings() {
           </p>
         </motion.div>
       )}
-      
+
       {selectedClub && meetings.length > 0 && (
         <div className="space-y-8">
           <div>
@@ -397,19 +397,18 @@ export default function Meetings() {
               {meetings.filter(m => m.status === 'upcoming').map(meeting => (
                 <div
                   key={meeting.id}
-                  className={`bg-white dark:bg-gray-900 dark:text-white border-bottom border-2 border-gray-500 rounded-lg shadow-md p-6 ${
-                    meeting.status === 'cancelled' ? 'border-l-4 border-red-500 bg-red-50' : ''
-                  }`}
+                  className={`bg-white dark:bg-gray-900 dark:text-white border-bottom border-2 border-gray-500 rounded-lg shadow-md p-6 ${meeting.status === 'cancelled' ? 'border-l-4 border-red-500 bg-red-50' : ''
+                    }`}
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h2 className="text-xl font-semibold dark:text-white">{meeting.name}</h2>
                   </div>
-                  
+
                   <div className="flex items-start text-gray-600 dark:text-gray-300 mb-4">
                     <FileText className="w-5 h-5 mr-2 mt-1 flex-shrink-0" />
                     <p className="text-sm">{meeting.description}</p>
                   </div>
-                  
+
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center dark:text-white text-gray-600">
                       <Calendar className="w-5 h-5 mr-2" />
@@ -419,7 +418,7 @@ export default function Meetings() {
                       <Clock className="w-5 h-5 mr-2 dark:text-white" />
                       <span>{meeting.time}</span>
                     </div>
-                    
+
                     <div className="flex dark:text-white items-center text-gray-600">
                       {meeting.mode === 'offline' ? (
                         <>
@@ -436,21 +435,20 @@ export default function Meetings() {
                         </>
                       )}
                     </div>
-                    
+
                     {userAbsenceRequests[meeting.id] && (
-                      <div className={`mt-2 px-3 py-2 rounded-md text-sm ${
-                        userAbsenceRequests[meeting.id].status === 'approved' 
-                          ? 'bg-green-100 text-green-800' 
+                      <div className={`mt-2 px-3 py-2 rounded-md text-sm ${userAbsenceRequests[meeting.id].status === 'approved'
+                          ? 'bg-green-100 text-green-800'
                           : userAbsenceRequests[meeting.id].status === 'rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
                         <div className="flex items-center">
-                          {userAbsenceRequests[meeting.id].status === 'approved' 
-                            ? <Check className="w-4 h-4 mr-1" /> 
+                          {userAbsenceRequests[meeting.id].status === 'approved'
+                            ? <Check className="w-4 h-4 mr-1" />
                             : userAbsenceRequests[meeting.id].status === 'rejected'
-                            ? <X className="w-4 h-4 mr-1" />
-                            : <Clock className="w-4 h-4 mr-1" />
+                              ? <X className="w-4 h-4 mr-1" />
+                              : <Clock className="w-4 h-4 mr-1" />
                           }
                           <span>Absence request: <strong>{userAbsenceRequests[meeting.id].status}</strong></span>
                         </div>
@@ -484,7 +482,7 @@ export default function Meetings() {
                         <h3 className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
                           Tasks ({Object.keys(meetingTasks[meeting.id]).length})
                         </h3>
-                        <button 
+                        <button
                           onClick={() => handleShowAllTasks(meeting)}
                           className="text-blue-600 dark:text-blue-400 text-sm flex items-center"
                         >
@@ -492,78 +490,77 @@ export default function Meetings() {
                           <div className='text-white'> Show All</div>
                         </button>
                       </div>
-                      
+
                       <ul className="space-y-2">
                         {Object.values(meetingTasks[meeting.id])
                           .slice(0, 1)
                           .map(task => (
-                          <li key={task.id} className="bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                            <div className="flex justify-between">
-                              <span className="font-medium">{task.title}</span>
-                            </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{task.description}</p>
-                            
-                            {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
-                              <div className="mt-2 space-y-2">
-                                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                  Assigned Members:
-                                </h4>
-                                <ul className="space-y-1">
-                                  {Object.entries(task.assignedTo).map(([userId, isAssigned]) => {
-                                    if (!isAssigned) return null;
-                                    const member = clubMembers[userId];
-                                    if (!member) return null;
-                                    
-                                    const isAssignedToCurrentUser = userId === currentUser.uid;
-                                    const isCompleted = task.completion?.[userId] || false;
-                                    
-                                    return (
-                                      <li key={userId} className="flex items-center justify-between">
-                                        <span className="text-sm">
-                                          {member.displayName}
-                                          {isAssignedToCurrentUser && (
-                                            <span className="ml-1 text-xs text-blue-500">(You)</span>
-                                          )}
-                                        </span>
-                                        {isAssignedToCurrentUser && (
-                                          <button
-                                            onClick={() => handleTaskStatusChange(
-                                              meeting.id, 
-                                              task.id, 
-                                              userId, 
-                                              !isCompleted
-                                            )}
-                                            className={`px-2 py-0.5 rounded text-xs ${
-                                              isCompleted
-                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                            }`}
-                                          >
-                                            {isCompleted ? 'Completed' : 'Pending'}
-                                          </button>
-                                        )}
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
+                            <li key={task.id} className="bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                              <div className="flex justify-between">
+                                <span className="font-medium">{task.title}</span>
                               </div>
-                            )}
-                            
-                            <div className="flex justify-between text-xs mt-2">
-                              {task.dueDate && (
-                                <span className="text-gray-500 dark:text-gray-400">
-                                  Due: {task.dueDate}
-                                </span>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">{task.description}</p>
+
+                              {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
+                                <div className="mt-2 space-y-2">
+                                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                    Assigned Members:
+                                  </h4>
+                                  <ul className="space-y-1">
+                                    {Object.entries(task.assignedTo).map(([userId, isAssigned]) => {
+                                      if (!isAssigned) return null;
+                                      const member = clubMembers[userId];
+                                      if (!member) return null;
+
+                                      const isAssignedToCurrentUser = userId === currentUser.uid;
+                                      const isCompleted = task.completion?.[userId] || false;
+
+                                      return (
+                                        <li key={userId} className="flex items-center justify-between">
+                                          <span className="text-sm">
+                                            {member.displayName}
+                                            {isAssignedToCurrentUser && (
+                                              <span className="ml-1 text-xs text-blue-500">(You)</span>
+                                            )}
+                                          </span>
+                                          {isAssignedToCurrentUser && (
+                                            <button
+                                              onClick={() => handleTaskStatusChange(
+                                                meeting.id,
+                                                task.id,
+                                                userId,
+                                                !isCompleted
+                                              )}
+                                              className={`px-2 py-0.5 rounded text-xs ${isCompleted
+                                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                }`}
+                                            >
+                                              {isCompleted ? 'Completed' : 'Pending'}
+                                            </button>
+                                          )}
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                </div>
                               )}
-                            </div>
-                          </li>
-                        ))}
+
+                              <div className="flex justify-between text-xs mt-2">
+                                {task.dueDate && (
+                                  <span className="text-gray-500 dark:text-gray-400">
+                                    Due: {task.dueDate}
+                                  </span>
+                                )}
+                              </div>
+                            </li>
+                          ))}
                       </ul>
                     </div>
                   )}
                 </div>
               ))}
-              
+
               {meetings.filter(m => m.status === 'upcoming').length === 0 && (
                 <div className="col-span-full text-center py-6">
                   <p className="text-gray-500">No upcoming meetings found</p>
@@ -571,7 +568,7 @@ export default function Meetings() {
               )}
             </div>
           </div>
-          
+
           {meetings.filter(m => m.status === 'past').length > 0 && (
             <div>
               <h2 className="text-xl font-semibold mb-4">Past Meetings</h2>
@@ -584,18 +581,18 @@ export default function Meetings() {
                     <div className="flex justify-between items-center mb-2">
                       <h2 className="text-xl font-semibold">{meeting.name}</h2>
                     </div>
-                    
+
                     <div className="flex items-start dark:text-gray-300 text-gray-600 mb-4">
                       <FileText className="w-5 h-5 mr-2 mt-1 flex-shrink-0" />
                       <p className="text-sm">{meeting.description}</p>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div className="flex items-center dark:text-gray-300 text-gray-600">
                         <Calendar className="w-5 h-5 mr-2" />
                         <span>{meeting.date}</span>
                       </div>
-                      
+
                       {meeting.attendees && (
                         <div className="flex items-center dark:text-gray-300 text-gray-600">
                           <Users className="w-5 h-5 mr-2" />
@@ -610,88 +607,86 @@ export default function Meetings() {
                           <h3 className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
                             Tasks ({Object.keys(meetingTasks[meeting.id]).length})
                           </h3>
-                          <div 
+                          <div
                             onClick={() => handleShowAllTasks(meeting)}
                             className="bg-transparent text-blue-500 dark:text-blue-400 text-sm flex items-center"
                           >
-                            <ChevronDown className="w-4 h-4 mr-1" />
-                           <div className='dark:text-white text-blue-500'> Show All</div>
+                            <ChevronDown className="w-4 h-4 mr-1 dark:text-white cursor-pointer" />
+                            <div className='dark:text-white cursor-pointer text-blue-500'> Show All</div>
                           </div>
                         </div>
-                        
+
                         <ul className="space-y-2">
                           {Object.values(meetingTasks[meeting.id])
                             .slice(0, 1)
                             .map(task => (
-                            <li key={task.id} className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                              <div className="flex justify-between">
-                                <span className="font-medium">{task.title}</span>
-                              </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-300">{task.description}</p>
-                              
-                              {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
-                                <div className="mt-2 space-y-2">
-                                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                    Assigned Members:
-                                  </h4>
-                                  <ul className="space-y-1">
-                                    {Object.entries(task.assignedTo).map(([userId, isAssigned]) => {
-                                      if (!isAssigned) return null;
-                                      const member = clubMembers[userId];
-                                      if (!member) return null;
-                                      
-                                      const isAssignedToCurrentUser = userId === currentUser.uid;
-                                      const isCompleted = task.completion?.[userId] || false;
-                                      
-                                      return (
-                                        <li key={userId} className="flex items-center justify-between">
-                                          <span className="text-sm">
-                                            {member.displayName}
-                                            {userId === currentUser.uid && (
-                                              <span className="ml-1 text-xs text-blue-500">(You)</span>
-                                            )}
-                                          </span>
-                                          {isAssignedToCurrentUser ? (
-                                            <button
-                                              onClick={() => handleTaskStatusChange(
-                                                meeting.id, 
-                                                task.id, 
-                                                userId, 
-                                                !isCompleted
+                              <li key={task.id} className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                                <div className="flex justify-between">
+                                  <span className="font-medium">{task.title}</span>
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-300">{task.description}</p>
+
+                                {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
+                                  <div className="mt-2 space-y-2">
+                                    <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                      Assigned Members:
+                                    </h4>
+                                    <ul className="space-y-1">
+                                      {Object.entries(task.assignedTo).map(([userId, isAssigned]) => {
+                                        if (!isAssigned) return null;
+                                        const member = clubMembers[userId];
+                                        if (!member) return null;
+
+                                        const isAssignedToCurrentUser = userId === currentUser.uid;
+                                        const isCompleted = task.completion?.[userId] || false;
+
+                                        return (
+                                          <li key={userId} className="flex items-center justify-between">
+                                            <span className="text-sm">
+                                              {member.displayName}
+                                              {userId === currentUser.uid && (
+                                                <span className="ml-1 text-xs text-blue-500">(You)</span>
                                               )}
-                                              className={`px-2 py-0.5 rounded text-xs ${
-                                                isCompleted
+                                            </span>
+                                            {isAssignedToCurrentUser ? (
+                                              <button
+                                                onClick={() => handleTaskStatusChange(
+                                                  meeting.id,
+                                                  task.id,
+                                                  userId,
+                                                  !isCompleted
+                                                )}
+                                                className={`px-2 py-0.5 rounded text-xs ${isCompleted
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                  }`}
+                                              >
+                                                {isCompleted ? 'Completed' : 'Pending'}
+                                              </button>
+                                            ) : (
+                                              <span className={`px-2 py-0.5 rounded text-xs ${isCompleted
                                                   ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                                   : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                              }`}
-                                            >
-                                              {isCompleted ? 'Completed' : 'Pending'}
-                                            </button>
-                                          ) : (
-                                            <span className={`px-2 py-0.5 rounded text-xs ${
-                                              isCompleted
-                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                            }`}>
-                                              {isCompleted ? 'Completed' : 'Pending'}
-                                            </span>
-                                          )}
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                </div>
-                              )}
-                              
-                              <div className="flex justify-between text-xs mt-2">
-                                {task.dueDate && (
-                                  <span className="text-gray-500 dark:text-gray-400">
-                                    Due: {task.dueDate}
-                                  </span>
+                                                }`}>
+                                                {isCompleted ? 'Completed' : 'Pending'}
+                                              </span>
+                                            )}
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  </div>
                                 )}
-                              </div>
-                            </li>
-                          ))}
+
+                                <div className="flex justify-between text-xs mt-2">
+                                  {task.dueDate && (
+                                    <span className="text-gray-500 dark:text-gray-400">
+                                      Due: {task.dueDate}
+                                    </span>
+                                  )}
+                                </div>
+                              </li>
+                            ))}
                         </ul>
                       </div>
                     )}
@@ -700,7 +695,7 @@ export default function Meetings() {
               </div>
             </div>
           )}
-          
+
           {meetings.filter(m => m.status === 'cancelled').length > 0 && (
             <div>
               <h2 className="text-xl font-semibold mb-4">Cancelled Meetings</h2>
@@ -713,12 +708,12 @@ export default function Meetings() {
                     <div className="flex justify-between items-center mb-2">
                       <h2 className="text-xl dark:text-white font-semibold">{meeting.name}</h2>
                     </div>
-                    
+
                     <div className="flex items-start dark:text-white text-gray-600 mb-4">
                       <FileText className="w-5 h-5 mr-2 mt-1 flex-shrink-0" />
                       <p className="text-sm dark:text-white">{meeting.description}</p>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div className="flex items-center dark:text-white text-gray-600">
                         <Calendar className="w-5 h-5 mr-2 dark:text-white" />
@@ -732,7 +727,7 @@ export default function Meetings() {
           )}
         </div>
       )}
-      
+
       {showAbsenceModal && selectedMeetingForAbsence && (
         <AbsenceRequestModal
           isOpen={showAbsenceModal}
@@ -742,7 +737,7 @@ export default function Meetings() {
           meetingName={selectedMeetingForAbsence.name}
         />
       )}
-      
+
       {showTaskModal && selectedMeetingForTask && (
         <TaskModal
           isOpen={showTaskModal}
@@ -758,7 +753,7 @@ export default function Meetings() {
       <AnimatePresence>
         {showAllTasksPopup && selectedMeetingForTasksPopup && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
@@ -769,7 +764,7 @@ export default function Meetings() {
                   <h3 className="text-xl font-bold dark:text-white">
                     All Tasks for {selectedMeetingForTasksPopup.name}
                   </h3>
-                  <button 
+                  <button
                     onClick={() => setShowAllTasksPopup(false)}
                     className="text-gray-500 hover:text-gray-700 bg-transparent hover:bg-transparent dark:text-gray-400 dark:hover:text-gray-200"
                   >
@@ -780,7 +775,7 @@ export default function Meetings() {
                   Meeting Date: {selectedMeetingForTasksPopup.date}
                 </p>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto p-6">
                 {meetingTasks[selectedMeetingForTasksPopup.id] ? (
                   Object.values(meetingTasks[selectedMeetingForTasksPopup.id]).length > 0 ? (
@@ -790,7 +785,7 @@ export default function Meetings() {
                         let emoji = '📝'; // Default emoji
                         const assignedToCurrentUser = task.assignedTo?.[currentUser.uid];
                         const isCompleted = task.completion?.[currentUser.uid];
-                        
+
                         if (assignedToCurrentUser) {
                           emoji = isCompleted ? '✅' : '⏳';
                         } else if (Object.values(task.completion || {}).some(c => c)) {
@@ -800,8 +795,8 @@ export default function Meetings() {
                         }
 
                         return (
-                          <motion.li 
-                            key={task.id} 
+                          <motion.li
+                            key={task.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4"
@@ -818,58 +813,63 @@ export default function Meetings() {
                                   )}
                                 </div>
                                 <p className="text-gray-600 dark:text-gray-300 mt-1">{task.description}</p>
-                                
+
                                 {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
                                   <div className="mt-3">
                                     <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                                       Assigned Members:
                                     </h5>
                                     <ul className="space-y-2">
-                                      {Object.entries(task.assignedTo).map(([userId, isAssigned]) => {
-                                        if (!isAssigned) return null;
-                                        const member = clubMembers[userId];
-                                        if (!member) return null;
-                                        
-                                        const isAssignedToCurrentUser = userId === currentUser.uid;
-                                        const isCompleted = task.completion?.[userId] || false;
-                                        const memberEmoji = isCompleted ? '✅' : '⌛';
-                                        
-                                        return (
-                                          <li key={userId} className="flex items-center justify-between">
-                                            <span className="text-sm dark:text-gray-200">
-                                              {memberEmoji} {member.displayName}
-                                              {userId === currentUser.uid && (
-                                                <span className="ml-1 text-xs text-blue-500">(You)</span>
-                                              )}
-                                            </span>
-                                            {isAssignedToCurrentUser ? (
-                                              <button
-                                                onClick={() => handleTaskStatusChange(
-                                                  selectedMeetingForTasksPopup.id, 
-                                                  task.id, 
-                                                  userId, 
-                                                  !isCompleted
+                                      {Object.entries(task.assignedTo)
+                                        // Filter out unassigned members
+                                        .filter(([userId, isAssigned]) => isAssigned && clubMembers[userId])
+                                        // Sort members alphabetically by displayName
+                                        .sort(([userIdA], [userIdB]) => {
+                                          const memberA = clubMembers[userIdA];
+                                          const memberB = clubMembers[userIdB];
+                                          return memberA.displayName.localeCompare(memberB.displayName);
+                                        })
+                                        // Map through sorted members
+                                        .map(([userId, isAssigned]) => {
+                                          const member = clubMembers[userId];
+                                          const isAssignedToCurrentUser = userId === currentUser.uid;
+                                          const isCompleted = task.completion?.[userId] || false;
+                                          const memberEmoji = isCompleted ? '✅' : '⌛';
+
+                                          return (
+                                            <li key={userId} className="flex items-center justify-between">
+                                              <span className="text-sm dark:text-gray-200">
+                                                {memberEmoji} {member.displayName}
+                                                {userId === currentUser.uid && (
+                                                  <span className="ml-1 text-xs text-blue-500">(You)</span>
                                                 )}
-                                                className={`px-2 py-0.5 rounded text-xs ${
-                                                  isCompleted
-                                                    ? 'bg-green-100 text-green-800 hover:text-white dark:bg-green-900 dark:text-green-200'
-                                                    : 'bg-yellow-100 text-yellow-800 hover:text-white dark:bg-yellow-900 dark:text-yellow-200'
-                                                }`}
-                                              >
-                                                {isCompleted ? 'Completed' : 'Pending'}
-                                              </button>
-                                            ) : (
-                                              <span className={`px-2 py-0.5 rounded text-xs ${
-                                                isCompleted
-                                                  ? 'bg-green-100 text-green-800  dark:bg-green-900 dark:text-green-200'
-                                                  : 'bg-yellow-100 text-yellow-800  dark:bg-yellow-900 dark:text-yellow-200'
-                                              }`}>
-                                                {isCompleted ? 'Completed' : 'Pending'}
                                               </span>
-                                            )}
-                                          </li>
-                                        );
-                                      })}
+                                              {isAssignedToCurrentUser ? (
+                                                <button
+                                                  onClick={() => handleTaskStatusChange(
+                                                    selectedMeetingForTasksPopup.id,
+                                                    task.id,
+                                                    userId,
+                                                    !isCompleted
+                                                  )}
+                                                  className={`px-2 py-0.5 rounded text-xs ${isCompleted
+                                                      ? 'bg-green-100 text-green-800 hover:text-white dark:bg-green-900 dark:text-green-200'
+                                                      : 'bg-yellow-100 text-yellow-800 hover:text-white dark:bg-yellow-900 dark:text-yellow-200'
+                                                    }`}
+                                                >
+                                                  {isCompleted ? 'Completed' : 'Pending'}
+                                                </button>
+                                              ) : (
+                                                <span className={`px-2 py-0.5 rounded text-xs ${isCompleted
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                  }`}>
+                                                  {isCompleted ? 'Completed' : 'Pending'}
+                                                </span>
+                                              )}
+                                            </li>
+                                          );
+                                        })}
                                     </ul>
                                   </div>
                                 )}
@@ -890,7 +890,7 @@ export default function Meetings() {
                   </div>
                 )}
               </div>
-              
+
               <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
                 <button
                   onClick={() => setShowAllTasksPopup(false)}
