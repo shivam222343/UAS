@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc, getDoc, Timestamp, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import PanelManagement from '../components/admin/PanelManagement';
 import { 
   Calendar, 
   Users, 
@@ -18,6 +19,7 @@ import {
   Laptop,
   Video,
   FileText,
+  PanelsRightBottom ,
   Plus,
   Clock,
   User
@@ -1025,6 +1027,7 @@ const AdminDashboard = () => {
       { key: 'clubs', icon: <Users className="w-5 h-5 mr-1" />, label: 'Clubs', color: 'bg-purple-600' },
       { key: 'members', icon: <User className="w-5 h-5 mr-1" />, label: 'Members', color: 'bg-green-600' },
       { key: 'analytics', icon: <BarChart2 className="w-5 h-5 mr-1" />, label: 'Analysis', color: 'bg-orange-600' },
+      { key: 'panels', icon: <PanelsRightBottom  className="w-5 h-5 mr-1" />, label: 'Panels', color: 'bg-pink-600' }
     ].map(({ key, icon, label, color }) => {
       const isActive = activeTab === key;
       return (
@@ -1045,7 +1048,7 @@ const AdminDashboard = () => {
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: isActive || window.innerWidth >= 768 ? 1 : 0, x: isActive ? 0 : -8 }}
             className={`ml-2 ${
-              isActive ? '' : 'hidden md:inline-block'
+              isActive ? 'hidden md:inline-block' : 'hidden md:inline-block'
             } whitespace-nowrap transition-opacity duration-200`}
           >
             {label}
@@ -1073,6 +1076,8 @@ const AdminDashboard = () => {
           </div>
         </>
       )}
+      
+      {activeTab === 'panels' && <PanelManagement />}
       
       {/* Analytics Section */}
       {activeTab === 'analytics' && (
