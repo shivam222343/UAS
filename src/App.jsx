@@ -18,6 +18,7 @@ import QRScanner from './pages/QRScanner';
 import AdminDashboard from './pages/AdminDashboard';
 import Mavericks from './pages/Mavericks';
 import Info from './components/layout/Info';
+import Panel from './pages/Panel';
 
 import './styles/Forms.css';
 
@@ -102,6 +103,7 @@ const App = () => {
               <Route path="settings" element={<Settings />} />
               <Route path="profile" element={<Profile />} />
               <Route path="about" element={<Mavericks />} />
+               <Route path="panel" element={<Panel />} />
               <Route path="info" element={<Info />} />
               <Route path="generate-qr" element={<AdminRoute><QRGenerator /></AdminRoute>} />
               <Route path="scan-qr" element={<QRScanner />} />

@@ -14,6 +14,7 @@ import {
   QrCode,
   Scan,
   BadgeInfo ,
+  PanelsRightBottom,
   Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,6 +29,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Members', href: '/members', icon: Users },
     { name: 'Meetings', href: '/meetings', icon: Calendar },
+     { name: 'Panels', href: '/panel', icon: PanelsRightBottom  },
     { name: 'Calendar', href: '/calendar', icon: CalendarClock },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
     // Admin dashboard - only for admins
