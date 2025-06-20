@@ -3,24 +3,37 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext();
 
 export function useTheme() {
-  return useContext(ThemeContext);
+  const context = useContext(ThemeContext);
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
 }
 
 export function ThemeProvider({ children }) {
-  // Check if dark mode preference is stored in localStorage
-  const storedTheme = localStorage.getItem('theme');
-  
-  // Initialize state based on stored preference or system preference
-  const [darkMode, setDarkMode] = useState(() => {
-    if (storedTheme) {
-      return storedTheme === 'dark';
-    } else {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-  });
+  const [darkMode, setDarkMode] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Update DOM when darkMode changes
+  // Initialize theme from localStorage or system preference
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const storedTheme = localStorage.getItem('theme');
+    
+    if (storedTheme) {
+      setDarkMode(storedTheme === 'dark');
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setDarkMode(prefersDark);
+    }
+
+    setIsLoaded(true);
+  }, []);
+
+  // Update DOM and localStorage when darkMode changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     if (darkMode) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -30,18 +43,17 @@ export function ThemeProvider({ children }) {
     }
   }, [darkMode]);
 
-  // Toggle dark mode
   const toggleDarkMode = () => {
     setDarkMode(prevMode => !prevMode);
   };
 
-  // Set specific theme
   const setTheme = (theme) => {
     setDarkMode(theme === 'dark');
   };
 
   const value = {
     darkMode,
+    isLoaded,
     toggleDarkMode,
     setTheme
   };
@@ -51,4 +63,4 @@ export function ThemeProvider({ children }) {
       {children}
     </ThemeContext.Provider>
   );
-} 
+}

@@ -120,10 +120,13 @@ const Sidebar = ({ isOpen, onClose }) => {
                     isActive
                         ? 'bg-primary-50 border-l-4 border-blue-500 rounded-l-none dark:bg-primary-900/20 text-primary-500 dark:text-primary-400'
                         : 'text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700/50 hover:text-secondary-900 dark:hover:text-secondary-200'
-                  }`}
+                  } `}
                 >
                     <item.icon className="h-5 w-5 mr-3" />
                     {item.name}
+                    {
+                      item.name == "Panels" && <div className='ml-2 px-2 py-[2px]  bg-green-200 dark:text-white dark:bg-green-700 rounded-lg'>New</div>
+                    }
                 </Link>
               );
             })}

@@ -41,6 +41,8 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
   const { currentUser, logout, userRole } = useAuth();
   const { darkMode } = useTheme();
 
+
+  
   const isAdmin = userRole === 'admin' || userRole === 'subadmin';
 
   const handleLogout = async () => {
@@ -51,7 +53,6 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
     }
   };
 
-  
 
   // Fetch only unread notification count
   useEffect(() => {

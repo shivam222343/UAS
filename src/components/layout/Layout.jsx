@@ -11,26 +11,56 @@ const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [themeLoaded, setThemeLoaded] = useState(false); // Track if theme is loaded
   const location = useLocation();
   const { currentUser } = useAuth();
 
-  // Handle dark mode
+  // Load theme from localStorage or system preference
   useEffect(() => {
+    const loadTheme = () => {
+      // Check for saved theme preference
+      const savedTheme = localStorage.getItem('theme');
+      
+      if (savedTheme) {
+        // Use the user's saved preference
+        setIsDarkMode(savedTheme === 'dark');
+      } else {
+        // No saved preference - use system preference
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setIsDarkMode(systemPrefersDark);
+      }
+      setThemeLoaded(true);
+    };
+
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      loadTheme();
+    }
+  }, []);
+
+  // Apply theme changes and save to localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined' || !themeLoaded) return;
+
+    // Apply the theme class to document
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [isDarkMode]);
+
+    // Save the preference to localStorage
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode, themeLoaded]);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => !prev);
+  };
 
   // Handle sidebar on mobile
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsSidebarOpen(true);
-      } else {
-        setIsSidebarOpen(false);
-      }
+      setIsSidebarOpen(window.innerWidth >= 1024);
     };
 
     handleResize();
@@ -42,17 +72,37 @@ const Layout = () => {
     setIsNotificationsOpen(!isNotificationsOpen);
   };
 
+  // Optional: Listen for system theme changes (if you want to respect system changes)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = (e) => {
+      // Only update if user hasn't explicitly set a preference
+      if (!localStorage.getItem('theme')) {
+        setIsDarkMode(e.matches);
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+  }, []);
+
+  if (!themeLoaded) {
+    // Optional: Show loading state or blank screen while theme loads
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-secondary-100 dark:bg-secondary-900">
       <Navbar
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         isDarkMode={isDarkMode}
-        toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        toggleDarkMode={toggleDarkMode}
         toggleNotifications={toggleNotifications}
       />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
-      {/* Main content */}
       <main className="lg:pl-64 pt-16 pb-24 md:pb-0">
         <div className="max-w-7xl mx-[2px] px-[2px] sm:px-6 md:px-2 lg:px-8 py-8">
           <AnimatePresence mode="wait">
@@ -69,13 +119,11 @@ const Layout = () => {
         </div>
       </main>
       
-      {/* Mobile Bottom Navigation */}
       <MobileBottomNav 
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
         toggleNotifications={toggleNotifications}
       />
       
-      {/* Notifications Panel */}
       <NotificationPanel 
         isOpen={isNotificationsOpen} 
         onClose={() => setIsNotificationsOpen(false)} 
@@ -85,4 +133,4 @@ const Layout = () => {
   );
 };
 
-export default Layout; 
+export default Layout;
