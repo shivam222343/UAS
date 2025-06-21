@@ -584,11 +584,11 @@ export default function Dashboard() {
           </div>
           <div className='w-full h-ato flex justify-center items-center'>
             {selectedClub && <div className="p-4">
-            <ClubCard />
-          </div>}
-          {!selectedClub && <div className="p-4">
-            <AccessKey />
-          </div>}
+              <ClubCard />
+            </div>}
+            {!selectedClub && <div className="p-4">
+              <AccessKey />
+            </div>}
           </div>
           <div className="p-4 border-t dark:border-gray-700 flex items-center justify-between">
             <div className="flex items-center">
@@ -664,10 +664,12 @@ export default function Dashboard() {
                   {greeting}
                 </h2>
                 <div className="w-24 h-1 rounded-full my-2 bg-blue-300/50 dark:bg-blue-400/30"></div>
-                <div className="text-4xl mt-2 text-yellow-500 dark:text-yellow-300">
-                  {greeting.includes('morning') ? '🌄' :
-                    greeting.includes('afternoon') ? '☀️' :
-                      greeting.includes('evening') ? '🌇' : '🌙'}
+                <div className="text-4xl mt-2 animate-bounce text-yellow-500 dark:text-yellow-300">
+                  {greeting.includes('morning') || greeting.includes('Rise') ? '🌄' :
+                    greeting.includes('afternoon') || greeting.includes('Hustle') ? '☀️' :
+                      greeting.includes('evening') || greeting.includes('Relax') ? '🌇' :
+                        greeting.includes('night') || greeting.includes('Sleep') || greeting.includes('Dream') ? '🌙' : "🔥"
+                  }
                 </div>
               </div>
             </div>
@@ -946,33 +948,33 @@ export default function Dashboard() {
         <JoinClubPopup onClose={() => setShowJoinClubPopup(false)} />
       )}
 
-     {(
-  <button
-    onClick={() => changeVal()}
-    className="fixed bottom-20 right-6 p-2 bg-blue-600 text-white rounded-full shadow-lg focus:outline-none focus:ring-offset-2 focus:ring-blue-500 z-40"
-    aria-label="Join a club"
-  >
-    <div className="relative h-12 w-12 flex items-center justify-center">
-      {/* Chatbot Icon */}
-      <div className={`absolute h-full w-full rounded-full flex items-center justify-center bg-transparent`}>
-        <div className='text-3xl font-bold'><BadgePlus /></div>
-      </div>
+      {(
+        <button
+          onClick={() => changeVal()}
+          className="fixed bottom-20 right-6 p-2 bg-blue-600 text-white rounded-full shadow-lg focus:outline-none focus:ring-offset-2 focus:ring-blue-500 z-40"
+          aria-label="Join a club"
+        >
+          <div className="relative h-12 w-12 flex items-center justify-center">
+            {/* Chatbot Icon */}
+            <div className={`absolute h-full w-full rounded-full flex items-center justify-center bg-transparent`}>
+              <div className='text-3xl font-bold'><BadgePlus /></div>
+            </div>
 
-      {/* Water Drop Waves */}
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className={`absolute h-full w-full rounded-full border-2 bg-transparent`}
-          style={{
-            animation: `wave 3s ease-out infinite`,
-            animationDelay: `${i * 1}s`,
-            borderColor: 'white' // Added to make waves visible
-          }}
-        />
-      ))}
+            {/* Water Drop Waves */}
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={`absolute h-full w-full rounded-full border-2 bg-transparent`}
+                style={{
+                  animation: `wave 3s ease-out infinite`,
+                  animationDelay: `${i * 1}s`,
+                  borderColor: 'white' // Added to make waves visible
+                }}
+              />
+            ))}
 
-      {/* CSS for the animation */}
-      <style>{`
+            {/* CSS for the animation */}
+            <style>{`
         @keyframes wave {
           0% {
             transform: scale(1);
@@ -984,9 +986,9 @@ export default function Dashboard() {
           }
         }
       `}</style>
-    </div>
-  </button>
-)}
+          </div>
+        </button>
+      )}
     </motion.div>
   );
 }

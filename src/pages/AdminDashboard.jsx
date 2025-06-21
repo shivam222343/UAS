@@ -1104,6 +1104,7 @@ const AdminDashboard = () => {
                 ))}
               </select>
             </div>
+
             
             {analyticsClubId ? (
               <AttendanceChart clubId={analyticsClubId} />
@@ -1113,6 +1114,7 @@ const AdminDashboard = () => {
               </div>
             )}
           </div>
+          
         </div>
       )}
       

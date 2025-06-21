@@ -11,6 +11,7 @@ const AttendanceWarnings = ({ clubId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [resetAll, setResetAll] = useState(false);
 
   useEffect(() => {
     if (clubId) {
@@ -39,7 +40,7 @@ const AttendanceWarnings = ({ clubId }) => {
   const handleResetCount = async (memberId) => {
     try {
       setLoading(true);
-      await resetMissedMeetingCount(clubId, memberId);
+      await resetMissedMeetingCount(clubId, memberId, resetAll);
       
       // Update UI
       setWarnings(prevWarnings => 
@@ -50,7 +51,7 @@ const AttendanceWarnings = ({ clubId }) => {
         )
       );
       
-      setSuccess(`Reset missed meetings count for member`);
+      setSuccess(`Reset ${resetAll ? 'all counts' : 'consecutive count'} for member`);
       setTimeout(() => setSuccess(''), 3000);
       setLoading(false);
     } catch (err) {
@@ -98,6 +99,20 @@ const AttendanceWarnings = ({ clubId }) => {
           {success}
         </div>
       )}
+      
+      <div className="mb-4 flex items-center">
+        <label className="inline-flex items-center">
+          <input
+            type="checkbox"
+            className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+            checked={resetAll}
+            onChange={() => setResetAll(!resetAll)}
+          />
+          <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+            Reset all missed counts (including total)
+          </span>
+        </label>
+      </div>
       
       {warnings.length > 0 ? (
         <div className="overflow-x-auto">
@@ -156,10 +171,10 @@ const AttendanceWarnings = ({ clubId }) => {
                       <button
                         onClick={() => handleResetCount(warning.userId)}
                         className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
-                        title="Reset missed meetings count"
+                        title={`Reset ${resetAll ? 'all' : 'consecutive'} missed meetings count`}
                       >
                         <RotateCcw className="h-4 w-4 mr-1" />
-                        <span className="text-xs">Reset Count</span>
+                        <span className="text-xs">Reset {resetAll ? 'All' : 'Count'}</span>
                       </button>
                     )}
                     {warning.reset && (
@@ -186,4 +201,4 @@ const AttendanceWarnings = ({ clubId }) => {
   );
 };
 
-export default AttendanceWarnings; 
+export default AttendanceWarnings;
