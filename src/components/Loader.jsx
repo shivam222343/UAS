@@ -19,4 +19,4 @@ export default function Loader({ size = "medium" }) {
       </svg>
     </div>
   );
-} 
+}

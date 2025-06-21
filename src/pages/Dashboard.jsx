@@ -17,6 +17,7 @@ import {
   Plus,
   X
 } from 'lucide-react';
+import AnalyticalLoader from '../components/AnalyticalLoader';
 import Loader from '../components/Loader';
 import PublicAttendanceWarnings from '../components/club/PublicAttendanceWarnings';
 import JoinClub from '../components/clubs/JoinClub';
@@ -30,6 +31,7 @@ import {
 import { Link } from 'react-router-dom';
 import AccessKey from './AccessKey';
 import ClubCard from './Clubcard';
+import MobileProgressLoader from '../components/MobileProgressLoader';
 
 const greetings = {
   morning: [
@@ -617,16 +619,20 @@ export default function Dashboard() {
 
   if (loading && userClubIds.length > 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader size="large" />
+      <div className="flex flex-col gap-10 items-center justify-center min-h-screen">
+         <Loader/>
+        <div className='lg:hidden'><MobileProgressLoader/></div>
+        <div className='hidden lg:block'><AnalyticalLoader size="large" /></div>
       </div>
     );
   }
 
   if (loading && userClubIds.length === 0 && !dontShowAgain) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader size="large" />
+      <div className="flex flex-col gap-10 items-center justify-center min-h-screen">
+        <Loader/>
+        <div className='lg:hidden'><MobileProgressLoader/></div>
+        <div className='hidden lg:block'><AnalyticalLoader size="large" /></div>
       </div>
     );
   }

@@ -38,6 +38,10 @@ const ClubManagement = () => {
   const [keyMessageType, setKeyMessageType] = useState(''); // 'success' or 'error'
   const [copiedKeyId, setCopiedKeyId] = useState(null);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [clubToDelete, setClubToDelete] = useState(null);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+
   const { currentUser } = useAuth();
 
   // Fetch clubs and access keys
@@ -50,7 +54,7 @@ const ClubManagement = () => {
       setLoading(true);
       const clubsRef = collection(db, 'clubs');
       const querySnapshot = await getDocs(clubsRef);
-      
+
       const clubsList = [];
       for (const clubDoc of querySnapshot.docs) {
         const clubData = {
@@ -58,15 +62,15 @@ const ClubManagement = () => {
           ...clubDoc.data(),
           createdAt: clubDoc.data().createdAt?.toDate() || new Date()
         };
-        
+
         // Get member count
         const membersRef = collection(db, 'clubs', clubDoc.id, 'members');
         const membersSnapshot = await getDocs(membersRef);
         clubData.memberCount = membersSnapshot.size;
-        
+
         clubsList.push(clubData);
       }
-      
+
       setClubs(clubsList);
       setLoading(false);
     } catch (error) {
@@ -79,20 +83,20 @@ const ClubManagement = () => {
     try {
       const keysRef = collection(db, 'clubs', clubId, 'accessKeys');
       const querySnapshot = await getDocs(keysRef);
-      
+
       const keysList = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         expiresAt: doc.data().expiresAt?.toDate()
       }));
-      
+
       // Sort by created date (newest first)
       keysList.sort((a, b) => {
         const dateA = a.createdAt?.toDate() || new Date(0);
         const dateB = b.createdAt?.toDate() || new Date(0);
         return dateB - dateA;
       });
-      
+
       setAccessKeys(keysList);
     } catch (error) {
       console.error('Error fetching access keys:', error);
@@ -109,7 +113,7 @@ const ClubManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       const clubData = {
         name: formData.name,
@@ -121,7 +125,7 @@ const ClubManagement = () => {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
-      
+
       if (selectedClub) {
         // Update existing club
         const clubRef = doc(db, 'clubs', selectedClub.id);
@@ -133,7 +137,7 @@ const ClubManagement = () => {
         // Create new club
         await addDoc(collection(db, 'clubs'), clubData);
       }
-      
+
       // Reset form and refresh clubs
       setFormData({
         name: '',
@@ -150,14 +154,26 @@ const ClubManagement = () => {
     }
   };
 
-  const handleDeleteClub = async (clubId) => {
-    if (window.confirm('Are you sure you want to delete this club? This action cannot be undone.')) {
+
+
+  const handleDeleteClick = (club) => {
+    setClubToDelete(club);
+    setDeleteConfirmationText('');
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteClub = async () => {
+    if (deleteConfirmationText === `Delete ${clubToDelete.name}`) {
       try {
-        await deleteDoc(doc(db, 'clubs', clubId));
+        await deleteDoc(doc(db, 'clubs', clubToDelete.id));
         fetchClubs();
+        setShowDeleteConfirm(false);
       } catch (error) {
         console.error('Error deleting club:', error);
+        alert('Failed to delete club. Please try again.');
       }
+    } else {
+      alert(`Please type "Delete ${clubToDelete.name}" to confirm deletion.`);
     }
   };
 
@@ -183,21 +199,21 @@ const ClubManagement = () => {
     try {
       setKeyMessage('');
       setKeyMessageType('');
-      
+
       if (accessKeyCount <= 0 || accessKeyCount > 50) {
         setKeyMessage('Please enter a valid number of keys (1-50)');
         setKeyMessageType('error');
         return;
       }
-      
+
       const keysToGenerate = [];
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + accessKeyExpiration);
-      
+
       for (let i = 0; i < accessKeyCount; i++) {
         // Generate a random 8-character key
         const key = Math.random().toString(36).substring(2, 10).toUpperCase();
-        
+
         keysToGenerate.push({
           key,
           createdAt: serverTimestamp(),
@@ -206,15 +222,15 @@ const ClubManagement = () => {
           isUsed: false
         });
       }
-      
+
       // Add keys to Firestore
       for (const keyData of keysToGenerate) {
         await addDoc(collection(db, 'clubs', selectedClub.id, 'accessKeys'), keyData);
       }
-      
+
       // Refresh access keys
       await fetchAccessKeys(selectedClub.id);
-      
+
       setKeyMessage(`Successfully generated ${accessKeyCount} access key${accessKeyCount > 1 ? 's' : ''}`);
       setKeyMessageType('success');
     } catch (error) {
@@ -249,11 +265,11 @@ const ClubManagement = () => {
   // Function to format expiration date
   const formatExpirationDate = (date) => {
     if (!date) return 'No expiration';
-    
+
     const now = new Date();
     const diffTime = date.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) return 'Expired';
     if (diffDays === 0) return 'Expires today';
     if (diffDays === 1) return 'Expires tomorrow';
@@ -337,7 +353,7 @@ const ClubManagement = () => {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteClub(club.id)}
+                      onClick={() => handleDeleteClick(club)}
                       className="form-btn form-btn-danger text-xs px-2 py-1"
                     >
                       <Trash2 className="h-3 w-3 inline mr-1" />
@@ -363,7 +379,7 @@ const ClubManagement = () => {
             <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
               {selectedClub ? 'Edit Club' : 'Create Club'}
             </h3>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="form-group">
                 <label className="form-label">Club Name</label>
@@ -376,7 +392,7 @@ const ClubManagement = () => {
                   required
                 />
               </div>
-              
+
               <div className="form-group">
                 <label className="form-label">Description</label>
                 <textarea
@@ -387,7 +403,7 @@ const ClubManagement = () => {
                   rows="3"
                 ></textarea>
               </div>
-              
+
               <div className="form-group">
                 <label className="form-label">Location</label>
                 <input
@@ -398,7 +414,7 @@ const ClubManagement = () => {
                   className="form-input"
                 />
               </div>
-              
+
               <div className="form-group">
                 <label className="form-label">Maximum Members</label>
                 <input
@@ -411,7 +427,7 @@ const ClubManagement = () => {
                   max="1000"
                 />
               </div>
-              
+
               <div className="form-group">
                 <label className="form-checkbox-label">
                   <input
@@ -424,7 +440,7 @@ const ClubManagement = () => {
                   <span>Public Club (Anyone can join)</span>
                 </label>
               </div>
-              
+
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"
@@ -453,7 +469,7 @@ const ClubManagement = () => {
             <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
               Access Keys for {selectedClub.name}
             </h3>
-            
+
             <div className="mb-6 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
               <h4 className="font-medium text-blue-700 dark:text-blue-300 mb-2">Generate New Access Keys</h4>
               <div className="flex flex-wrap gap-4">
@@ -488,19 +504,18 @@ const ClubManagement = () => {
                   </button>
                 </div>
               </div>
-              
+
               {keyMessage && (
-                <div className={`mt-3 p-2 rounded-md ${
-                  keyMessageType === 'success' 
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
-                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                }`}>
+                <div className={`mt-3 p-2 rounded-md ${keyMessageType === 'success'
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                  }`}>
                   {keyMessageType === 'success' ? <Check className="h-4 w-4 inline mr-1" /> : <AlertTriangle className="h-4 w-4 inline mr-1" />}
                   {keyMessage}
                 </div>
               )}
             </div>
-            
+
             <div className="mb-4 ">
               <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Access Keys</h4>
               {accessKeys.length === 0 ? (
@@ -535,20 +550,18 @@ const ClubManagement = () => {
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              key.isUsed 
-                                ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' 
-                                : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                            }`}>
+                            <span className={`px-2 py-1 text-xs rounded-full ${key.isUsed
+                              ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                              }`}>
                               {key.isUsed ? 'Used' : 'Available'}
                             </span>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`text-sm ${
-                              !key.expiresAt ? 'text-gray-500 dark:text-gray-400' :
+                            <span className={`text-sm ${!key.expiresAt ? 'text-gray-500 dark:text-gray-400' :
                               key.expiresAt < new Date() ? 'text-red-600 dark:text-red-400' :
-                              'text-gray-600 dark:text-gray-300'
-                            }`}>
+                                'text-gray-600 dark:text-gray-300'
+                              }`}>
                               {formatExpirationDate(key.expiresAt)}
                             </span>
                           </td>
@@ -583,13 +596,65 @@ const ClubManagement = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="flex justify-end">
               <button
                 onClick={() => setIsAccessKeyModalOpen(false)}
                 className="form-btn form-btn-secondary"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && clubToDelete && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowDeleteConfirm(false)}></div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 relative z-10">
+            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+              Delete Club
+            </h3>
+            <div className="mb-4">
+              <p className="text-gray-700 dark:text-gray-300 mb-2">
+                Are you sure you want to delete <span className="font-semibold">{clubToDelete.name}</span>?
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                This action cannot be undone. All club data will be permanently removed.
+              </p>
+              <div className="form-group">
+                <label className="form-label">
+                  Type <span className="font-mono"> @Secrete_Code {clubToDelete.name}</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmationText}
+                  onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                  className="form-input"
+                  placeholder={`@Secrete_Code ${clubToDelete.name}`}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="form-btn form-btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteClub}
+                className={`form-btn form-btn-danger relative ${deleteConfirmationText !== `Delete ${clubToDelete.name}`
+                    ? 'opacity-70 cursor-not-allowed'
+                    : ''
+                  }`}
+                disabled={deleteConfirmationText !== `Delete ${clubToDelete.name}`}
+              >
+                <span className="flex items-center justify-center">
+                  Delete Club
+                </span>
               </button>
             </div>
           </div>

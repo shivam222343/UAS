@@ -19,7 +19,9 @@ import {
   Legend
 } from 'recharts';
 import { Download, Calendar, Users, TrendingUp, User, Clock, AlertTriangle } from 'lucide-react';
+import AnalyticalLoader from '../components/AnalyticalLoader';
 import Loader from '../components/Loader';
+import MobileProgressLoader from '../components/MobileProgressLoader';
 
 export default function Analytics() {
   const [loading, setLoading] = useState(true);
@@ -49,37 +51,37 @@ export default function Analytics() {
       // Get current user data
       const userRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userRef);
-      
+
       if (!userDoc.exists()) {
         setError('User data not found');
         setLoading(false);
         return;
       }
-      
+
       const userData = userDoc.data();
       const userAttendedMeetings = userData.attendedMeetings || [];
       const userClubs = userData.clubsJoined || {};
-      
+
       // Check which clubs the user joined with access key
-      const joinedClubs = Object.keys(userClubs).filter(clubId => 
+      const joinedClubs = Object.keys(userClubs).filter(clubId =>
         userClubs[clubId].joinedAt !== undefined
       );
-      
+
       let allMeetings = [];
-      
+
       // If user has joined clubs with access key, fetch meetings from those clubs
       if (joinedClubs.length > 0) {
         for (const clubId of joinedClubs) {
           // Fetch club's meetings
           const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
           const meetingsSnapshot = await getDocs(meetingsRef);
-          
+
           const clubMeetings = meetingsSnapshot.docs.map(doc => ({
             id: doc.id,
             clubId: clubId,
             ...doc.data()
           }));
-          
+
           allMeetings = [...allMeetings, ...clubMeetings];
         }
       } else {
@@ -91,28 +93,28 @@ export default function Analytics() {
           ...doc.data()
         }));
       }
-      
+
       // Calculate personal statistics
       const totalMeetings = allMeetings.length;
       const attendedMeetings = userAttendedMeetings.length;
-      const attendanceRate = totalMeetings > 0 
+      const attendanceRate = totalMeetings > 0
         ? Math.round((attendedMeetings / totalMeetings) * 100)
         : 0;
-        
+
       // Get missed meeting counts for the user across all clubs
       let totalMissedMeetings = 0;
       let warningsSent = false;
-      
+
       // Check each club for missed meetings
       for (const clubId of joinedClubs) {
         try {
           const memberRef = doc(db, 'clubs', clubId, 'members', currentUser.uid);
           const memberDoc = await getDoc(memberRef);
-          
+
           if (memberDoc.exists()) {
             const memberData = memberDoc.data();
             totalMissedMeetings += memberData.missedMeetingCount || 0;
-            
+
             // Check if warnings were sent
             if (memberData.warningEmailSent) {
               warningsSent = true;
@@ -122,21 +124,21 @@ export default function Analytics() {
           console.error(`Error fetching missed meetings for club ${clubId}:`, err);
         }
       }
-      
+
       // Calculate monthly attendance
       const monthlyData = {};
-      
+
       // Get 6 months range
       const today = new Date();
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-      
+
       // Initialize all months in range with 0 attendance
       for (let d = new Date(sixMonthsAgo); d <= today; d.setMonth(d.getMonth() + 1)) {
         const month = d.toLocaleString('default', { month: 'short' });
         monthlyData[month] = { attended: 0, total: 0 };
       }
-      
+
       // Fill with actual data
       // Enhanced monthly data calculation
       allMeetings.forEach(meeting => {
@@ -145,7 +147,7 @@ export default function Analytics() {
           const month = meetingDate.toLocaleString('default', { month: 'short' });
           if (monthlyData[month]) {
             monthlyData[month].total += 1;
-            
+
             // Check if user attended this meeting
             const didAttend = meeting.attendees && meeting.attendees[currentUser.uid];
             if (didAttend) {
@@ -156,7 +158,7 @@ export default function Analytics() {
           }
         }
       });
-      
+
       const monthlyAttendanceData = Object.entries(monthlyData).map(([month, data]) => ({
         name: month,
         attendanceRate: data.total > 0 ? Math.round((data.attended / data.total) * 100) : 0,
@@ -164,29 +166,29 @@ export default function Analytics() {
         missed: data.missed,
         total: data.total
       }));
-      
+
       // Get most recent attended meetings
       const recentAttendedMeetings = allMeetings
         .filter(meeting => meeting.attendees && meeting.attendees[currentUser.uid])
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 5);
-      
+
       // Get ranking data (compare with other members) across all joined clubs
       let allClubMembers = [];
       let memberAttendanceData = {};
-      
+
       for (const clubId of joinedClubs) {
         // Get all members of this club
         const membersRef = collection(db, 'clubs', clubId, 'members');
         const membersSnapshot = await getDocs(membersRef);
-        
+
         membersSnapshot.docs.forEach(memberDoc => {
           const memberId = memberDoc.data().userId || memberDoc.id;
           allClubMembers.push({
             id: memberId,
             displayName: memberDoc.data().displayName || 'Anonymous'
           });
-          
+
           // Initialize attendance data for this member
           if (!memberAttendanceData[memberId]) {
             memberAttendanceData[memberId] = {
@@ -195,23 +197,23 @@ export default function Analytics() {
             };
           }
         });
-        
+
         // Get club meetings
         const clubMeetings = allMeetings.filter(meeting => meeting.clubId === clubId);
-        
+
         // Calculate attendance for each member
         for (const member of allClubMembers) {
           memberAttendanceData[member.id].total += clubMeetings.length;
-          
+
           // Count attended meetings
-          const attendedCount = clubMeetings.filter(meeting => 
+          const attendedCount = clubMeetings.filter(meeting =>
             meeting.attendees && meeting.attendees[member.id]
           ).length;
-          
+
           memberAttendanceData[member.id].attended += attendedCount;
         }
       }
-      
+
       // Calculate attendance rates for all users
       const userAttendanceRates = Object.entries(memberAttendanceData).map(([userId, data]) => {
         const member = allClubMembers.find(m => m.id === userId) || { displayName: 'Anonymous' };
@@ -221,13 +223,13 @@ export default function Analytics() {
           attendanceRate: data.total > 0 ? (data.attended / data.total) * 100 : 0
         };
       });
-      
+
       // Sort by attendance rate (highest first)
       userAttendanceRates.sort((a, b) => b.attendanceRate - a.attendanceRate);
-      
+
       // Find current user's ranking
       const userRanking = userAttendanceRates.findIndex(user => user.id === currentUser.uid) + 1;
-      
+
       // Get top 5 users for comparison
       const topUsers = userAttendanceRates.slice(0, 5).map(user => ({
         name: user.id === currentUser.uid ? 'You' : user.name,
@@ -236,7 +238,7 @@ export default function Analytics() {
         totalMeetings: memberAttendanceData[user.id].total,
         isCurrentUser: user.id === currentUser.uid
       }));
-      
+
       setPersonalStats({
         totalMeetings,
         attendedMeetings,
@@ -245,7 +247,7 @@ export default function Analytics() {
         missedMeetings: totalMissedMeetings,
         warningsReceived: warningsSent
       });
-      
+
       setMonthlyAttendance(monthlyAttendanceData);
       setRecentMeetings(recentAttendedMeetings);
       setComparisonData(topUsers);
@@ -259,8 +261,10 @@ export default function Analytics() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader size="large" />
+      <div className="flex flex-col gap-10 items-center justify-center min-h-screen">
+        <Loader />
+        <div className='lg:hidden'><MobileProgressLoader /></div>
+        <div className='hidden lg:block'><AnalyticalLoader size="large" /></div>
       </div>
     );
   }
@@ -281,11 +285,7 @@ export default function Analytics() {
       className="p-2"
     >
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">My Analytics</h1>
-        <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center">
-          <Download className="w-4 h-4 mr-2" />
-          Export Report
-        </button>
+        <h1 className="text-3xl w-full font-bold text-center md:text-left">My Analytics</h1>
       </div>
 
       {/* Stats Grid */}
@@ -337,24 +337,20 @@ export default function Analytics() {
             </div>
           </div>
         </div>
-        
-        <div className={`bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6 ${
-          personalStats.warningsReceived ? 'border-2 border-red-400' : ''
-        }`}>
+
+        <div className={`bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6 ${personalStats.warningsReceived ? 'border-2 border-red-400' : ''
+          }`}>
           <div className="flex items-center">
-            <div className={`p-3 rounded-full ${
-              personalStats.missedMeetings >= 3 ? 'bg-red-100' : 'bg-gray-100'
-            }`}>
-              <AlertTriangle className={`w-6 h-6 ${
-                personalStats.missedMeetings >= 3 ? 'text-red-600' : 'text-gray-600'
-              }`} />
+            <div className={`p-3 rounded-full ${personalStats.missedMeetings >= 3 ? 'bg-red-100' : 'bg-gray-100'
+              }`}>
+              <AlertTriangle className={`w-6 h-6 ${personalStats.missedMeetings >= 3 ? 'text-red-600' : 'text-gray-600'
+                }`} />
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-500">Missed Meetings</p>
               <div className="flex items-center">
-                <p className={`text-2xl font-semibold ${
-                  personalStats.missedMeetings >= 3 ? 'text-red-600 dark:text-red-400' : ''
-                }`}>{personalStats.missedMeetings}</p>
+                <p className={`text-2xl font-semibold ${personalStats.missedMeetings >= 3 ? 'text-red-600 dark:text-red-400' : ''
+                  }`}>{personalStats.missedMeetings}</p>
                 {personalStats.warningsReceived && (
                   <span className="ml-2 px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
                     Warning Sent
@@ -395,17 +391,17 @@ export default function Analytics() {
                 <XAxis type="number" domain={[0, 100]} />
                 <YAxis dataKey="name" type="category" width={80} />
                 <Tooltip />
-                <Bar 
-                  dataKey="attendanceRate" 
+                <Bar
+                  dataKey="attendanceRate"
                   name="Attendance Rate %"
-                  fill="#3B82F6" 
+                  fill="#3B82F6"
                   radius={[0, 4, 4, 0]}
                   label={{ position: 'right', formatter: (value) => `${value}%` }}
                 >
                   {comparisonData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.isCurrentUser ? '#22C55E' : '#3B82F6'} 
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.isCurrentUser ? '#22C55E' : '#3B82F6'}
                     />
                   ))}
                 </Bar>
@@ -421,7 +417,7 @@ export default function Analytics() {
         <div className="space-y-4">
           {recentMeetings.length > 0 ? (
             recentMeetings.map(meeting => (
-              <div 
+              <div
                 key={meeting.id}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
               >
