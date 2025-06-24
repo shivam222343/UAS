@@ -106,14 +106,14 @@ export default function ProgressLoader({ active = true }) {
   if (currentProcessSet.length === 0) return null;
 
   return (
-    <div className="loader-container">
+    <div className="loader-container dark:text-white dark:bg-slate-800">
       <div className="particles-container" ref={particlesRef}></div>
 
       <div className="bg-items">
         {currentProcessSet.map((step, index) => (
           <div
             key={`bg-${index}`}
-            className="bg-item"
+            className="bg-item "
             style={{
               opacity: 0.08,
               color: step.color,
@@ -128,7 +128,7 @@ export default function ProgressLoader({ active = true }) {
       <div className="loader-content">
         <div className="sparkle-header">
           <Sparkles className="sparkle-icon" size={20} />
-          <span className="sparkle-text">System Initialization</span>
+          <span className="sparkle-text dark:text-white">System Initialization</span>
         </div>
 
         <div className="progress-track">
@@ -149,7 +149,7 @@ export default function ProgressLoader({ active = true }) {
             {currentProcessSet[currentStep].icon}
           </div>
           <div className="step-text-wrapper">
-            <div className="step-text">{currentProcessSet[currentStep].name}</div>
+            <div className="step-text dark:text-white">{currentProcessSet[currentStep].name}</div>
             <div className="step-progress">
               {currentStep + 1}/{currentProcessSet.length}
             </div>
