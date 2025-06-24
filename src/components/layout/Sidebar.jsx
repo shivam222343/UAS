@@ -89,7 +89,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               <img
                 className="h-8 w-auto rounded-full"
                 src="/logo.png"
-                alt="Attendance System"
+                alt=""
               />
               <span className="ml-2 text-lg font-semibold text-blue-700 flex gap-1 dark:text-primary-400">
              <span className='font-semibold text-md text-blue-700 dark:text-primary-400'>Team</span>
@@ -135,7 +135,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           {/* Footer with User Info and Logout */}
           {currentUser && (
-          <div className="p-4 border-t border-secondary-200 dark:border-secondary-700">
+          <div className="p-4 border-t border-secondary-200 overflow-hidden dark:border-secondary-700">
               <div className="flex items-center mb-4">
                 <img
                   className="h-10 w-10 rounded-full mr-3"

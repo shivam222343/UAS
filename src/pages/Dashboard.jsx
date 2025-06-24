@@ -32,113 +32,7 @@ import { Link } from 'react-router-dom';
 import AccessKey from './AccessKey';
 import ClubCard from './Clubcard';
 import MobileProgressLoader from '../components/MobileProgressLoader';
-
-const greetings = {
-  morning: [
-    "Good morning, Mavericks! Time to crush it like a boss! 💥",
-    "Wake up, wake up! The world needs your magic today! ✨",
-    "Rise and shine, Mavericks! Coffee in one hand, confidence in the other! ☕😎",
-    "Top of the morning to the Mavericks! Let's make today legendary! 🏆",
-    "Morning, Mavericks! Ready to slay the day? 🔥",
-    "Sun's up, Mavericks! So are your dreams—go chase 'em! 🌞",
-    "Good morning! Don't hit snooze on greatness! ⏰",
-    "Hey Mavericks, did you bring your A-game today? Let's see it! 🎯",
-    "Morning MVPs! Time to turn ideas into action! 🚀",
-    "Up and at 'em, Mavericks! Today's challenges are just fun puzzles! 🧩",
-    "Shoutout to the Mavericks waking up already winning! 🏅",
-    "Sun's out, fun's out! Let's make this morning epic! 🌞🎉",
-    "Mornings are for Mavericks who hustle before the world wakes! 💪",
-    "Good morning, legends! Time to write your success story today! 📖",
-    "Wakey wakey, eggs and victory! 🥚🏆",
-    "Morning Mavericks! Got your superhero cape on? Let's fly! 🦸‍♂️🦸‍♀️",
-    "New day, new goals, same fierce Mavericks! ⚔️",
-    "Morning vibes for Mavericks who mean business! 💼",
-    "Rise like a Maverick phoenix from the coffee ashes! ☕🔥",
-    "Hey Mavericks, time to shake the world awake! 🌍✨",
-    "Sun's shining, Mavericks grinding! Let's go! 🌅💥",
-    "Good morning! Let's make this day so good, yesterday gets jealous! 😎",
-    "Mavericks, ready to conquer before breakfast? Let's do it! 🥐🚀",
-    "Happy morning to the coolest Mavericks in town! 😎👊",
-  ],
-  afternoon: [
-    "Good afternoon, Mavericks! Keep rocking that hustle! 🤘",
-    "Hey Mavericks, time to refuel with some good vibes and snacks! 🍎😄",
-    "Afternoon alert! Mavericks still winning, still grinning! 😁",
-    "Keep calm and power through, Mavericks! Afternoon's your playground! 🎢",
-    "Afternoon, Mavericks! Ready for a productivity power-up? ⚡",
-    "Hey Mavericks, is it snack o'clock yet? Stay energized! 🍪🚀",
-    "Afternoon sunshine to our unstoppable Mavericks! ☀️🔥",
-    "Halfway through the day, Mavericks — still killing it! 💪",
-    "Mavericks, let's turn this afternoon into a masterpiece! 🎨",
-    "Good afternoon! Keep those brains buzzing, Mavericks! 🧠✨",
-    "Mavericks in action: powering through the day like champs! 🏆",
-    "Afternoon, Mavericks! The day's not over till you say so! 🕒",
-    "Take a deep breath, Mavericks — and keep crushing goals! 🌬️💥",
-    "Hey Mavericks, remember: naps are for quitters! Just kidding, take a quick one! 😴😉",
-    "Afternoon Mavericks, your vibe attracts your tribe! Keep it lit! 🔥",
-    "Hello Mavericks! Time for an afternoon pep talk: You've got this! 🙌",
-    "Mavericks, coffee's good, but your passion's better! ☕❤️",
-    "Afternoon roll call! Who's ready to smash some tasks? 📝🔥",
-    "Keep your spirits high and your coffee higher, Mavericks! ☕🚀",
-    "Mavericks, every afternoon is a fresh chance to shine brighter! ✨",
-    "Afternoon vibes: Mavericks making waves and taking names! 🌊✍️",
-    "Halfway through, Mavericks — let's make the rest of the day count! ⏳",
-    "Hey Mavericks, your afternoon hustle is legendary! Keep it up! 🏅",
-    "Afternoon champs, keep your eyes on the prize and your feet on the ground! 🎯",
-    "Mavericks, you're the reason the afternoon rocks! 🎸😄",
-  ],
-  evening: [
-    "Good evening, Mavericks! Time to kick back and relax like royalty! 👑",
-    "Evening Mavericks! Did you win the day? Either way, celebrate! 🎉",
-    "Sunset salute to our amazing Mavericks! You crushed it! 🌇🔥",
-    "Evening vibes! Time to recharge your superhero powers! 🦸‍♂️⚡",
-    "Hey Mavericks, time to unwind and share your epic stories! 📖✨",
-    "Mavericks, the stars are out — just like your brilliance! 🌟",
-    "Good evening! Time for some well-earned Maverick chill time! 😎🍹",
-    "Evening, Mavericks! Let's toast to a day well conquered! 🥂",
-    "Mavericks, don't just count stars — be one! ✨",
-    "Evening! Hope your day was as awesome as you are, Mavericks! 💫",
-    "Sunset and Mavericks — the perfect combo! 🌅🔥",
-    "Time to swap your hustle hat for a chill cap, Mavericks! 🧢😌",
-    "Evening Mavericks, let your mind relax and your dreams get wild! 🌙💭",
-    "Cheers to Mavericks who hustle by day and dream big by night! 🍻",
-    "Mavericks, the day's done — now time to plot tomorrow's victory! 🗺️",
-    "Good evening! Even Mavericks need to Netflix and chill sometimes! 📺😄",
-    "Sun's down, Mavericks — time to let your awesomeness glow! 🌃✨",
-    "Evening, team! May your relaxation be as fierce as your work ethic! 🔥",
-    "Mavericks, you earned this evening's peace and quiet! Enjoy it! 🌌",
-    "Good evening! Remember, even legends need rest! 🛌",
-    "Mavericks, the night is young and so is your potential! Go dream big! 🌠",
-    "Time to wind down, Mavericks. Your future self thanks you! 🙏",
-    "Evening cheers to the boldest Mavericks in the galaxy! 🌟🚀",
-    "Mavericks, rest well so you can rise and shine even brighter tomorrow! 🌞",
-  ],
-  night: [
-    "Good night, Mavericks! Dream big, rest well! 🌙💤",
-    "Mavericks, the stars are watching — make sure you're dreaming of greatness! ✨",
-    "Sleep tight, Mavericks! Tomorrow's another chance to be awesome! 😴🔥",
-    "Night, Mavericks! Don't let the bedbugs steal your creativity! 🛏️🐞",
-    "Mavericks, recharge your brain — it's time to power up! ⚡💤",
-    "Good night! May your dreams be as epic as your hustle! 🌌💫",
-    "Rest easy, Mavericks! You've earned your place among the stars! 🌟",
-    "Sleep like a Maverick — fierce and unbreakable! 🛌🦁",
-    "Nighty night, Mavericks! See you at the top tomorrow! 🏔️",
-    "Dream on, Mavericks! Tomorrow is your canvas! 🎨🌙",
-    "Good night! Even Mavericks need their beauty sleep! 💅😴",
-    "Mavericks, close your eyes and open your mind to amazing dreams! 🌠",
-    "Sleep well, champions! The world awaits your next move! 🏆",
-    "Mavericks, rest now so you can rule tomorrow! 👑",
-    "Good night! Let your dreams do the heavy lifting tonight! 🌛💪",
-    "Mavericks, the night is your friend — recharge and rise! 🌙✨",
-    "Sleep tight! Remember, the best ideas come after a good rest! 💡😴",
-    "Mavericks, drift into dreams and wake up ready to conquer! 🌌🚀",
-    "Good night! Your dreams are the blueprint for tomorrow's success! 📐🌟",
-    "Rest well, Mavericks! Tomorrow's adventures await! 🌄",
-    "Night, Mavericks! May your sleep be deep and your dreams wild! 🌙🌪️",
-    "Mavericks, even heroes need their downtime! Recharge those powers! 🦸‍♀️💤",
-    "Sleep tight, sleep right — Mavericks' motto for greatness! 💤🔥",
-  ],
-};
+import greetings from '../utils/Greetings';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -620,8 +514,8 @@ export default function Dashboard() {
   if (loading && userClubIds.length > 0) {
     return (
       <div className="flex flex-col gap-10 items-center justify-center min-h-screen">
-         <Loader/>
-        <div className='lg:hidden'><MobileProgressLoader/></div>
+        <Loader />
+        <div className='lg:hidden'><MobileProgressLoader /></div>
         <div className='hidden lg:block'><AnalyticalLoader size="large" /></div>
       </div>
     );
@@ -630,8 +524,8 @@ export default function Dashboard() {
   if (loading && userClubIds.length === 0 && !dontShowAgain) {
     return (
       <div className="flex flex-col gap-10 items-center justify-center min-h-screen">
-        <Loader/>
-        <div className='lg:hidden'><MobileProgressLoader/></div>
+        <Loader />
+        <div className='lg:hidden'><MobileProgressLoader /></div>
         <div className='hidden lg:block'><AnalyticalLoader size="large" /></div>
       </div>
     );
@@ -671,11 +565,11 @@ export default function Dashboard() {
                 </h2>
                 <div className="w-24 h-1 rounded-full my-2 bg-blue-300/50 dark:bg-blue-400/30"></div>
                 <div className="text-4xl mt-2 animate-bounce text-yellow-500 dark:text-yellow-300">
-                  {greeting.includes('morning') || greeting.includes('Rise') ? '🌄' :
-                    greeting.includes('afternoon') || greeting.includes('Hustle') ? '☀️' :
-                      greeting.includes('evening') || greeting.includes('Relax') ? '🌇' :
-                        greeting.includes('night') || greeting.includes('Sleep') || greeting.includes('Dream') ? '🌙' : "🔥"
-                  }
+                  {greeting.match(/(^|\s)(good\s)?(morning|sunrise|rise|wakeup|wake up|shine|early bird)/i) ? '🌄' :
+                    greeting.match(/(^|\s)(good\s)?(afternoon|sunshine|sunhigh|midday|hustle|snack|focus|refuel)/i) ? '☀️' :
+                      greeting.match(/(^|\s)(good\s)?(evening|sunset|relax|chill|unwind|stars|cool breeze|twilight)/i) ? '🌇' :
+                        greeting.match(/(^|\s)(good\s)?(night|dream|sleep|nap|rest|shubh ratri|moonlight)/i) ? '🌙' :
+                          '🔥'}
                 </div>
               </div>
             </div>
