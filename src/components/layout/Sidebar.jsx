@@ -127,6 +127,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     {
                       item.name == "Panels" && <div className='ml-2 px-2 py-[2px]  bg-green-200 dark:text-white dark:bg-green-700 rounded-lg'>New</div>
                     }
+                    
                 </Link>
               );
             })}

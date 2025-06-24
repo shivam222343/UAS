@@ -18,7 +18,7 @@ import {
   Line,
   Legend
 } from 'recharts';
-import { Download, Calendar, Users, TrendingUp, User, Clock, AlertTriangle } from 'lucide-react';
+import { Download, Calendar, Users, TrendingUp, User, Clock, AlertTriangle, Trophy, Crown, Award } from 'lucide-react';
 import AnalyticalLoader from '../components/AnalyticalLoader';
 import Loader from '../components/Loader';
 import MobileProgressLoader from '../components/MobileProgressLoader';
@@ -35,6 +35,8 @@ export default function Analytics() {
   const [monthlyAttendance, setMonthlyAttendance] = useState([]);
   const [recentMeetings, setRecentMeetings] = useState([]);
   const [comparisonData, setComparisonData] = useState([]);
+  const [allMembersRanking, setAllMembersRanking] = useState([]);
+  const [showFullRanking, setShowFullRanking] = useState(false);
   const { currentUser } = useAuth();
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
@@ -45,10 +47,8 @@ export default function Analytics() {
     }
   }, [currentUser]);
 
-  // Update the fetchPersonalAnalytics function to include more detailed statistics
   const fetchPersonalAnalytics = async () => {
     try {
-      // Get current user data
       const userRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userRef);
 
@@ -62,17 +62,14 @@ export default function Analytics() {
       const userAttendedMeetings = userData.attendedMeetings || [];
       const userClubs = userData.clubsJoined || {};
 
-      // Check which clubs the user joined with access key
       const joinedClubs = Object.keys(userClubs).filter(clubId =>
         userClubs[clubId].joinedAt !== undefined
       );
 
       let allMeetings = [];
 
-      // If user has joined clubs with access key, fetch meetings from those clubs
       if (joinedClubs.length > 0) {
         for (const clubId of joinedClubs) {
-          // Fetch club's meetings
           const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
           const meetingsSnapshot = await getDocs(meetingsRef);
 
@@ -85,7 +82,6 @@ export default function Analytics() {
           allMeetings = [...allMeetings, ...clubMeetings];
         }
       } else {
-        // Fallback to original behavior - fetch from general meetings collection
         const meetingsRef = collection(db, 'meetings');
         const meetingsSnapshot = await getDocs(meetingsRef);
         allMeetings = meetingsSnapshot.docs.map(doc => ({
@@ -94,18 +90,15 @@ export default function Analytics() {
         }));
       }
 
-      // Calculate personal statistics
       const totalMeetings = allMeetings.length;
       const attendedMeetings = userAttendedMeetings.length;
       const attendanceRate = totalMeetings > 0
         ? Math.round((attendedMeetings / totalMeetings) * 100)
         : 0;
 
-      // Get missed meeting counts for the user across all clubs
       let totalMissedMeetings = 0;
       let warningsSent = false;
 
-      // Check each club for missed meetings
       for (const clubId of joinedClubs) {
         try {
           const memberRef = doc(db, 'clubs', clubId, 'members', currentUser.uid);
@@ -115,7 +108,6 @@ export default function Analytics() {
             const memberData = memberDoc.data();
             totalMissedMeetings += memberData.missedMeetingCount || 0;
 
-            // Check if warnings were sent
             if (memberData.warningEmailSent) {
               warningsSent = true;
             }
@@ -125,35 +117,26 @@ export default function Analytics() {
         }
       }
 
-      // Calculate monthly attendance
       const monthlyData = {};
-
-      // Get 6 months range
       const today = new Date();
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
 
-      // Initialize all months in range with 0 attendance
       for (let d = new Date(sixMonthsAgo); d <= today; d.setMonth(d.getMonth() + 1)) {
         const month = d.toLocaleString('default', { month: 'short' });
         monthlyData[month] = { attended: 0, total: 0 };
       }
 
-      // Fill with actual data
-      // Enhanced monthly data calculation
       allMeetings.forEach(meeting => {
         const meetingDate = new Date(meeting.date);
         if (meetingDate >= sixMonthsAgo && meetingDate <= today) {
           const month = meetingDate.toLocaleString('default', { month: 'short' });
           if (monthlyData[month]) {
             monthlyData[month].total += 1;
-
-            // Check if user attended this meeting
             const didAttend = meeting.attendees && meeting.attendees[currentUser.uid];
             if (didAttend) {
               monthlyData[month].attended += 1;
             }
-            // Add missed meetings count per month
             monthlyData[month].missed = monthlyData[month].total - monthlyData[month].attended;
           }
         }
@@ -167,45 +150,50 @@ export default function Analytics() {
         total: data.total
       }));
 
-      // Get most recent attended meetings
       const recentAttendedMeetings = allMeetings
         .filter(meeting => meeting.attendees && meeting.attendees[currentUser.uid])
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 5);
 
-      // Get ranking data (compare with other members) across all joined clubs
+      // Enhanced member ranking calculation
       let allClubMembers = [];
       let memberAttendanceData = {};
 
       for (const clubId of joinedClubs) {
-        // Get all members of this club
         const membersRef = collection(db, 'clubs', clubId, 'members');
         const membersSnapshot = await getDocs(membersRef);
 
-        membersSnapshot.docs.forEach(memberDoc => {
+        // Get user details for each member
+        for (const memberDoc of membersSnapshot.docs) {
           const memberId = memberDoc.data().userId || memberDoc.id;
+          const userRef = doc(db, 'users', memberId);
+          const userDoc = await getDoc(userRef);
+          
+          const displayName = userDoc.exists() 
+            ? userDoc.data().displayName || 'Anonymous'
+            : memberDoc.data().displayName || 'Anonymous';
+
           allClubMembers.push({
             id: memberId,
-            displayName: memberDoc.data().displayName || 'Anonymous'
+            displayName,
+            photoURL: userDoc.exists() ? userDoc.data().photoURL : null
           });
 
-          // Initialize attendance data for this member
           if (!memberAttendanceData[memberId]) {
             memberAttendanceData[memberId] = {
               attended: 0,
-              total: 0
+              total: 0,
+              clubs: new Set()
             };
           }
-        });
+          memberAttendanceData[memberId].clubs.add(clubId);
+        }
 
-        // Get club meetings
         const clubMeetings = allMeetings.filter(meeting => meeting.clubId === clubId);
 
-        // Calculate attendance for each member
         for (const member of allClubMembers) {
           memberAttendanceData[member.id].total += clubMeetings.length;
 
-          // Count attended meetings
           const attendedCount = clubMeetings.filter(meeting =>
             meeting.attendees && meeting.attendees[member.id]
           ).length;
@@ -214,28 +202,35 @@ export default function Analytics() {
         }
       }
 
-      // Calculate attendance rates for all users
       const userAttendanceRates = Object.entries(memberAttendanceData).map(([userId, data]) => {
         const member = allClubMembers.find(m => m.id === userId) || { displayName: 'Anonymous' };
         return {
           id: userId,
           name: member.displayName,
-          attendanceRate: data.total > 0 ? (data.attended / data.total) * 100 : 0
+          photoURL: member.photoURL,
+          attendanceRate: data.total > 0 ? (data.attended / data.total) * 100 : 0,
+          attended: data.attended,
+          total: data.total,
+          clubsCount: data.clubs.size
         };
       });
 
-      // Sort by attendance rate (highest first)
       userAttendanceRates.sort((a, b) => b.attendanceRate - a.attendanceRate);
 
-      // Find current user's ranking
       const userRanking = userAttendanceRates.findIndex(user => user.id === currentUser.uid) + 1;
 
-      // Get top 5 users for comparison
+      // Set full members ranking
+      setAllMembersRanking(userAttendanceRates.map((user, index) => ({
+        ...user,
+        rank: index + 1,
+        isCurrentUser: user.id === currentUser.uid
+      })));
+
       const topUsers = userAttendanceRates.slice(0, 5).map(user => ({
         name: user.id === currentUser.uid ? 'You' : user.name,
         attendanceRate: Math.round(user.attendanceRate),
-        totalAttended: memberAttendanceData[user.id].attended,
-        totalMeetings: memberAttendanceData[user.id].total,
+        totalAttended: user.attended,
+        totalMeetings: user.total,
         isCurrentUser: user.id === currentUser.uid
       }));
 
@@ -245,7 +240,8 @@ export default function Analytics() {
         attendanceRate,
         ranking: userRanking || allClubMembers.length,
         missedMeetings: totalMissedMeetings,
-        warningsReceived: warningsSent
+        warningsReceived: warningsSent,
+        totalMembers: allClubMembers.length
       });
 
       setMonthlyAttendance(monthlyAttendanceData);
@@ -333,24 +329,22 @@ export default function Analytics() {
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-500">Your Ranking</p>
-              <p className="text-2xl font-semibold">#{personalStats.ranking}</p>
+              <p className="text-2xl font-semibold">#{personalStats.ranking} of {personalStats.totalMembers}</p>
             </div>
           </div>
         </div>
 
-        <div className={`bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6 ${personalStats.warningsReceived ? 'border-2 border-red-400' : ''
-          }`}>
+        <div className={`bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6 ${personalStats.warningsReceived ? 'border-2 border-red-400' : ''}`}>
           <div className="flex items-center">
-            <div className={`p-3 rounded-full ${personalStats.missedMeetings >= 3 ? 'bg-red-100' : 'bg-gray-100'
-              }`}>
-              <AlertTriangle className={`w-6 h-6 ${personalStats.missedMeetings >= 3 ? 'text-red-600' : 'text-gray-600'
-                }`} />
+            <div className={`p-3 rounded-full ${personalStats.missedMeetings >= 3 ? 'bg-red-100' : 'bg-gray-100'}`}>
+              <AlertTriangle className={`w-6 h-6 ${personalStats.missedMeetings >= 3 ? 'text-red-600' : 'text-gray-600'}`} />
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-500">Missed Meetings</p>
               <div className="flex items-center">
-                <p className={`text-2xl font-semibold ${personalStats.missedMeetings >= 3 ? 'text-red-600 dark:text-red-400' : ''
-                  }`}>{personalStats.missedMeetings}</p>
+                <p className={`text-2xl font-semibold ${personalStats.missedMeetings >= 3 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                  {personalStats.missedMeetings}
+                </p>
                 {personalStats.warningsReceived && (
                   <span className="ml-2 px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
                     Warning Sent
@@ -411,6 +405,101 @@ export default function Analytics() {
         </div>
       </div>
 
+      {/* Full Members Ranking Section */}
+      <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6 mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold flex items-center">
+            <Trophy className="mr-2 text-yellow-500" />
+            Members Ranking
+          </h2>
+          <button 
+            onClick={() => setShowFullRanking(!showFullRanking)}
+            className="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
+          >
+            {showFullRanking ? 'Top' : 'All'}
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium dark:text-white text-gray-500 uppercase tracking-wider">Rank</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium dark:text-white text-gray-500 uppercase tracking-wider">Member</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium dark:text-white text-gray-500 uppercase tracking-wider">Attendance</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium dark:text-white text-gray-500 uppercase tracking-wider">Meetings</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium dark:text-white text-gray-500 uppercase tracking-wider">Clubs</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+              {(showFullRanking ? allMembersRanking : allMembersRanking.slice(0, 5)).map((member) => (
+                <tr 
+                  key={member.id} 
+                  className={`${member.isCurrentUser ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {member.rank <= 3 ? (
+                        <>
+                          {member.rank === 1 && <Crown className="text-yellow-500 mr-2" size={16} />}
+                          {member.rank === 2 && <Award className="text-gray-400 mr-2" size={16} />}
+                          {member.rank === 3 && <Award className="text-amber-600 mr-2" size={16} />}
+                        </>
+                      ) : null}
+                      <span className={`font-medium ${member.rank <= 3 ? 'text-lg' : ''}`}>
+                        {member.rank}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {member.photoURL ? (
+                        <img className="h-8 w-8 rounded-full mr-3" src={member.photoURL} alt={member.name} />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
+                          <User size={16} className="text-gray-500" />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium">{member.name}</div>
+                        {member.isCurrentUser && (
+                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                            You
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="w-24 mr-2">
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full" 
+                            style={{ 
+                              width: `${member.attendanceRate}%`,
+                              backgroundColor: member.attendanceRate >= 80 ? '#10B981' : 
+                                             member.attendanceRate >= 50 ? '#F59E0B' : '#EF4444'
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                      <span>{Math.round(member.attendanceRate)}%</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {member.attended}/{member.total}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {member.clubsCount}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Recent Attended Meetings */}
       <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold mb-4">Recent Attended Meetings</h2>
@@ -419,7 +508,7 @@ export default function Analytics() {
             recentMeetings.map(meeting => (
               <div
                 key={meeting.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <div>
                   <h3 className="font-medium">{meeting.topic}</h3>
@@ -428,7 +517,7 @@ export default function Analytics() {
                   </p>
                 </div>
                 <div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300`}>
                     Attended
                   </span>
                 </div>

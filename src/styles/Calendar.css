@@ -26,6 +26,7 @@
 /* Calendar navigation and header styles */
 .react-calendar__navigation {
   margin-bottom: 1rem;
+  color: #111827; /* Black text for light mode */
 }
 
 .react-calendar__navigation button {
@@ -34,6 +35,18 @@
   font: inherit;
   padding: 0.5rem;
   border-radius: 0.5rem;
+  color: #111827; /* Black text for light mode */
+}
+
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  background-color: #f3f4f6;
+}
+
+/* Month label in light mode */
+.react-calendar__navigation__label {
+  color: #111827 !important; /* Black text for light mode */
+  font-weight: 600;
 }
 
 /* Weekday labels */
@@ -85,6 +98,12 @@
 /* Dark mode styles */
 .dark .react-calendar {
   background-color: transparent;
+}
+
+.dark .react-calendar__navigation,
+.dark .react-calendar__navigation button,
+.dark .react-calendar__navigation__label {
+  color: #f9fafb !important; /* White text for dark mode */
 }
 
 .dark .react-calendar__tile:enabled {

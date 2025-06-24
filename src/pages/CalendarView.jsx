@@ -83,8 +83,10 @@ const CalendarView = () => {
             clubName: clubName,
             ...doc.data(),
             // Make sure we have a topic for backwards compatibility
-            topic: doc.data().name || 'Untitled Meeting'
+            topic: doc.data().name || 'Untitled Meeting',
           }));
+
+
           
           allMeetings = [...allMeetings, ...clubMeetings];
         } else {
@@ -95,8 +97,8 @@ const CalendarView = () => {
           // For each meeting, check if it was created by an admin
           const meetingsPromises = meetingsSnapshot.docs.map(async (doc) => {
             const meetingData = doc.data();
-            const creatorId = meetingData.createdBy;
             
+
             if (!creatorId) return null;
             
             // Get the creator's role
@@ -273,12 +275,12 @@ const CalendarView = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <div className=" bg-blue-500 text-gray-950 dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div className=" bg-white text-gray-950 dark:bg-gray-800 rounded-lg shadow-md p-6">
             <Calendar
               onChange={handleDateClick}
               value={value}
               tileContent={tileContent}
-              className={`calendar-container  bg-blue-500 text-gray-800 dark:bg-gray-800 ${darkMode ? 'dark' : ''}`}
+              className={`calendar-container  bg-white text-gray-800 dark:bg-gray-800 ${darkMode ? 'dark' : ''}`}
             />
           </div>
           
@@ -359,7 +361,7 @@ const CalendarView = () => {
                         <span className="font-medium">
                           {meeting.status === 'upcoming' ? 'Upcoming' :
                            meeting.status === 'in-progress' ? 'In Progress' :
-                           meeting.status === 'completed' ? 'Completed' :
+                           meeting.status === 'past' ? 'Completed' :
                            meeting.status === 'cancelled' ? 'Cancelled' : 'Unknown'}
                         </span>
                       </p>

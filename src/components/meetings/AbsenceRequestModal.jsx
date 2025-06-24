@@ -141,17 +141,17 @@ const AbsenceRequestModal = ({ isOpen, onClose, meetingId, clubId, meetingName }
   if (!isOpen) return null;
 
   return (
-    <div className="fixed dark:bg-gray-900 inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed dark:bg-gray-800 inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-xl m-4"
+        className="bg-white dark:bg-gray-900 rounded-lg shadow-xl min-h-[500px] overflow-y-auto p-6 w-full max-w-xl m-4"
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Meeting Absence</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100"
+            className="p-1 rounded-full dark:hover:bg-slate-700 hover:bg-gray-100"
           >
             <X className="w-6 h-6" />
           </button>
@@ -217,11 +217,25 @@ const AbsenceRequestModal = ({ isOpen, onClose, meetingId, clubId, meetingName }
           </div>
         )}
         
+        {
+          userRequestStatus && isAdmin && (
+            <div className="p-4 mb-4 rounded-lg bg-blue-50 text-blue-700">
+              <div className="flex items-center">
+                <Clock className="w-5 h-5 mr-2" />
+                <p>
+                  <span className="font-semibold">User's request status: </span>
+                  {userRequestStatus.charAt(0).toUpperCase() + userRequestStatus.slice(1)}
+                </p>
+              </div>
+            </div>
+          ) 
+        }
+
         {/* Request form */}
         {activeTab === 'request' && !userRequestStatus && (
           <form onSubmit={handleSubmitRequest} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">
                 Reason for absence
               </label>
               <textarea
@@ -287,7 +301,7 @@ const AbsenceRequestModal = ({ isOpen, onClose, meetingId, clubId, meetingName }
                       </div>
                     </div>
                     
-                    <p className="text-gray-700 text-sm mb-2">{request.reason}</p>
+                    <p className="text-gray-700 dark:text-white text-sm mb-2">{request.reason}</p>
                     
                     {/* Admin controls - only shown to admins */}
                     {isAdmin && request.status === 'pending' && (

@@ -17,7 +17,7 @@ import {
   Line
 } from 'recharts';
 import { CheckCircle, XCircle, Clock, AlertTriangle, Users, Download, FileText } from 'lucide-react';
-import Loader from '../../components/Loader';
+import AnalyticalLoader from "../AnalyticalLoader"
 
 // Try to import packages, but don't fail if they're not available
 let XLSX, jsPDF, html2canvas;
@@ -316,7 +316,7 @@ const AttendanceChart = ({ clubId }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="medium" />
+        <AnalyticalLoader size="medium" />
       </div>
     );
   }
