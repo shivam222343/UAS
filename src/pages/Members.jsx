@@ -458,7 +458,7 @@ export default function Members() {
                 onClick={() => setSelectedMember(null)}
               />
               <motion.div
-                className="relative w-full bg-white dark:bg-gray-800 rounded-t-3xl shadow-xl"
+                className="relative w-full bg-white overflow-hidden dark:bg-gray-800 rounded-t-3xl shadow-xl"
                 initial={{ y: '100%' }}
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}

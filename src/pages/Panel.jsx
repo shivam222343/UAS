@@ -345,7 +345,7 @@ useEffect(() => {
           <select
             value={selectedClub}
             onChange={(e) => setSelectedClub(e.target.value)}
-            className="block w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-slate-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="block w-full p-2 border border-gray-300 bg-white dark:border-gray-600 dark:bg-slate-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Select a club</option>
             {userClubs.map(club => (
@@ -361,7 +361,7 @@ useEffect(() => {
           <select
             value={selectedEvent}
             onChange={(e) => setSelectedEvent(e.target.value)}
-            className="block w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-slate-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="block w-full p-2 border border-gray-300 bg-white dark:border-gray-600 dark:bg-slate-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={!selectedClub}
           >
             <option value="">Select an event</option>
@@ -378,7 +378,7 @@ useEffect(() => {
           <select
             value={selectedPanel}
             onChange={(e) => setSelectedPanel(e.target.value)}
-            className="block w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-slate-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="block w-full p-2 border bg-white border-gray-300 dark:border-gray-600 dark:bg-slate-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={!selectedEvent}
           >
             <option value="">Select a panel</option>
