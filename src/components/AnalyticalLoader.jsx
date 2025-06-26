@@ -39,7 +39,7 @@ const allProcessSets = [
     { name: "Logging off users", icon: <UserCheck size={18} />, color: "#f59e0b" },
     { name: "Securing backend", icon: <Shield size={18} />, color: "#ef4444" },
     { name: "Archiving data", icon: <Database size={18} />, color: "#6366f1" },
-    { name: "Good night!", icon: <CheckCircle size={18} />, color: "#10b981" }
+    { name: "Everything is done!", icon: <CheckCircle size={18} />, color: "#10b981" }
   ],
   [
     { name: "Connecting microservices", icon: <Network size={18} />, color: "#6366f1" },

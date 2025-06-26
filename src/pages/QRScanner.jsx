@@ -230,7 +230,7 @@ const QRScanner = () => {
         </h1>
       </div>
       
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md">
+      <div className="bg-white dark:bg-gray-700 rounded-xl p-6 shadow-md">
         <AnimatePresence mode="wait">
           {!scanning && !scanResult && !showManualEntry && (
             <motion.div 
@@ -258,7 +258,7 @@ const QRScanner = () => {
                 </button>
                 <button
                   onClick={toggleManualEntry}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center"
+                  className="px-6 py-3 bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center"
                 >
                   <Key className="h-4 w-4 mr-2 hidden lg:block" />
                   Enter Code
@@ -292,7 +292,7 @@ const QRScanner = () => {
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
                     placeholder="Enter session code"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     maxLength="8"
                     pattern="[A-Za-z0-9]{8}"
                     title="8-character alphanumeric code"
@@ -309,7 +309,7 @@ const QRScanner = () => {
                   <button
                     type="button"
                     onClick={toggleManualEntry}
-                    className="px-6 py-2 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    className="px-6 py-2 bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
                     Cancel
                   </button>

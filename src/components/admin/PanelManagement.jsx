@@ -475,11 +475,11 @@ const fetchMembers = async (clubId) => {
 
     // Event Modal
     const EventModal = () => (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black  bg-opacity-50 flex items-center justify-center z-50">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-white dark:bg-slate-800 dark:text-white rounded-lg shadow-xl p-6 w-full max-w-md"
+          className="w-full md:w-1/2 border border-blue-200 mx-2 dark:bg-slate-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
                 <h2 className="text-xl font-bold mb-4">Create New Event</h2>
 
@@ -490,7 +490,7 @@ const fetchMembers = async (clubId) => {
                             type="text"
                             value={newEvent.name}
                             onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             placeholder="Enter event name"
                             required
                         />
@@ -501,7 +501,7 @@ const fetchMembers = async (clubId) => {
                         <textarea
                             value={newEvent.description}
                             onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             rows="3"
                             placeholder="Enter event description"
                         ></textarea>
@@ -514,7 +514,7 @@ const fetchMembers = async (clubId) => {
                                 type="date"
                                 value={newEvent.date}
                                 onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                                className="w-full border dark:text-white border-gray-300 rounded-md px-3 py-2"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             />
                         </div>
                         <div>
@@ -523,7 +523,7 @@ const fetchMembers = async (clubId) => {
                                 type="time"
                                 value={newEvent.time}
                                 onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                                className="w-full border dark:text-white border-gray-300 rounded-md px-3 py-2"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             />
                         </div>
                     </div>
@@ -573,7 +573,7 @@ const fetchMembers = async (clubId) => {
                             type="text"
                             value={newPanel.name}
                             onChange={(e) => setNewPanel({ ...newPanel, name: e.target.value })}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             placeholder="Enter panel name"
                             required
                         />
@@ -690,7 +690,7 @@ const fetchMembers = async (clubId) => {
                                 type="tel"
                                 value={newCandidate.phone}
                                 onChange={(e) => setNewCandidate({ ...newCandidate, phone: e.target.value })}
-                                className="w-full border border-gray-300 rounded-md px-3 py-2"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                 placeholder="Enter phone number"
                             />
                         </div>
@@ -712,7 +712,7 @@ const fetchMembers = async (clubId) => {
                                 type="time"
                                 value={newCandidate.interviewTime}
                                 onChange={(e) => setNewCandidate({ ...newCandidate, interviewTime: e.target.value })}
-                                className="w-full border border-gray-300 rounded-md px-3 py-2"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             />
                         </div>
                     </div>
@@ -792,7 +792,7 @@ const fetchMembers = async (clubId) => {
                     <select
                         value={selectedClub}
                         onChange={(e) => setSelectedClub(e.target.value)}
-                        className="w-full border bg-white border-gray-300 rounded-md px-3 py-2"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                         <option value="">Select a club</option>
                         {clubs.map(club => (
@@ -807,7 +807,7 @@ const fetchMembers = async (clubId) => {
                         <select
                             value={selectedEvent}
                             onChange={(e) => setSelectedEvent(e.target.value)}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             disabled={!selectedClub}
                         >
                             <option value="">Select an event</option>
