@@ -566,7 +566,7 @@ const AttendanceChart = ({ clubId }) => {
                   name="format"
                   value={exportOptions.format}
                   onChange={handleExportOptionChange}
-                  className="w-full p-2 border rounded dark:bg-gray-600 dark:text-white"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   {XLSX && <option value="excel">Excel (.xlsx)</option>}
                   <option value="csv">CSV (.csv)</option>
@@ -579,7 +579,7 @@ const AttendanceChart = ({ clubId }) => {
                   name="timeRange"
                   value={exportOptions.timeRange}
                   onChange={handleExportOptionChange}
-                  className="w-full p-2 border rounded dark:bg-gray-600 dark:text-white"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   <option value="lastMonth">Last Month</option>
                   <option value="lastTwoMonths">Last Two Months</option>
@@ -595,7 +595,7 @@ const AttendanceChart = ({ clubId }) => {
                   name="colorTheme"
                   value={exportOptions.colorTheme}
                   onChange={handleExportOptionChange}
-                  className="w-full p-2 border rounded dark:bg-gray-600 dark:text-white"
+          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   <option value="default">Default</option>
                 </select>
