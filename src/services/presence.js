@@ -3,9 +3,16 @@ import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from './firebase';
 
-
 let intervalId;
 let userRef = null;
+let isPWA = false;
+
+// Check if the app is running as a PWA
+if (window.matchMedia('(display-mode: standalone)').matches || 
+    window.navigator.standalone ||
+    document.referrer.includes('android-app://')) {
+  isPWA = true;
+}
 
 const setOnlineStatus = async (status) => {
   if (userRef) {
@@ -14,7 +21,6 @@ const setOnlineStatus = async (status) => {
         isOnline: status,
         lastSeen: serverTimestamp(),
       });
-
     } catch (err) {
       console.error('Error updating presence:', err);
     }
@@ -24,13 +30,17 @@ const setOnlineStatus = async (status) => {
 const handleVisibility = () => {
   if (document.visibilityState === 'hidden') {
     setOnlineStatus(false);
-  } else if (document.visibilityState === 'visible') {
+  } else {
     setOnlineStatus(true);
   }
 };
 
-const handleUnload = () => {
-  setOnlineStatus(false);
+const handleAppStateChange = (state) => {
+  if (state === 'background' || state === 'inactive') {
+    setOnlineStatus(false);
+  } else if (state === 'active') {
+    setOnlineStatus(true);
+  }
 };
 
 export const startPresenceTracking = () => {
@@ -40,10 +50,20 @@ export const startPresenceTracking = () => {
     userRef = doc(db, 'users', user.uid);
     await setOnlineStatus(true);
 
+    // For browser tabs
     document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('beforeunload', handleUnload);
-    window.addEventListener('pagehide', handleUnload);
+    window.addEventListener('beforeunload', () => setOnlineStatus(false));
+    window.addEventListener('pagehide', () => setOnlineStatus(false));
 
+    // For PWAs
+    if (isPWA && window.cordova) {
+      document.addEventListener('pause', () => setOnlineStatus(false), false);
+      document.addEventListener('resume', () => setOnlineStatus(true), false);
+    } else if (isPWA && document.addEventListener) {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+
+    // Heartbeat to keep status fresh
     intervalId = setInterval(() => {
       setOnlineStatus(true);
     }, 20000);
@@ -52,8 +72,14 @@ export const startPresenceTracking = () => {
 
 export const stopPresenceTracking = () => {
   clearInterval(intervalId);
-  window.removeEventListener('visibilitychange', handleVisibility);
-  window.removeEventListener('beforeunload', handleUnload);
-  window.removeEventListener('pagehide', handleUnload);
+  document.removeEventListener('visibilitychange', handleVisibility);
+  window.removeEventListener('beforeunload', () => setOnlineStatus(false));
+  window.removeEventListener('pagehide', () => setOnlineStatus(false));
+  
+  if (isPWA && window.cordova) {
+    document.removeEventListener('pause', () => setOnlineStatus(false));
+    document.removeEventListener('resume', () => setOnlineStatus(true));
+  }
+  
   setOnlineStatus(false);
 };

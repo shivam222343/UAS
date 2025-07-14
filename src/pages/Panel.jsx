@@ -25,10 +25,10 @@ import {
   Bookmark,
   Users2,
   PanelRightOpen,
-  Info
+  Info,
+  RefreshCw
 } from 'lucide-react';
 import Loader from '../components/Loader';
-import { use } from 'react';
 
 const PanelView = () => {
   const [loading, setLoading] = useState(true);
@@ -43,6 +43,7 @@ const PanelView = () => {
   const [candidates, setCandidates] = useState([]);
   const [members, setMembers] = useState([]);
   const [panelDetails, setPanelDetails] = useState(null);
+  const [sortOption, setSortOption] = useState('dateTime');
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -117,7 +118,6 @@ const PanelView = () => {
         }
       }
 
-
       const clubDetails = [];
 
       for (const clubId of clubIds) {
@@ -146,36 +146,35 @@ const PanelView = () => {
   };
 
   const fetchMembers = async (clubId) => {
-  try {
-    if (!clubId) {
-      setMembers([]);
-      return;
+    try {
+      if (!clubId) {
+        setMembers([]);
+        return;
+      }
+      
+      const querySnapshot = await getDocs(collection(db, 'clubs', clubId, 'members'));
+      const membersList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name || '',
+        role: doc.data().role || '',
+        ...doc.data()
+      }));
+      setMembers(membersList);
+    } catch (err) {
+      setError('Failed to fetch members');
+      console.error(err);
     }
-    
-    const querySnapshot = await getDocs(collection(db, 'clubs', clubId, 'members'));
-    const membersList = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name || '', // Ensure name exists
-      role: doc.data().role || '', // Ensure role exists
-      ...doc.data()
-    }));
-    setMembers(membersList);
-  } catch (err) {
-    setError('Failed to fetch members');
-    console.error(err);
-  }
-};
+  };
 
-useEffect(() => {
-   if (selectedClub) {
-            fetchEvents(selectedClub);
-            fetchMembers(selectedClub);
-        } else {
-            setEvents([]);
-            setMembers([]);
-        }
-}, [selectedClub]);
-  
+  useEffect(() => {
+    if (selectedClub) {
+      fetchEvents(selectedClub);
+      fetchMembers(selectedClub);
+    } else {
+      setEvents([]);
+      setMembers([]);
+    }
+  }, [selectedClub]);
 
   const fetchEvents = async (clubId) => {
     try {
@@ -202,7 +201,6 @@ useEffect(() => {
     }
   };
 
-  // Fetch panels for selected event
   const fetchPanels = async (clubId, eventId) => {
     try {
       if (!clubId || !eventId) {
@@ -216,7 +214,6 @@ useEffect(() => {
         ...doc.data()
       }));
     
-
       setPanels(panelsList);
     } catch (err) {
       setError('Failed to fetch panels');
@@ -244,20 +241,40 @@ useEffect(() => {
     }
   };
 
+  const sortCandidates = (candidates, option) => {
+    return [...candidates].sort((a, b) => {
+      switch (option) {
+        case 'name':
+          return (a.name || '').localeCompare(b.name || '');
+        case 'status':
+          return (a.status || '').localeCompare(b.status || '');
+        case 'dateTime':
+        default:
+          const dateA = a.interviewDate ? new Date(a.interviewDate).getTime() : Infinity;
+          const dateB = b.interviewDate ? new Date(b.interviewDate).getTime() : Infinity;
+          
+          if (dateA !== dateB) return dateA - dateB;
+          
+          const timeA = a.interviewTime || '';
+          const timeB = b.interviewTime || '';
+          return timeA.localeCompare(timeB);
+      }
+    });
+  };
+
   const fetchCandidates = async (clubId, eventId, panelId) => {
     try {
       setLoading(true);
       const candidatesRef = collection(db, 'clubs', clubId, 'events', eventId, 'panels', panelId, 'candidates');
       const querySnapshot = await getDocs(candidatesRef);
 
-      const candidatesList = querySnapshot.docs.map(doc => ({
+      let candidatesList = querySnapshot.docs.map(doc => ({
         id: doc.id,
         panelId: panelId,
         ...doc.data()
       }));
-      console.log('Fetched candidates:', candidatesList);
 
-
+      candidatesList = sortCandidates(candidatesList, sortOption);
       setCandidates(candidatesList);
     } catch (err) {
       setError('Failed to fetch candidates: ' + err.message);
@@ -265,6 +282,18 @@ useEffect(() => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefreshCandidates = () => {
+    if (selectedClub && selectedEvent && selectedPanel) {
+      fetchCandidates(selectedClub, selectedEvent, selectedPanel);
+    }
+  };
+
+  const handleSortChange = (e) => {
+    const newSortOption = e.target.value;
+    setSortOption(newSortOption);
+    setCandidates(sortCandidates(candidates, newSortOption));
   };
 
   const getStatusBadge = (status, interviewDone) => {
@@ -345,7 +374,7 @@ useEffect(() => {
           <select
             value={selectedClub}
             onChange={(e) => setSelectedClub(e.target.value)}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="">Select a club</option>
             {userClubs.map(club => (
@@ -361,7 +390,7 @@ useEffect(() => {
           <select
             value={selectedEvent}
             onChange={(e) => setSelectedEvent(e.target.value)}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             disabled={!selectedClub}
           >
             <option value="">Select an event</option>
@@ -378,7 +407,7 @@ useEffect(() => {
           <select
             value={selectedPanel}
             onChange={(e) => setSelectedPanel(e.target.value)}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             disabled={!selectedEvent}
           >
             <option value="">Select a panel</option>
@@ -434,8 +463,7 @@ useEffect(() => {
         </motion.div>
       )}
 
-      {
-        !selectedPanel && panels.length > 0 && 
+      {!selectedPanel && panels.length > 0 && 
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -451,7 +479,6 @@ useEffect(() => {
 
       {selectedClub && selectedEvent && selectedPanel && panelDetails && (
         <div className="space-y-8">
-          {/* Panel Details Section */}
           <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold dark:text-white flex items-center">
@@ -509,7 +536,6 @@ useEffect(() => {
                       {Object.entries(panelDetails.members)
                         .filter(([_, isMember]) => isMember)
                         .map(([memberId]) => {
-                          // Find the member details from the members array
                           const member = members.find(m => m.id === memberId);
                           return (
                             <li key={memberId} className="flex items-center">
@@ -535,12 +561,31 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* Candidates Section */}
           <div>
-            <h2 className="text-xl font-semibold mb-4 flex items-center dark:text-white">
-              <Users className="h-5 w-5 mr-2" />
-              Candidates for {panelDetails.name}
-            </h2>
+            <div className="flex md:flex-row flex-col items-center md:justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center dark:text-white">
+                <Users className="h-5 w-5 mr-2" />
+                Candidates for {panelDetails.name}
+              </h2>
+              <div className="flex mt-5 md:mt-none items-center space-x-2">
+                <select
+                  value={sortOption}
+                  onChange={handleSortChange}
+                  className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700"
+                >
+                  <option value="dateTime ">Sort by Date & Time</option>
+                  <option value="name">Sort by Name</option>
+                  <option value="status">Sort by Status</option>
+                </select>
+                <button
+                  onClick={handleRefreshCandidates}
+                  className="p-2 rounded-full hover:animate-spin hover:bg-blue-400 dark:hover:bg-slate-700 transition-colors"
+                  title="Refresh candidates list"
+                >
+                  <RefreshCw className="h-5 w-5 text-white  dark:text-gray-300" />
+                </button>
+              </div>
+            </div>
 
             {candidates.length === 0 ? (
               <div className="bg-gray-50 dark:bg-slate-800 p-8 rounded-lg text-center">

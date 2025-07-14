@@ -478,7 +478,7 @@ export default function Dashboard() {
                 <X className="w-5 h-5" />
               </button></div>
           </div>
-          <div className='w-full h-ato flex justify-center items-center'>
+          <div className='w-full h-auto flex justify-center items-center'>
             {selectedClub && <div className="p-4">
               <ClubCard />
             </div>}
