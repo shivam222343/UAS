@@ -10,7 +10,8 @@ import {
     deleteDoc,
     serverTimestamp,
     query,
-    where
+    where,
+    orderBy
 } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import {
@@ -50,7 +51,14 @@ const PanelManagement = () => {
     // Modal states
     const [showEventModal, setShowEventModal] = useState(false);
     const [showPanelModal, setShowPanelModal] = useState(false);
+    const [showPanelEditModal, setShowPanelEditModal] = useState(false);
     const [showCandidateModal, setShowCandidateModal] = useState(false);
+    const [showConfirmationModal, setShowConfirmationModal] = useState({
+        show: false,
+        message: '',
+        onConfirm: () => {},
+        onCancel: () => {}
+    });
 
     // Form states
     const [newEvent, setNewEvent] = useState({
@@ -61,6 +69,12 @@ const PanelManagement = () => {
     });
 
     const [newPanel, setNewPanel] = useState({
+        name: '',
+        members: {}
+    });
+
+    const [editPanel, setEditPanel] = useState({
+        id: '',
         name: '',
         members: {}
     });
@@ -76,7 +90,10 @@ const PanelManagement = () => {
         interviewTime: ''
     });
 
+    // Sorting states
     const [sortAlphabetically, setSortAlphabetically] = useState(true);
+    const [candidateSortOption, setCandidateSortOption] = useState('dateTime');
+    const [candidateSortDirection, setCandidateSortDirection] = useState('desc');
     const { currentUser } = useAuth();
 
     // Clear messages after timeout
@@ -145,29 +162,29 @@ const PanelManagement = () => {
         }
     };
 
-    //fetch club members
-const fetchMembers = async (clubId) => {
-  try {
-    if (!clubId) {
-      setMembers([]);
-      return;
-    }
-    
-    const querySnapshot = await getDocs(collection(db, 'clubs', clubId, 'members'));
-    const membersList = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name || '', // Ensure name exists
-      role: doc.data().role || '', // Ensure role exists
-      ...doc.data()
-    }));
-    setMembers(membersList);
-  } catch (err) {
-    setError('Failed to fetch members');
-    console.error(err);
-  }
-};
+    // Fetch club members
+    const fetchMembers = async (clubId) => {
+        try {
+            if (!clubId) {
+                setMembers([]);
+                return;
+            }
+            
+            const querySnapshot = await getDocs(collection(db, 'clubs', clubId, 'members'));
+            const membersList = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                name: doc.data().name || '',
+                role: doc.data().role || '',
+                ...doc.data()
+            }));
+            setMembers(membersList);
+        } catch (err) {
+            setError('Failed to fetch members');
+            console.error(err);
+        }
+    };
 
-    // Fetch candidates for selected panel
+    // Fetch candidates for selected panel with sorting
     const fetchCandidates = async (clubId, eventId, panelId) => {
         try {
             if (!clubId || !eventId || !panelId) {
@@ -175,17 +192,48 @@ const fetchMembers = async (clubId) => {
                 return;
             }
 
-            const querySnapshot = await getDocs(collection(db, 'clubs', clubId, 'events', eventId, 'panels', panelId, 'candidates'));
+            let candidatesQuery;
+            const candidatesRef = collection(db, 'clubs', clubId, 'events', eventId, 'panels', panelId, 'candidates');
+
+            if (candidateSortOption === 'name') {
+                candidatesQuery = query(
+                    candidatesRef,
+                    orderBy('name', candidateSortDirection === 'asc' ? 'asc' : 'desc')
+                );
+            } else if (candidateSortOption === 'status') {
+                candidatesQuery = query(
+                    candidatesRef,
+                    orderBy('status', candidateSortDirection === 'asc' ? 'asc' : 'desc')
+                );
+            } else {
+                // Default sort by dateTime (createdAt)
+                candidatesQuery = query(
+                    candidatesRef,
+                    orderBy('createdAt', candidateSortDirection === 'asc' ? 'asc' : 'desc')
+                );
+            }
+
+            const querySnapshot = await getDocs(candidatesQuery);
             const candidatesList = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-                panelId: panelId // Include panelId with each candidate
+                panelId: panelId
             }));
             setCandidates(candidatesList);
         } catch (err) {
             setError('Failed to fetch candidates');
             console.error(err);
         }
+    };
+
+    // Toggle candidate sort direction
+    const toggleCandidateSortDirection = () => {
+        setCandidateSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    };
+
+    // Change candidate sort option
+    const changeCandidateSortOption = (option) => {
+        setCandidateSortOption(option);
     };
 
     // Create new event
@@ -228,14 +276,24 @@ const fetchMembers = async (clubId) => {
     };
 
     // Toggle member selection for panel
-    const toggleMemberSelection = (memberId) => {
-        setNewPanel(prev => ({
-            ...prev,
-            members: {
-                ...prev.members,
-                [memberId]: !prev.members[memberId]
-            }
-        }));
+    const toggleMemberSelection = (memberId, isEditMode = false) => {
+        if (isEditMode) {
+            setEditPanel(prev => ({
+                ...prev,
+                members: {
+                    ...prev.members,
+                    [memberId]: !prev.members[memberId]
+                }
+            }));
+        } else {
+            setNewPanel(prev => ({
+                ...prev,
+                members: {
+                    ...prev.members,
+                    [memberId]: !prev.members[memberId]
+                }
+            }));
+        }
     };
 
     // Toggle sort order for members
@@ -247,7 +305,6 @@ const fetchMembers = async (clubId) => {
     const getSortedMembers = () => {
         if (sortAlphabetically) {
             return [...members].sort((a, b) => {
-                // Handle cases where name might be undefined
                 const nameA = a.displayName || '';
                 const nameB = b.displayName || '';
                 return nameA.localeCompare(nameB);
@@ -255,9 +312,6 @@ const fetchMembers = async (clubId) => {
         }
         return members;
     };
-
-
-
 
     // Create new panel
     const handleCreatePanel = async (e) => {
@@ -295,6 +349,50 @@ const fetchMembers = async (clubId) => {
             setSuccess('Panel created successfully');
         } catch (err) {
             setError('Failed to create panel');
+            console.error(err);
+        }
+    };
+
+    // Open panel edit modal
+    const openEditPanelModal = (panel) => {
+        setEditPanel({
+            id: panel.id,
+            name: panel.name,
+            members: panel.members || {}
+        });
+        setShowPanelEditModal(true);
+    };
+
+    // Update panel
+    const handleUpdatePanel = async (e) => {
+        e.preventDefault();
+
+        if (!selectedClub || !selectedEvent) {
+            setError('Please select a club and event');
+            return;
+        }
+
+        const selectedMemberIds = Object.keys(editPanel.members).filter(id => editPanel.members[id]);
+
+        if (!editPanel.name || selectedMemberIds.length === 0) {
+            setError('Panel name and at least one member is required');
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', editPanel.id), {
+                name: editPanel.name,
+                members: selectedMemberIds.reduce((acc, id) => {
+                    acc[id] = true;
+                    return acc;
+                }, {})
+            });
+
+            setShowPanelEditModal(false);
+            fetchPanels(selectedClub, selectedEvent);
+            setSuccess('Panel updated successfully');
+        } catch (err) {
+            setError('Failed to update panel');
             console.error(err);
         }
     };
@@ -370,73 +468,90 @@ const fetchMembers = async (clubId) => {
         }
     };
 
-
+    // Show confirmation dialog
+    const showConfirm = (message, onConfirm, onCancel = () => {}) => {
+        setShowConfirmationModal({
+            show: true,
+            message,
+            onConfirm: () => {
+                onConfirm();
+                setShowConfirmationModal({ show: false, message: '', onConfirm: () => {}, onCancel: () => {} });
+            },
+            onCancel: () => {
+                onCancel();
+                setShowConfirmationModal({ show: false, message: '', onConfirm: () => {}, onCancel: () => {} });
+            }
+        });
+    };
 
     // Delete event
     const handleDeleteEvent = async (eventId) => {
-        if (!window.confirm('Are you sure you want to delete this event? All panels and candidates will also be deleted.')) {
-            return;
-        }
+        showConfirm(
+            'Are you sure you want to delete this event? All panels and candidates will also be deleted.',
+            async () => {
+                try {
+                    // First delete all panels (and their candidates) for this event
+                    const panelsSnapshot = await getDocs(collection(db, 'clubs', selectedClub, 'events', eventId, 'panels'));
+                    const deletePromises = panelsSnapshot.docs.map(panelDoc =>
+                        deleteDoc(doc(db, 'clubs', selectedClub, 'events', eventId, 'panels', panelDoc.id))
+                    );
+                    await Promise.all(deletePromises);
 
-        try {
-            // First delete all panels (and their candidates) for this event
-            const panelsSnapshot = await getDocs(collection(db, 'clubs', selectedClub, 'events', eventId, 'panels'));
-            const deletePromises = panelsSnapshot.docs.map(panelDoc =>
-                deleteDoc(doc(db, 'clubs', selectedClub, 'events', eventId, 'panels', panelDoc.id))
-            );
-            await Promise.all(deletePromises);
+                    // Then delete the event itself
+                    await deleteDoc(doc(db, 'clubs', selectedClub, 'events', eventId));
 
-            // Then delete the event itself
-            await deleteDoc(doc(db, 'clubs', selectedClub, 'events', eventId));
-
-            fetchEvents(selectedClub);
-            setSelectedEvent('');
-            setSuccess('Event and all associated panels deleted successfully');
-        } catch (err) {
-            setError('Failed to delete event');
-            console.error(err);
-        }
+                    fetchEvents(selectedClub);
+                    setSelectedEvent('');
+                    setSuccess('Event and all associated panels deleted successfully');
+                } catch (err) {
+                    setError('Failed to delete event');
+                    console.error(err);
+                }
+            }
+        );
     };
 
     // Delete panel
     const handleDeletePanel = async (panelId) => {
-        if (!window.confirm('Are you sure you want to delete this panel? All candidates will also be deleted.')) {
-            return;
-        }
+        showConfirm(
+            'Are you sure you want to delete this panel? All candidates will also be deleted.',
+            async () => {
+                try {
+                    // First delete all candidates for this panel
+                    const candidatesSnapshot = await getDocs(collection(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates'));
+                    const deletePromises = candidatesSnapshot.docs.map(candidateDoc =>
+                        deleteDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates', candidateDoc.id))
+                    );
+                    await Promise.all(deletePromises);
 
-        try {
-            // First delete all candidates for this panel
-            const candidatesSnapshot = await getDocs(collection(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates'));
-            const deletePromises = candidatesSnapshot.docs.map(candidateDoc =>
-                deleteDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates', candidateDoc.id))
-            );
-            await Promise.all(deletePromises);
+                    // Then delete the panel itself
+                    await deleteDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId));
 
-            // Then delete the panel itself
-            await deleteDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId));
-
-            fetchPanels(selectedClub, selectedEvent);
-            setSuccess('Panel and all associated candidates deleted successfully');
-        } catch (err) {
-            setError('Failed to delete panel');
-            console.error(err);
-        }
+                    fetchPanels(selectedClub, selectedEvent);
+                    setSuccess('Panel and all associated candidates deleted successfully');
+                } catch (err) {
+                    setError('Failed to delete panel');
+                    console.error(err);
+                }
+            }
+        );
     };
 
     // Delete candidate
     const handleDeleteCandidate = async (candidateId, panelId) => {
-        if (!window.confirm('Are you sure you want to delete this candidate?')) {
-            return;
-        }
-
-        try {
-            await deleteDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates', candidateId));
-            fetchCandidates(selectedClub, selectedEvent, panelId);
-            setSuccess('Candidate deleted successfully');
-        } catch (err) {
-            setError('Failed to delete candidate');
-            console.error(err);
-        }
+        showConfirm(
+            'Are you sure you want to delete this candidate?',
+            async () => {
+                try {
+                    await deleteDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates', candidateId));
+                    fetchCandidates(selectedClub, selectedEvent, panelId);
+                    setSuccess('Candidate deleted successfully');
+                } catch (err) {
+                    setError('Failed to delete candidate');
+                    console.error(err);
+                }
+            }
+        );
     };
 
     // Effects for data fetching
@@ -471,37 +586,37 @@ const fetchMembers = async (clubId) => {
         if (selectedClub && selectedEvent && selectedPanel) {
             fetchCandidates(selectedClub, selectedEvent, selectedPanel);
         }
-    }, [selectedPanel]);
+    }, [selectedPanel, candidateSortOption, candidateSortDirection]);
 
     // Event Modal
     const EventModal = () => (
-        <div className="fixed inset-0 bg-black  bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-          className="w-full md:w-1/2 border border-blue-200 mx-2 dark:bg-slate-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full md:w-1/2 border border-blue-200 mx-2 dark:bg-slate-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
                 <h2 className="text-xl font-bold mb-4">Create New Event</h2>
 
                 <form onSubmit={handleCreateEvent} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium  dark:text-white text-gray-700 mb-1">Event Name*</label>
+                        <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">Event Name*</label>
                         <input
                             type="text"
                             value={newEvent.name}
                             onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             placeholder="Enter event name"
                             required
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium  dark:text-white text-gray-700 mb-1">Description</label>
+                        <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">Description</label>
                         <textarea
                             value={newEvent.description}
                             onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             rows="3"
                             placeholder="Enter event description"
                         ></textarea>
@@ -509,21 +624,21 @@ const fetchMembers = async (clubId) => {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium  dark:text-white text-gray-700 mb-1">Date</label>
+                            <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">Date</label>
                             <input
                                 type="date"
                                 value={newEvent.date}
                                 onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium  dark:text-white text-gray-700 mb-1">Time</label>
+                            <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">Time</label>
                             <input
                                 type="time"
                                 value={newEvent.time}
                                 onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             />
                         </div>
                     </div>
@@ -549,91 +664,97 @@ const fetchMembers = async (clubId) => {
     );
 
     // Panel Modal
-    const PanelModal = () => (
-        <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            onClick={(e) => {
-                if (e.target === e.currentTarget) {
-                    setShowPanelModal(false);
-                }
-            }}
-        >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="bg-white dark:bg-slate-800 dark:text-white rounded-lg shadow-xl p-6 w-full max-w-md"
-                onClick={(e) => e.stopPropagation()}
+    const PanelModal = ({ isEditMode = false }) => {
+        const panelData = isEditMode ? editPanel : newPanel;
+        const setPanelData = isEditMode ? setEditPanel : setNewPanel;
+        const handleSubmit = isEditMode ? handleUpdatePanel : handleCreatePanel;
+
+        return (
+            <div
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                        isEditMode ? setShowPanelEditModal(false) : setShowPanelModal(false);
+                    }
+                }}
             >
-                <h2 className="text-xl font-bold mb-4">Create New Panel</h2>
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="bg-white dark:bg-slate-800 dark:text-white rounded-lg shadow-xl p-6 w-full max-w-md"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <h2 className="text-xl font-bold mb-4">{isEditMode ? 'Edit Panel' : 'Create New Panel'}</h2>
 
-                <form onSubmit={handleCreatePanel} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">Panel Name*</label>
-                        <input
-                            type="text"
-                            value={newPanel.name}
-                            onChange={(e) => setNewPanel({ ...newPanel, name: e.target.value })}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            placeholder="Enter panel name"
-                            required
-                        />
-                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">Panel Name*</label>
+                            <input
+                                type="text"
+                                value={panelData.name}
+                                onChange={(e) => setPanelData({ ...panelData, name: e.target.value })}
+                                className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                placeholder="Enter panel name"
+                                required
+                            />
+                        </div>
 
-                    <div>
-                        <div className="flex justify-between items-center mb-1">
-                            <label className="block text-sm font-medium dark:text-white text-gray-700">Select Members*</label>
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="block text-sm font-medium dark:text-white text-gray-700">Select Members*</label>
+                                <button
+                                    onClick={toggleSortOrder}
+                                    className="flex items-center text-xs text-white-600 hover:underline"
+                                >
+                                    <ArrowUpDown className="w-3 h-3 mr-1" />
+                                    {sortAlphabetically ? 'Sorted' : 'Default'}
+                                </button>
+                            </div>
+
+                            <div className="max-h-60 overflow-y-auto border rounded-md p-2">
+                                {members.length === 0 ? (
+                                    <p className="text-sm text-gray-500">No members found in this club</p>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {getSortedMembers().map(member => (
+                                            <div key={member.id} className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`member-${member.id}`}
+                                                    checked={!!panelData.members[member.id]}
+                                                    onChange={() => toggleMemberSelection(member.id, isEditMode)}
+                                                    className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                                />
+                                                <label htmlFor={`member-${member.id}`} className="ml-2 text-sm">
+                                                    {member.displayName || 'Unnamed Member'} ({member.role || 'No Role'})
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end space-x-3">
                             <button
-                                onClick={toggleSortOrder}
-                                className="flex items-center text-xs text-white-600 hover:underline"
+                                type="button"
+                                onClick={() => isEditMode ? setShowPanelEditModal(false) : setShowPanelModal(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
                             >
-                                <ArrowUpDown className="w-3 h-3 mr-1" />
-                                {sortAlphabetically ? 'Sorted' : 'Default'}
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            >
+                                {isEditMode ? 'Update Panel' : 'Create Panel'}
                             </button>
                         </div>
-
-                        <div className="max-h-60 overflow-y-auto border rounded-md p-2">
-                            {members.length === 0 ? (
-                                <p className="text-sm text-gray-500">No members found in this club</p>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    {getSortedMembers().map(member => (
-                                        <div key={member.id} className="flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                id={`member-${member.id}`}
-                                                checked={!!newPanel.members[member.id]}
-                                                onChange={() => toggleMemberSelection(member.id)}
-                                                className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                            />
-                                            <label htmlFor={`member-${member.id}`} className="ml-2 text-sm">
-                                                {member.displayName || 'Unnamed Member'} ({member.role || 'No Role'})
-                                            </label>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="flex justify-end space-x-3">
-                        <button
-                            type="button"
-                            onClick={() => setShowPanelModal(false)}
-                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                        >
-                            Create Panel
-                        </button>
-                    </div>
-                </form>
-            </motion.div>
-        </div>
-    );
+                    </form>
+                </motion.div>
+            </div>
+        );
+    };
 
     // Candidate Modal
     const CandidateModal = () => (
@@ -641,7 +762,7 @@ const fetchMembers = async (clubId) => {
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-white  dark:bg-slate-800 dark:text-white rounded-lg shadow-xl p-6 w-full max-w-md"
+                className="bg-white dark:bg-slate-800 dark:text-white rounded-lg shadow-xl p-6 w-full max-w-md"
             >
                 <h2 className="text-xl font-bold mb-4">Add New Candidate</h2>
 
@@ -690,7 +811,7 @@ const fetchMembers = async (clubId) => {
                                 type="tel"
                                 value={newCandidate.phone}
                                 onChange={(e) => setNewCandidate({ ...newCandidate, phone: e.target.value })}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                 placeholder="Enter phone number"
                             />
                         </div>
@@ -712,7 +833,7 @@ const fetchMembers = async (clubId) => {
                                 type="time"
                                 value={newCandidate.interviewTime}
                                 onChange={(e) => setNewCandidate({ ...newCandidate, interviewTime: e.target.value })}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             />
                         </div>
                     </div>
@@ -762,6 +883,34 @@ const fetchMembers = async (clubId) => {
         </div>
     );
 
+    // Confirmation Modal
+    const ConfirmationModal = () => (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white dark:bg-slate-800 dark:text-white rounded-lg shadow-xl p-6 w-full max-w-md"
+            >
+                <h3 className="text-lg font-bold mb-4">Confirm Action</h3>
+                <p className="mb-6">{showConfirmationModal.message}</p>
+                <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={showConfirmationModal.onCancel}
+                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={showConfirmationModal.onConfirm}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                        Confirm
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    );
+
     if (loading) {
         return <Loader />;
     }
@@ -792,7 +941,7 @@ const fetchMembers = async (clubId) => {
                     <select
                         value={selectedClub}
                         onChange={(e) => setSelectedClub(e.target.value)}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                         <option value="">Select a club</option>
                         {clubs.map(club => (
@@ -807,7 +956,7 @@ const fetchMembers = async (clubId) => {
                         <select
                             value={selectedEvent}
                             onChange={(e) => setSelectedEvent(e.target.value)}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             disabled={!selectedClub}
                         >
                             <option value="">Select an event</option>
@@ -835,7 +984,7 @@ const fetchMembers = async (clubId) => {
                         {events.map(event => (
                             <div
                                 key={event.id}
-                                className={`p-3 rounded-md mb-2 cursor-pointer ${selectedEvent === event.id ? 'bg-blue-100 dark:bg-slate-900 dark:text-white border border-blue-200' : 'bg-white dark:bg-slate-800 dark:text-white  hover:bg-gray-100 border'}`}
+                                className={`p-3 rounded-md mb-2 cursor-pointer ${selectedEvent === event.id ? 'bg-blue-100 dark:bg-slate-900 dark:text-white border border-blue-200' : 'bg-white dark:bg-slate-800 dark:text-white hover:bg-gray-100 border'}`}
                                 onClick={() => setSelectedEvent(event.id)}
                             >
                                 <div className="flex justify-between items-center">
@@ -898,7 +1047,7 @@ const fetchMembers = async (clubId) => {
                             No panels created yet for this event
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1  md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {panels.map(panel => (
                                 <div
                                     key={panel.id}
@@ -908,6 +1057,16 @@ const fetchMembers = async (clubId) => {
                                     <div className="flex justify-between items-start mb-2">
                                         <h4 className="font-medium dark:text-white">{panel.name}</h4>
                                         <div className="flex space-x-2">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openEditPanelModal(panel);
+                                                }}
+                                                className="text-blue-600 hover:bg-transparent bg-transparent dark:text-blue-300 hover:text-blue-800 p-1"
+                                                title="Edit Panel"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -970,25 +1129,50 @@ const fetchMembers = async (clubId) => {
                         <h3 className="text-lg font-semibold">
                             Candidates for {panels.find(p => p.id === selectedPanel)?.name || 'Selected Panel'}
                         </h3>
-                        <button
-                            onClick={() => {
-                                setNewCandidate(prev => ({ ...prev, panelId: selectedPanel }));
-                                setShowCandidateModal(true);
-                            }}
-                            className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                        >
-                            <Plus className="w-4 h-4 mr-1" />
-                           <span className='hidden md:block'> Add Candidate</span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                            <div className="relative">
+                                <select
+                                    value={candidateSortOption}
+                                    onChange={(e) => changeCandidateSortOption(e.target.value)}
+                                    className="appearance-none bg-white dark:bg-slate-700 border border-gray-300 rounded-md px-3 py-1 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="dateTime">Date & Time</option>
+                                    <option value="name">Name</option>
+                                    <option value="status">Status</option>
+                                </select>
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <button
+                                onClick={toggleCandidateSortDirection}
+                                className="p-1 rounded-md bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600"
+                                title={candidateSortDirection === 'asc' ? 'Sort ascending' : 'Sort descending'}
+                            >
+                                <ArrowUpDown className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setNewCandidate(prev => ({ ...prev, panelId: selectedPanel }));
+                                    setShowCandidateModal(true);
+                                }}
+                                className="flex items-center px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                            >
+                                <Plus className="w-4 h-4 mr-1" />
+                                <span className='hidden md:block'>Add Candidate</span>
+                            </button>
+                        </div>
                     </div>
 
                     {candidates.filter(c => c.panelId === selectedPanel).length === 0 ? (
-                        <div className="bg-gray-50 rounded-md  dark:bg-slate-700 dark:text-white p-4 text-center text-gray-500">
+                        <div className="bg-gray-50 rounded-md dark:bg-slate-700 dark:text-white p-4 text-center text-gray-500">
                             No candidates added yet for this panel
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y  divide-gray-200">
+                            <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50 dark:bg-slate-700 dark:text-white">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium dark:text-white text-gray-500 uppercase tracking-wider">Name</th>
@@ -998,7 +1182,7 @@ const fetchMembers = async (clubId) => {
                                         <th className="px-6 py-3 text-left text-xs font-medium dark:text-white text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white dark:bg-slate-700  dark:text-white divide-y divide-gray-200">
+                                <tbody className="bg-white dark:bg-slate-700 dark:text-white divide-y divide-gray-200">
                                     {candidates
                                         .filter(c => c.panelId === selectedPanel)
                                         .map(candidate => (
@@ -1072,7 +1256,9 @@ const fetchMembers = async (clubId) => {
             {/* Modals */}
             {showEventModal && <EventModal />}
             {showPanelModal && <PanelModal />}
+            {showPanelEditModal && <PanelModal isEditMode={true} />}
             {showCandidateModal && <CandidateModal />}
+            {showConfirmationModal.show && <ConfirmationModal />}
         </div>
     );
 };
