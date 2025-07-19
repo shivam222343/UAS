@@ -488,11 +488,11 @@ const PanelView = () => {
               <div className="flex items-center space-x-2">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
                   <Users2 className="w-4 h-4 mr-1" />
-                  {Object.keys(panelDetails.members || {}).filter(id => panelDetails.members[id]).length} <span className='hidden lg:block'>Members</span>
+                  {Object.keys(panelDetails.members || {}).filter(id => panelDetails.members[id]).length} <span className='hidden lg:block ml-1'>Members</span>
                 </span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                   <ClipboardList className="w-4 h-4 mr-1" />
-                  {candidates.length} <span className='hidden lg:block'>Candidates</span>
+                  {candidates.length} <span className='hidden lg:block ml-1'>Candidates</span>
                 </span>
               </div>
             </div>

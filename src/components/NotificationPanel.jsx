@@ -1,10 +1,8 @@
-// NotificationPanel.jsx
-
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, query, orderBy, limit, onSnapshot, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { Bell, Calendar as CalendarIcon, AlertTriangle, Trash2, X } from 'lucide-react';
+import { Bell, Calendar as CalendarIcon, AlertTriangle, CheckCircle, Trash2, X, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './NotificationPanel.css';
 
@@ -38,6 +36,7 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
     try {
       await updateDoc(doc(db, 'users', currentUser.uid, 'notifications', id), { read: true });
     } catch (err) {
+      console.error('Error marking notification as read:', err);
     }
   };
 
@@ -54,6 +53,7 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
     markAsRead(notification.id);
     if (notification.type === 'new_meeting') navigate(`/meetings`);
     else if (notification.type === 'attendance_warning') navigate('/analytics');
+    else if (notification.type === 'interview_completed') navigate('/panel-management');
     onClose();
   };
 
@@ -71,6 +71,19 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
     return date.toLocaleDateString();
   };
 
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'new_meeting':
+        return <CalendarIcon className="text-blue-500 w-5 h-5 mt-1" />;
+      case 'attendance_warning':
+        return <AlertTriangle className="text-red-500 w-5 h-5 mt-1" />;
+      case 'interview_completed':
+        return <CheckCircle className="text-green-500 w-5 h-5 mt-1" />;
+      default:
+        return <Bell className="text-gray-500 w-5 h-5 mt-1" />;
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -83,7 +96,7 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
             isMobile ? 'w-[100%] bottom-0 rounded-b-none left-0 -translate-x-1/2' : 'top-16 right-8 w-96'
           }`}
         >
-          <div className="flex flex-col border-t-2 border-blue-400  h-full">
+          <div className="flex flex-col border-t-2 border-blue-400 h-full">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-secondary-800 sticky top-0 z-10 rounded-t-lg">
               <div className="flex items-center gap-2">
                 <Bell className="w-5 h-5 text-blue-500" />
@@ -96,7 +109,7 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
               </div>
               <button
                 onClick={onClose}
-                className="p-1 text-gray-100 hover:text-balck transition-colors"
+                className="p-1 text-gray-500 hover:text-black dark:hover:text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -104,36 +117,48 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
 
             <div className="p-4 max-h-[400px] border-t-2 border-blue-400 overflow-y-auto">
               {notifications.length === 0 ? (
-                <p className="text-center text-sm text-gray-100 dark:text-gray-400">No notifications</p>
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400">No notifications</p>
               ) : (
                 notifications.map((n) => (
                   <div
                     key={n.id}
                     onClick={() => handleNotificationClick(n)}
-                    className={`flex mb-2 justify-between items-start dark:bg-blue-900/40 p-3 rounded-lg transition hover:shadow-md cursor-pointer ${
+                    className={`flex mb-2 justify-between items-start p-3 rounded-lg transition hover:shadow-md cursor-pointer ${
                       n.read
                         ? 'bg-gray-50 dark:bg-gray-800'
                         : 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-400'
                     }`}
                   >
                     <div className="flex items-start gap-3 flex-1">
-                      {n.type === 'new_meeting' ? (
-                   <div className='w-10 h-auto'><CalendarIcon className="text-blue-500 w-5 h-5 mt-1" /></div>
-                      ) : n.type === 'attendance_warning' ? (
-                     <div className='w-10 h-auto'>   <AlertTriangle className="text-red-500 w-5 h-5 mt-1" /></div>
-                      ) : (
-                       <div className='w-10 h-auto'> <Bell className="text-gray-100 w-5 h-5 mt-1" /></div>
-                      )}
+                      <div className="w-10 h-auto">
+                        {getNotificationIcon(n.type)}
+                      </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-800 dark:text-white">{n.title}</p>
-                        <p className="text-xs text-gray-700 dark:text-gray-300">{n.message}</p>
+                        <p className="text-xs text-gray-700 dark:text-gray-300">
+                          {n.message}
+                          {n.type === 'interview_completed' && (
+                            <>
+                              <br />
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                Panel: {n.panelName}
+                              </span>
+                              <br />
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                Next: {n.nextCandidateName}
+                              </span>
+                            </>
+                          )}
+                        </p>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1 ml-3">
-                      <span className="text-xs dark:text-gray-400 text-gray-700">{formatNotificationDate(n.createdAt)}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatNotificationDate(n.createdAt)}
+                      </span>
                       <button
                         onClick={(e) => deleteNotification(n.id, e)}
-                        className="text-blue-600 hover:text-blue-300 bg-transparent p-1 rounded-full transition-colors" 
+                        className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 bg-transparent p-1 rounded-full transition-colors" 
                       >
                         <Trash2 size={14} />
                       </button>

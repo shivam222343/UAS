@@ -31,24 +31,17 @@ import { useAuth } from '../../contexts/AuthContext';
 import Loader from '../../components/Loader';
 
 const PanelManagement = () => {
-    // State for data
     const [clubs, setClubs] = useState([]);
     const [events, setEvents] = useState([]);
     const [panels, setPanels] = useState([]);
     const [members, setMembers] = useState([]);
     const [candidates, setCandidates] = useState([]);
-
-    // State for UI
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-
-    // Selection state
     const [selectedClub, setSelectedClub] = useState('');
     const [selectedEvent, setSelectedEvent] = useState('');
     const [selectedPanel, setSelectedPanel] = useState('');
-
-    // Modal states
     const [showEventModal, setShowEventModal] = useState(false);
     const [showPanelModal, setShowPanelModal] = useState(false);
     const [showPanelEditModal, setShowPanelEditModal] = useState(false);
@@ -59,26 +52,21 @@ const PanelManagement = () => {
         onConfirm: () => {},
         onCancel: () => {}
     });
-
-    // Form states
     const [newEvent, setNewEvent] = useState({
         name: '',
         description: '',
         date: '',
         time: ''
     });
-
     const [newPanel, setNewPanel] = useState({
         name: '',
         members: {}
     });
-
     const [editPanel, setEditPanel] = useState({
         id: '',
         name: '',
         members: {}
     });
-
     const [newCandidate, setNewCandidate] = useState({
         name: '',
         email: '',
@@ -89,14 +77,11 @@ const PanelManagement = () => {
         interviewDate: '',
         interviewTime: ''
     });
-
-    // Sorting states
     const [sortAlphabetically, setSortAlphabetically] = useState(true);
     const [candidateSortOption, setCandidateSortOption] = useState('dateTime');
     const [candidateSortDirection, setCandidateSortDirection] = useState('desc');
     const { currentUser } = useAuth();
 
-    // Clear messages after timeout
     useEffect(() => {
         if (error || success) {
             const timer = setTimeout(() => {
@@ -107,7 +92,48 @@ const PanelManagement = () => {
         }
     }, [error, success]);
 
-    // Fetch clubs
+    const sendInterviewNotification = async (panelId, candidateName) => {
+        try {
+            if (!selectedClub || !selectedEvent || !panelId) return;
+
+            const panelDoc = await getDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId));
+            const panel = panelDoc.data();
+            
+            const candidatesSnapshot = await getDocs(
+                collection(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates')
+            );
+            const candidatesList = candidatesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            const nextCandidate = candidatesList.find(c => 
+                c.id !== candidateName && (c.status === 'pending' || c.status === 'scheduled')
+            );
+
+            const panelMembers = Object.keys(panel.members).filter(id => panel.members[id]);
+
+            const notificationPromises = panelMembers.map(async memberId => {
+                const notification = {
+                    type: 'interview_completed',
+                    title: 'Interview Completed',
+                    message: `Interview with ${candidateName} is completed. ${nextCandidate ? `Next candidate: ${nextCandidate.name}` : 'No more candidates'}`,
+                    panelName: panel.name,
+                    candidateName: candidateName,
+                    nextCandidateName: nextCandidate?.name || 'None',
+                    read: false,
+                    createdAt: serverTimestamp()
+                };
+
+                await addDoc(collection(db, 'users', memberId, 'notifications'), notification);
+            });
+
+            await Promise.all(notificationPromises);
+        } catch (err) {
+            console.error('Error sending notification:', err);
+        }
+    };
+
     const fetchClubs = async () => {
         try {
             const querySnapshot = await getDocs(collection(db, 'clubs'));
@@ -122,7 +148,6 @@ const PanelManagement = () => {
         }
     };
 
-    // Fetch events for selected club
     const fetchEvents = async (clubId) => {
         try {
             if (!clubId) {
@@ -142,7 +167,6 @@ const PanelManagement = () => {
         }
     };
 
-    // Fetch panels for selected event
     const fetchPanels = async (clubId, eventId) => {
         try {
             if (!clubId || !eventId) {
@@ -162,7 +186,6 @@ const PanelManagement = () => {
         }
     };
 
-    // Fetch club members
     const fetchMembers = async (clubId) => {
         try {
             if (!clubId) {
@@ -184,7 +207,6 @@ const PanelManagement = () => {
         }
     };
 
-    // Fetch candidates for selected panel with sorting
     const fetchCandidates = async (clubId, eventId, panelId) => {
         try {
             if (!clubId || !eventId || !panelId) {
@@ -206,7 +228,6 @@ const PanelManagement = () => {
                     orderBy('status', candidateSortDirection === 'asc' ? 'asc' : 'desc')
                 );
             } else {
-                // Default sort by dateTime (createdAt)
                 candidatesQuery = query(
                     candidatesRef,
                     orderBy('createdAt', candidateSortDirection === 'asc' ? 'asc' : 'desc')
@@ -226,17 +247,14 @@ const PanelManagement = () => {
         }
     };
 
-    // Toggle candidate sort direction
     const toggleCandidateSortDirection = () => {
         setCandidateSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     };
 
-    // Change candidate sort option
     const changeCandidateSortOption = (option) => {
         setCandidateSortOption(option);
     };
 
-    // Create new event
     const handleCreateEvent = async (e) => {
         e.preventDefault();
 
@@ -275,7 +293,6 @@ const PanelManagement = () => {
         }
     };
 
-    // Toggle member selection for panel
     const toggleMemberSelection = (memberId, isEditMode = false) => {
         if (isEditMode) {
             setEditPanel(prev => ({
@@ -296,12 +313,10 @@ const PanelManagement = () => {
         }
     };
 
-    // Toggle sort order for members
     const toggleSortOrder = () => {
         setSortAlphabetically(!sortAlphabetically);
     };
 
-    // Get sorted members
     const getSortedMembers = () => {
         if (sortAlphabetically) {
             return [...members].sort((a, b) => {
@@ -313,7 +328,6 @@ const PanelManagement = () => {
         return members;
     };
 
-    // Create new panel
     const handleCreatePanel = async (e) => {
         e.preventDefault();
 
@@ -353,7 +367,6 @@ const PanelManagement = () => {
         }
     };
 
-    // Open panel edit modal
     const openEditPanelModal = (panel) => {
         setEditPanel({
             id: panel.id,
@@ -363,7 +376,6 @@ const PanelManagement = () => {
         setShowPanelEditModal(true);
     };
 
-    // Update panel
     const handleUpdatePanel = async (e) => {
         e.preventDefault();
 
@@ -397,7 +409,6 @@ const PanelManagement = () => {
         }
     };
 
-    // Create new candidate
     const handleCreateCandidate = async (e) => {
         e.preventDefault();
 
@@ -440,7 +451,6 @@ const PanelManagement = () => {
         }
     };
 
-    // Update candidate status
     const handleUpdateCandidateStatus = async (candidateId, newStatus, panelId) => {
         try {
             await updateDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates', candidateId), {
@@ -448,27 +458,38 @@ const PanelManagement = () => {
             });
             fetchCandidates(selectedClub, selectedEvent, panelId);
             setSuccess('Candidate status updated');
+
+            if (newStatus === 'interviewed') {
+                const candidate = candidates.find(c => c.id === candidateId);
+                if (candidate) {
+                    await sendInterviewNotification(panelId, candidate.name);
+                }
+            }
         } catch (err) {
             setError('Failed to update candidate status');
             console.error(err);
         }
     };
 
-    // Mark interview as done
     const handleMarkInterviewDone = async (candidateId, panelId) => {
         try {
             await updateDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates', candidateId), {
-                interviewDone: true
+                interviewDone: true,
+                status: 'interviewed'
             });
             fetchCandidates(selectedClub, selectedEvent, panelId);
             setSuccess('Interview marked as completed');
+
+            const candidate = candidates.find(c => c.id === candidateId);
+            if (candidate) {
+                await sendInterviewNotification(panelId, candidate.name);
+            }
         } catch (err) {
             setError('Failed to mark interview');
             console.error(err);
         }
     };
 
-    // Show confirmation dialog
     const showConfirm = (message, onConfirm, onCancel = () => {}) => {
         setShowConfirmationModal({
             show: true,
@@ -484,20 +505,17 @@ const PanelManagement = () => {
         });
     };
 
-    // Delete event
     const handleDeleteEvent = async (eventId) => {
         showConfirm(
             'Are you sure you want to delete this event? All panels and candidates will also be deleted.',
             async () => {
                 try {
-                    // First delete all panels (and their candidates) for this event
                     const panelsSnapshot = await getDocs(collection(db, 'clubs', selectedClub, 'events', eventId, 'panels'));
                     const deletePromises = panelsSnapshot.docs.map(panelDoc =>
                         deleteDoc(doc(db, 'clubs', selectedClub, 'events', eventId, 'panels', panelDoc.id))
                     );
                     await Promise.all(deletePromises);
 
-                    // Then delete the event itself
                     await deleteDoc(doc(db, 'clubs', selectedClub, 'events', eventId));
 
                     fetchEvents(selectedClub);
@@ -511,20 +529,17 @@ const PanelManagement = () => {
         );
     };
 
-    // Delete panel
     const handleDeletePanel = async (panelId) => {
         showConfirm(
             'Are you sure you want to delete this panel? All candidates will also be deleted.',
             async () => {
                 try {
-                    // First delete all candidates for this panel
                     const candidatesSnapshot = await getDocs(collection(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates'));
                     const deletePromises = candidatesSnapshot.docs.map(candidateDoc =>
                         deleteDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates', candidateDoc.id))
                     );
                     await Promise.all(deletePromises);
 
-                    // Then delete the panel itself
                     await deleteDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId));
 
                     fetchPanels(selectedClub, selectedEvent);
@@ -537,7 +552,6 @@ const PanelManagement = () => {
         );
     };
 
-    // Delete candidate
     const handleDeleteCandidate = async (candidateId, panelId) => {
         showConfirm(
             'Are you sure you want to delete this candidate?',
@@ -554,7 +568,6 @@ const PanelManagement = () => {
         );
     };
 
-    // Effects for data fetching
     useEffect(() => {
         fetchClubs();
         setLoading(false);
@@ -588,7 +601,6 @@ const PanelManagement = () => {
         }
     }, [selectedPanel, candidateSortOption, candidateSortDirection]);
 
-    // Event Modal
     const EventModal = () => (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <motion.div
@@ -597,7 +609,6 @@ const PanelManagement = () => {
                 className="w-full md:w-1/2 border border-blue-200 mx-2 dark:bg-slate-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
                 <h2 className="text-xl font-bold mb-4">Create New Event</h2>
-
                 <form onSubmit={handleCreateEvent} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">Event Name*</label>
@@ -610,7 +621,6 @@ const PanelManagement = () => {
                             required
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">Description</label>
                         <textarea
@@ -621,7 +631,6 @@ const PanelManagement = () => {
                             placeholder="Enter event description"
                         ></textarea>
                     </div>
-
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">Date</label>
@@ -642,7 +651,6 @@ const PanelManagement = () => {
                             />
                         </div>
                     </div>
-
                     <div className="flex justify-end space-x-3">
                         <button
                             type="button"
@@ -663,7 +671,6 @@ const PanelManagement = () => {
         </div>
     );
 
-    // Panel Modal
     const PanelModal = ({ isEditMode = false }) => {
         const panelData = isEditMode ? editPanel : newPanel;
         const setPanelData = isEditMode ? setEditPanel : setNewPanel;
@@ -685,7 +692,6 @@ const PanelManagement = () => {
                     onClick={(e) => e.stopPropagation()}
                 >
                     <h2 className="text-xl font-bold mb-4">{isEditMode ? 'Edit Panel' : 'Create New Panel'}</h2>
-
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium dark:text-white text-gray-700 mb-1">Panel Name*</label>
@@ -698,7 +704,6 @@ const PanelManagement = () => {
                                 required
                             />
                         </div>
-
                         <div>
                             <div className="flex justify-between items-center mb-1">
                                 <label className="block text-sm font-medium dark:text-white text-gray-700">Select Members*</label>
@@ -710,7 +715,6 @@ const PanelManagement = () => {
                                     {sortAlphabetically ? 'Sorted' : 'Default'}
                                 </button>
                             </div>
-
                             <div className="max-h-60 overflow-y-auto border rounded-md p-2">
                                 {members.length === 0 ? (
                                     <p className="text-sm text-gray-500">No members found in this club</p>
@@ -734,7 +738,6 @@ const PanelManagement = () => {
                                 )}
                             </div>
                         </div>
-
                         <div className="flex justify-end space-x-3">
                             <button
                                 type="button"
@@ -756,7 +759,6 @@ const PanelManagement = () => {
         );
     };
 
-    // Candidate Modal
     const CandidateModal = () => (
         <div className="fixed inset-0 bg-black bg-opacity-50 m-2 flex items-center justify-center z-50">
             <motion.div
@@ -765,7 +767,6 @@ const PanelManagement = () => {
                 className="bg-white dark:bg-slate-800 dark:text-white rounded-lg shadow-xl p-6 w-full max-w-md"
             >
                 <h2 className="text-xl font-bold mb-4">Add New Candidate</h2>
-
                 <form onSubmit={handleCreateCandidate} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium dark:text-gray-200 text-gray-700 mb-1">Select Panel*</label>
@@ -781,7 +782,6 @@ const PanelManagement = () => {
                             ))}
                         </select>
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium dark:text-gray-200 text-gray-700 mb-1">Candidate Name*</label>
                         <input
@@ -793,7 +793,6 @@ const PanelManagement = () => {
                             required
                         />
                     </div>
-
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium dark:text-gray-200 text-gray-700 mb-1">Email</label>
@@ -816,7 +815,6 @@ const PanelManagement = () => {
                             />
                         </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium dark:text-gray-200 text-gray-700 mb-1">Interview Date</label>
@@ -837,7 +835,6 @@ const PanelManagement = () => {
                             />
                         </div>
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium dark:text-gray-200 text-gray-700 mb-1">Initial Status</label>
                         <select
@@ -849,9 +846,9 @@ const PanelManagement = () => {
                             <option value="scheduled">Scheduled</option>
                             <option value="rejected">Rejected</option>
                             <option value="selected">Selected</option>
+                            <option value="interviewed">Interviewed</option>
                         </select>
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium dark:text-gray-200 text-gray-700 mb-1">Notes</label>
                         <textarea
@@ -862,7 +859,6 @@ const PanelManagement = () => {
                             placeholder="Any additional notes..."
                         ></textarea>
                     </div>
-
                     <div className="flex justify-end space-x-3">
                         <button
                             type="button"
@@ -883,7 +879,6 @@ const PanelManagement = () => {
         </div>
     );
 
-    // Confirmation Modal
     const ConfirmationModal = () => (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <motion.div
@@ -1223,9 +1218,10 @@ const PanelManagement = () => {
                                                             }`}
                                                     >
                                                         <option value="pending">Pending</option>
-                                                        <option value="scheduled">Done</option>
+                                                        <option value="scheduled">Scheduled</option>
                                                         <option value="rejected">Rejected</option>
                                                         <option value="selected">Selected</option>
+                                                        <option value="interviewed">Interviewed</option>
                                                     </select>
                                                     {!candidate.interviewDone && candidate.status === 'scheduled' && (
                                                         <button
