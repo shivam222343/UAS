@@ -78,8 +78,8 @@ const PanelManagement = () => {
         interviewTime: ''
     });
     const [sortAlphabetically, setSortAlphabetically] = useState(true);
-    const [candidateSortOption, setCandidateSortOption] = useState('dateTime');
-    const [candidateSortDirection, setCandidateSortDirection] = useState('desc');
+    const [candidateSortOption, setCandidateSortOption] = useState('dateTime'); // default sort by date & time
+    const [candidateSortDirection, setCandidateSortDirection] = useState('asc'); // ascending order
     const { currentUser } = useAuth();
 
     useEffect(() => {
@@ -98,22 +98,30 @@ const PanelManagement = () => {
 
             const panelDoc = await getDoc(doc(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId));
             const panel = panelDoc.data();
-            
+
+            // Get all candidates, sorted by interviewDate and interviewTime ascending
             const candidatesSnapshot = await getDocs(
-                collection(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates')
+                query(
+                    collection(db, 'clubs', selectedClub, 'events', selectedEvent, 'panels', panelId, 'candidates'),
+                    orderBy('interviewDate', 'asc'),
+                    orderBy('interviewTime', 'asc')
+                )
             );
             const candidatesList = candidatesSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
 
-            const nextCandidate = candidatesList.find(c => 
+            // Find the next candidate in sorted order who is pending or scheduled and not the current one
+            const nextCandidate = candidatesList.find(c =>
                 c.id !== candidateName && (c.status === 'pending' || c.status === 'scheduled')
             );
 
-            const panelMembers = Object.keys(panel.members).filter(id => panel.members[id]);
+            // Get all club members
+            const membersSnapshot = await getDocs(collection(db, 'clubs', selectedClub, 'members'));
+            const clubMemberIds = membersSnapshot.docs.map(doc => doc.id);
 
-            const notificationPromises = panelMembers.map(async memberId => {
+            const notificationPromises = clubMemberIds.map(async memberId => {
                 const notification = {
                     type: 'interview_completed',
                     title: 'Interview Completed',
