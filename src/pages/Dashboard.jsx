@@ -577,7 +577,7 @@ export default function Dashboard() {
         </div>
 
         {userClubs.length > 1 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm">
+          <div className="bg-white ml-5 dark:bg-gray-800 rounded-lg p-2 shadow-sm">
             <select
               value={selectedClub}
               onChange={(e) => setSelectedClub(e.target.value)}

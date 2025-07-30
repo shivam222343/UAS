@@ -751,7 +751,7 @@ const AttendanceChart = ({ clubId }) => {
       {attendanceData.overview.lowAttendanceMembers.length > 0 && (
         <div className="mb-8">
           <h3 className="text-lg dark:text-white font-semibold mb-4">Members with Low Attendance</h3>
-          <div className="bg-yellow-50 dark:bg-yellow-900 dark:text-white p-4 rounded-lg">
+          <div className="bg-yellow-50 dark:bg-yellow-950/50 dark:text-white p-4 rounded-lg">
             <ul className="divide-y divide-yellow-200">
               {attendanceData.overview.lowAttendanceMembers.map(member => (
                 <li key={member.id} className="py-3 flex-wrap flex justify-between items-center">

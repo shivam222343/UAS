@@ -201,7 +201,7 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0  bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
@@ -228,7 +228,7 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
                 type="text"
                 value={newTask.title}
                 onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white"
+                className="w-full p-2 border bg-white border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white"
                 placeholder="Task title"
                 required
               />
@@ -239,7 +239,7 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
               <textarea
                 value={newTask.description}
                 onChange={(e) => setNewTask({...newTask, description: e.target.value})}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white"
+                className="w-full p-2 border bg-white border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white"
                 placeholder="Task description"
                 rows="3"
               />
@@ -264,7 +264,7 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
                       id={`member-${member.id}`}
                       checked={!!newTask.assignedTo[member.id]}
                       onChange={() => toggleMemberAssignment(member.id)}
-                      className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      className="h-4 w-4 text-blue-600 bg-white rounded border-gray-300 focus:ring-blue-500"
                     />
                     <label htmlFor={`member-${member.id}`} className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                       {member.displayName}
@@ -280,7 +280,7 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
                 type="date"
                 value={newTask.dueDate}
                 onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white"
+                className="w-full p-2 border bg-white border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white"
               />
             </div>
 
