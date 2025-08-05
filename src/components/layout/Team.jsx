@@ -8,7 +8,7 @@ const teamData = [
     name: "Aakash Desai",
     position: "Team Member",
     email: "aakkidesai4567@gmail.com",
-    img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370541/IMG_0384_vc6oui.jpg"
   },
   {
     name: "Aaryan Yerudkar",
@@ -26,7 +26,7 @@ const teamData = [
     name: "Advait Kulkarni",
     position: "Team Member",
     email: "kulkarniadvait108@gmail.com",
-    img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370573/IMG_20250225_092849_mlkqi5.jpg"
   },
   {
     name: "Aryada Kajrekar",
@@ -50,7 +50,13 @@ const teamData = [
     name: "Bhavesh Ahuja",
     position: "Team Member",
     email: "bhaveshahuja0302@gmail.com",
-    img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370439/Screenshot_2025-02-19_140653_ivu7gx.png"
+  },
+  {
+    name: "Chinmayee Pawar",
+    position: "Team Member",
+    email: "chinmayeepawar@gmail.com",
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370438/chinmayi_nabc2z.jpg"
   },
   {
     name: "Haripriya Patil",
@@ -62,7 +68,7 @@ const teamData = [
     name: "Hrushikesh Tamhankar",
     position: "Team Member",
     email: "hvttamhankar@gmail.com",
-    img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370536/IMG_8576_pvc6yx.jpg"
   },
   {
     name: "Ishwari Ambrale",
@@ -86,19 +92,19 @@ const teamData = [
     name: "Karan Patil",
     position: "Team Member",
     email: "karanvpatil703@gmail.com",
-    img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370543/IMG-20250721-WA0025_faerp6.jpg"
   },
   {
     name: "Ketan Shingana",
     position: "Team Member",
     email: "ketanshingana12@gmail.com",
-    img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370542/IMG_20241207_084901_srqrmc.jpg"
   },
   {
     name: "Maithili Dhopate",
     position: "Team Member",
     email: "maithilidhopate@gmail.com",
-    img: "https://4kwallpapers.com/images/wallpapers/anime-girl-girly-2048x1536-9793.jpg"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370540/IMG-20241031-WA0126_efztab.jpg"
   },
   {
     name: "Mahika Savardekar",
@@ -128,7 +134,7 @@ const teamData = [
     name: "Om Mali",
     position: "Team Member",
     email: "om542058@gmail.com",
-    img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370551/ommalis_edits-20250721-0001_fuuy5q.jpg"
   },
   {
     name: "Parth Chavan",
@@ -164,13 +170,13 @@ const teamData = [
     name: "Sakshi Gaikwad",
     position: "Team Member",
     email: "sakshi5@gmail.com",
-    img: "https://4kwallpapers.com/images/wallpapers/anime-girl-girly-2048x1536-9793.jpg"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370582/IMG_0315_wziwfk.jpg"
   },
   {
     name: "Sangram Nevase",
     position: "Team Member",
     email: "sangram.nvaes35@gmail.com",
-    img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370569/Sangram_Nevase_b2ppek.jpg"
   },
   {
     name: "Sarthaki Dixit",
@@ -188,7 +194,7 @@ const teamData = [
     name: "Sayali Shinde",
     position: "Team Member",
     email: "sayalishinde@gmail.com",
-    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1753887009/IMG_3915_1_caqdpt.jpg"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370456/Sayali_Shinde_ciuees.jpg"
   },
   {
     name: "Shivam Dombe",
@@ -212,13 +218,13 @@ const teamData = [
     name: "Shruti Narke",
     position: "Team Member",
     email: "shrutinarke1007@gmail.com",
-    img: "https://4kwallpapers.com/images/wallpapers/anime-girl-girly-2048x1536-9793.jpg"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370540/IMG-20230709-WA0007_oyt5to.jpg"
   },
   {
     name: "Shruti Powar",
     position: "Team Member",
     email: "shrutipowar1144@gmail.com",
-    img: "https://4kwallpapers.com/images/wallpapers/anime-girl-girly-2048x1536-9793.jpg"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370571/IMG-20241214-WA0180_ck3rmq.jpg"
   },
   {
     name: "Siddhi Kumbhar",
@@ -254,7 +260,7 @@ const teamData = [
     name: "Veer Metri",
     position: "Team Member",
     email: "veermetri05@gmail.com",
-    img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370441/Veer_Metri_w67cwt.jpg"
   },
   {
     name: "Vinayak Tale",
@@ -266,7 +272,7 @@ const teamData = [
     name: "Yashraj Kulgude",
     position: "Team Member",
     email: "yashrajkulgude1045@gmail.com",
-    img: "https://th.bing.com/th/id/OIP.wyqkY6RhmO3Po-pCmJj7JgHaHa?w=169&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754370509/DSC_8482_1_yxocoi.jpg"
   }
 ];
 
