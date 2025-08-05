@@ -202,7 +202,7 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                         </div>
                         <Link
                           to="/profile"
-                          className="flex items-start px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="flex items-start w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => setIsProfileOpen(false)}
                         >
                           <User className="h-4 w-4 mr-2 mt-[2px]" />
@@ -210,16 +210,16 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleDarkMode, toggleNotifications
                         </Link>
                         <Link
                           to="/settings"
-                          className="flex items-start px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="flex items-start w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => setIsProfileOpen(false)}
                         >
                           <Settings className="h-4 w-4 mr-2 mt-[2px]" />
                           Settings
                         </Link>
-                        <div className='w-full flex justify-start items-start px-4 py-2'>
+                        <div className='w-full flex justify-center items-start px-4 py-2'>
                           <button
                             onClick={handleLogout}
-                            className="flex items-start bg-red-100  w-full text-left px-2 max-w-[80%] py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="flex items-end bg-red-100  w-full text-left px-2 max-w-[80%] py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <LogOut className="h-4 w-4 mr-2" />
                             Sign out

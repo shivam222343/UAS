@@ -111,7 +111,7 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
                 onClick={onClose}
                 className="p-1 text-gray-500 hover:text-black dark:hover:text-white transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-white" />
               </button>
             </div>
 

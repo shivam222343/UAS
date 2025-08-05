@@ -286,7 +286,7 @@ const QRScanner = () => {
               </p>
               
               <form onSubmit={handleManualSubmit} className="w-full max-w-sm">
-                <div className="mb-4">
+                <div className="mb-4 flex w-full justify-center">
                   <input
                     type="text"
                     value={manualCode}

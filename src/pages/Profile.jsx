@@ -149,6 +149,9 @@ const Profile = () => {
     }
   };
 
+  console.log(currentUser?.photoURL);
+  
+
   if (loading) {
     return (
       <motion.div 
