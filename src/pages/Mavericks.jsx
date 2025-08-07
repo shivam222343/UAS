@@ -207,7 +207,7 @@ const Mavericks = () => {
   };
 
   return (
-  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 ">
+  <div className="min-h-screen  dark:bg-gray-900 text-gray-800 dark:text-gray-200 ">
       {/* Navigation Bar */}
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
