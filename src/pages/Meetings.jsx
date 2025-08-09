@@ -327,6 +327,38 @@ export default function Meetings() {
     );
   }
 
+  // Function to render text with preserved formatting
+  const renderFormattedText = (text) => {
+    if (!text) return null;
+    
+    return text.split('\n').map((line, i) => (
+      <span key={i}>
+        {line}
+        <br />
+      </span>
+    ));
+  };
+
+  // Function to render task description with limited lines
+  const renderTaskDescriptionPreview = (description) => {
+    if (!description) return null;
+    
+    const lines = description.split('\n');
+    const previewLines = lines.slice(0, 2); // Show first 2 lines
+    
+    return (
+      <>
+        {previewLines.map((line, i) => (
+          <span key={i}>
+            {line}
+            <br />
+          </span>
+        ))}
+        {lines.length > 2 && <span className="text-gray-500">...</span>}
+      </>
+    );
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -406,7 +438,7 @@ export default function Meetings() {
 
                   <div className="flex items-start text-gray-600 dark:text-gray-300 mb-4">
                     <FileText className="w-5 h-5 mr-2 mt-1 flex-shrink-0" />
-                    <p className="text-sm">{meeting.description}</p>
+                    <p className="text-sm whitespace-pre-wrap">{renderFormattedText(meeting.description)}</p>
                   </div>
 
                   <div className="space-y-2 mb-4">
@@ -499,7 +531,9 @@ export default function Meetings() {
                               <div className="flex justify-between">
                                 <span className="font-medium">{task.title}</span>
                               </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-300">{task.description}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                                {renderTaskDescriptionPreview(task.description)}
+                              </p>
 
                               {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
                                 <div className="mt-2 space-y-2">
@@ -584,7 +618,7 @@ export default function Meetings() {
 
                     <div className="flex items-start dark:text-gray-300 text-gray-600 mb-4">
                       <FileText className="w-5 h-5 mr-2 mt-1 flex-shrink-0" />
-                      <p className="text-sm">{meeting.description}</p>
+                      <p className="text-sm whitespace-pre-wrap">{renderFormattedText(meeting.description)}</p>
                     </div>
 
                     <div className="space-y-2">
@@ -624,7 +658,9 @@ export default function Meetings() {
                                 <div className="flex justify-between">
                                   <span className="font-medium">{task.title}</span>
                                 </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">{task.description}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                                  {renderTaskDescriptionPreview(task.description)}
+                                </p>
 
                                 {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
                                   <div className="mt-2 space-y-2">
@@ -657,8 +693,8 @@ export default function Meetings() {
                                                   !isCompleted
                                                 )}
                                                 className={`px-2 py-0.5 rounded text-xs ${isCompleted
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                    ? 'bg-green-100 text-green-800 hover:text-white dark:bg-green-900 dark:text-green-200'
+                                                    : 'bg-yellow-100 text-yellow-800 hover:text-white dark:bg-yellow-900 dark:text-yellow-200'
                                                   }`}
                                               >
                                                 {isCompleted ? 'Completed' : 'Pending'}
@@ -711,7 +747,7 @@ export default function Meetings() {
 
                     <div className="flex items-start dark:text-white text-gray-600 mb-4">
                       <FileText className="w-5 h-5 mr-2 mt-1 flex-shrink-0" />
-                      <p className="text-sm dark:text-white">{meeting.description}</p>
+                      <p className="text-sm dark:text-white whitespace-pre-wrap">{renderFormattedText(meeting.description)}</p>
                     </div>
 
                     <div className="space-y-2">
@@ -812,7 +848,9 @@ export default function Meetings() {
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-gray-600 dark:text-gray-300 mt-1">{task.description}</p>
+                                <p className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
+                                  {renderFormattedText(task.description)}
+                                </p>
 
                                 {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
                                   <div className="mt-3">

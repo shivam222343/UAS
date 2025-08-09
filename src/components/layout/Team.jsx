@@ -2,8 +2,19 @@ import React, { useState } from 'react';
 import { Github, Linkedin, Instagram, Info, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Add extra fields to teamData
-const teamData = [
+const Team = () => {
+  const [selectedMember, setSelectedMember] = useState(null);
+  
+  // Birthday messages array
+  const birthdayMessages = [
+    "🎉 Happy Birthday!",
+    "🥳 Wishing you a fantastic birthday!",
+    "🎂 Have a wonderful birthday!",
+    "🌟 Cheers to your special day!",
+    "🎈 Celebrate and enjoy your day!",
+  ];
+
+  const teamData = [
   {
     name: "Aakash Desai",
     position: "Team Member",
@@ -237,9 +248,9 @@ const teamData = [
     contact: "+91 74984 94963",
     year: "Third Year",
     department: "Electrical Engineering",
-    github: "https://github.com/ketanshingana",
-    linkedin: "https://linkedin.com/in/ketanshingana",
-    instagram: "https://instagram.com/ketanshingana",
+    github: "",
+    linkedin: "",
+    instagram: "",
     dateOfBirth: "Not specified"
   },
   {
@@ -279,9 +290,9 @@ const teamData = [
     contact: "9876543228",
     year: "Second Year",
     department: "Computer Engineering",
-    github: "https://github.com/mangereshprabhavalkar",
-    linkedin: "https://linkedin.com/in/mangereshprabhavalkar",
-    instagram: "https://instagram.com/mangereshprabhavalkar",
+    github: "",
+    linkedin: "",
+    instagram: "",
     dateOfBirth: "Not specified"
   },
   {
@@ -335,9 +346,9 @@ const teamData = [
     contact: "+91 96997 08599",
     year: "Second Year",
     department: "Civil and Environmental Engineering",
-    github: "https://github.com/parthchavan",
-    linkedin: "https://linkedin.com/in/parthchavan",
-    instagram: "https://instagram.com/parthchavan",
+    github: "",
+    linkedin: "",
+    instagram: "",
     dateOfBirth: "2006-01-20"
   },
   {
@@ -363,9 +374,9 @@ const teamData = [
     contact: "+91 70585 42189",
     year: "Third Year",
     department: "Artificial Intelligence and Machine Learning",
-    github: "https://github.com/pranalibedkyale",
-    linkedin: "https://linkedin.com/in/pranalibedkyale",
-    instagram: "https://instagram.com/pranalibedkyale",
+    github: "",
+    linkedin: "",
+    instagram: "",
     dateOfBirth: "2005-10-21"
   },
   {
@@ -377,9 +388,9 @@ const teamData = [
     contact: "+91 78759 21162",
     year: "Second Year",
     department: "Artificial Intelligence and Machine Learning",
-    github: "https://github.com/rahulpatil",
-    linkedin: "https://linkedin.com/in/rahulpatil",
-    instagram: "https://instagram.com/rahulpatil",
+    github: "",
+    linkedin: "",
+    instagram: "https://www.instagram.com/rahulp_14/",
     dateOfBirth: "2006-04-14"
   },
   {
@@ -419,9 +430,9 @@ const teamData = [
     contact: "+91 98601 70537",
     year: "Second Year",
     department: "Computer Science and Business Systems",
-    github: "https://github.com/sarthakidixit",
-    linkedin: "https://linkedin.com/in/sarthakidixit",
-    instagram: "https://instagram.com/sarthakidixit",
+    github: "",
+    linkedin: "",
+    instagram: "https://www.instagram.com/sarthaki_dixit/",
     dateOfBirth: "2006-07-02"
   },
   {
@@ -435,7 +446,7 @@ const teamData = [
     department: "Artificial Intelligence and Machine Learning",
     github: "",
     linkedin: "https://www.linkedin.com/in/sayali-koshti-08a33229a/",
-    instagram: "",
+    instagram: "https://www.instagram.com/sayali_koshti_987/",
     dateOfBirth: "Not specified"
   },
   {
@@ -447,9 +458,9 @@ const teamData = [
     contact: "+91 70206 73602",
     year: "Second Year",
     department: "Computer Science and Business Systems",
-    github: "https://github.com/sayalishinde",
-    linkedin: "https://linkedin.com/in/sayalishinde",
-    instagram: "https://instagram.com/sayalishinde",
+    github: "",
+    linkedin: "https://www.linkedin.com/in/sayali-shinde-9a767a316/",
+    instagram: "https://www.instagram.com/imsayali_shinde/",
     dateOfBirth: "2005-09-21"
   },
   {
@@ -464,7 +475,7 @@ const teamData = [
     github: "https://github.com/shivam222343",
     linkedin: "https://www.linkedin.com/in/shivam-dombe-390798296/",
     instagram: "https://www.instagram.com/shivam_dombe0077/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2005-10-19"
   },
   {
     name: "Shreeya Dhond",
@@ -478,7 +489,7 @@ const teamData = [
     github: "",
     linkedin: "https://www.linkedin.com/in/shreeya-dhond-45576a2b0/",
     instagram: "",
-    dateOfBirth: "Not specified"
+    dateOfBirth: ""
   },
   {
     name: "Shruti Narke",
@@ -492,7 +503,7 @@ const teamData = [
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "Not specified"
+    dateOfBirth: ""
   },
   {
     name: "Shruti Powar",
@@ -506,7 +517,7 @@ const teamData = [
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "Not specified"
+    dateOfBirth: ""
   },
   {
     name: "Siddhant Sadalage",
@@ -520,7 +531,7 @@ const teamData = [
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "Not specified"
+    dateOfBirth: ""
   },
   {
     name: "Siddhi Kumbhar",
@@ -534,7 +545,7 @@ const teamData = [
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "Not specified"
+    dateOfBirth: ""
   },
   {
     name: "Siya Yaranalkar",
@@ -545,23 +556,23 @@ const teamData = [
     contact: "+91 86683 74297",
     year: "Second Year",
     department: "Computer Science and Business Systems",
-    github: "https://github.com/siyayaranalkar",
-    linkedin: "https://linkedin.com/in/siyayaranalkar",
-    instagram: "https://instagram.com/siyayaranalkar",
+    github: "",
+    linkedin: "",
+    instagram: "https://www.instagram.com/see_yeah06/",
     dateOfBirth: "2006-06-08"
   },
   {
     name: "Sneha Inamdar",
     position: "Team Member",
     email: "snehapinamdar2006@gmail.com",
-    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754574249/Untitled_design_4_jlz8m9.png",
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754757426/WhatsApp_Image_2025-08-09_at_21.58.49_f70e6a42_dagqhq.jpg",
     bio: "A meticulous worker with a kind heart. Takes pride in both the quality of her work and her relationships.",
     contact: "+91 86000 36971",
     year: "Second Year",
     department: "Artificial Intelligence and Machine Learning",
-    github: "https://github.com/snehainamdar",
-    linkedin: "https://linkedin.com/in/snehainamdar",
-    instagram: "https://instagram.com/snehainamdar",
+    github: "",
+    linkedin: "",
+    instagram: "https://www.instagram.com/sneha._.2006?igsh=aWpxenA5a2g2c2R5",
     dateOfBirth: "2006-10-08"
   },
   {
@@ -573,9 +584,9 @@ const teamData = [
     contact: "+91 97643 41424",
     year: "Third Year",
     department: "Computer Science and Engineering",
-    github: "https://github.com/swatisanap",
-    linkedin: "https://linkedin.com/in/swatisanap",
-    instagram: "https://instagram.com/swatisanap",
+    github: "",
+    linkedin: "",
+    instagram: "",
     dateOfBirth: "2005-01-07"
   },
   {
@@ -587,9 +598,9 @@ const teamData = [
     contact: "+91 91569 81383",
     year: "Third Year",
     department: "Computer Science and Engineering",
-    github: "https://github.com/venukamble",
-    linkedin: "https://linkedin.com/in/venukamble",
-    instagram: "https://instagram.com/venukamble",
+    github: "",
+    linkedin: "",
+    instagram: "",
     dateOfBirth: "2004-06-28"
   },
   {
@@ -604,7 +615,7 @@ const teamData = [
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "Not specified"
+    dateOfBirth: ""
   },
   {
     name: "Vinayak Tale",
@@ -615,9 +626,9 @@ const teamData = [
     contact: "+91 96897 28072",
     year: "Second Year",
     department: "Mechanical Engineering",
-    github: "https://github.com/vinayaktale",
-    linkedin: "https://linkedin.com/in/vinayaktale",
-    instagram: "https://instagram.com/vinayaktale",
+    github: "",
+    linkedin: "https://www.linkedin.com/in/vinayak-tale-468794352?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
+    instagram: "https://www.instagram.com/_vnykkk_?utm_source=qr&igsh=anQzdzcwZjBkdXNy",
     dateOfBirth: "2005-09-12"
   },
   {
@@ -631,18 +642,78 @@ const teamData = [
     department: "Computer Science and Engineering",
     github: "",
     linkedin: "",
-    instagram: "",
-    dateOfBirth: "Not specified"
+    instagram: "https://www.instagram.com/yashraj_kulgude/",
+    dateOfBirth: "2005-08-09"
   }
 ];
 
-const Team = () => {
-  const [selectedMember, setSelectedMember] = useState(null);
+
+  // Confetti effect function
+  const shootConfetti = () => {
+    const confettiCount = 100;
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+    
+    for (let i = 0; i < confettiCount; i++) {
+      const confetti = document.createElement('div');
+      confetti.style.position = 'fixed';
+      confetti.style.width = '10px';
+      confetti.style.height = '10px';
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.borderRadius = '50%';
+      confetti.style.left = `${Math.random() * 100}vw`;
+      confetti.style.top = '-10px';
+      confetti.style.zIndex = '9999';
+      confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+      
+      document.body.appendChild(confetti);
+      
+      const animation = confetti.animate([
+        { top: '-10px', opacity: 1 },
+        { top: `${Math.random() * 100}vh`, opacity: 0 }
+      ], {
+        duration: 2000 + Math.random() * 3000,
+        easing: 'cubic-bezier(0.1, 0.2, 0.3, 1)'
+      });
+      
+      animation.onfinish = () => confetti.remove();
+    }
+  };
+
+  // Check for birthdays
+  const today = new Date();
+  const todayDay = String(today.getDate()).padStart(2, '0');
+  const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+
+  // Find member whose birthday is today
+  const birthdayMember = teamData.find(member => {
+    if (!member.dateOfBirth) return false;
+    const parts = member.dateOfBirth.split('-');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        return parts[2] === todayDay && parts[1] === todayMonth;
+      } else {
+        return parts[0] === todayDay && parts[1] === todayMonth;
+      }
+    }
+    return false;
+  });
+
+  const [showBirthday, setShowBirthday] = useState(!!birthdayMember);
+  const [isHoveringPopup, setIsHoveringPopup] = useState(false);
+
+  React.useEffect(() => {
+    let timer;
+    if (showBirthday && birthdayMember && !isHoveringPopup) {
+      shootConfetti();
+      timer = setTimeout(() => setShowBirthday(false), 10000);
+    }
+    return () => clearTimeout(timer);
+  }, [showBirthday, birthdayMember, isHoveringPopup]);
+
+  const randomMsg = birthdayMessages[Math.floor(Math.random() * birthdayMessages.length)];
 
   const handleInfoClick = (member) => {
     setSelectedMember(member);
-    // Remove this line to prevent scrolling to top
-    // window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const closePopup = () => {
@@ -650,110 +721,202 @@ const Team = () => {
   };
 
   return (
-    <div
-      className="min-h-screen py-10 px-6 bg-white dark:bg-gray-900 transition-colors duration-300"
-      style={{ scrollBehavior: 'smooth' }} // Smooth scrolling
-    >
-      <h1 className="text-4xl font-bold text-center mb-12 text-gray-800 dark:text-white">Meet Our Team</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-        {teamData.map((member, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            whileHover={{
-              y: -5,
-              transition: { duration: 0.2 }
-            }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden"
-          >
-            <img
-              src={member.img}
-              alt={member.name}
-              className="w-full rounded-lg h-80 object-cover"
-              loading="lazy" // Lazy loading for images
-            />
-            <div className="flex justify-between">
-              <div className='p-4'>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{member.name}</h2>
-                <p className="text-gray-500 dark:text-gray-400 mb-3">{member.position}</p>
-                <div className="flex gap-4 text-xl text-gray-700 dark:text-gray-300">
-                  <a className='cursor-pointer hover:text-pink-600 ' href={member.github} target="_blank" rel="noopener noreferrer"><Github size={20} /></a>
-                  <a className='cursor-pointer hover:text-pink-600 ' href={member.linkedin} target="_blank" rel="noopener noreferrer"><Linkedin size={20} /></a>
-                  <a className='cursor-pointer hover:text-pink-600 ' href={member.instagram} target="_blank" rel="noopener noreferrer"><Instagram size={20} /></a>
-                </div>
-              </div>
-              <div
-                onClick={() => handleInfoClick(member)}
-                className='mr-3 duration-200 hover:text-green-600 cursor-pointer mt-6 text-blue-400'
-              >
-                <Info />
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Popup for member info */}
+    <>
+      {/* Birthday Popup - Centered on screen */}
       <AnimatePresence>
-        {selectedMember && (
-          <div
-            className="fixed px-2 md:px-0 inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
-          >
+        {showBirthday && birthdayMember && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
             <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full relative"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"
+              onMouseEnter={() => setIsHoveringPopup(true)}
+              onMouseLeave={() => setIsHoveringPopup(false)}
             >
-              <div
-                onClick={closePopup}
-                className="absolute top-4 right-4 text-gray-500 hover:text-red-500"
-              >
-                <X size={24} />
-              </div>
-              <div className="flex flex-col items-center">
-               <div className='flex flex-col justify-center w-full items-center'>
-                 <img
-                  src={selectedMember.img}
-                  alt={selectedMember.name}
-                  className="w-32 h-32 rounded-full  object-cover mb-4"
-                  loading="lazy" // Lazy loading for popup image
-                />
-                <h2 className="text-2xl  font-bold text-gray-900 dark:text-white mb-1">{selectedMember.name}</h2>
-                <p className="text-lg text-blue-500 dark:text-blue-300 mb-2">{selectedMember.position}</p>
-                     <p className="text-gray-600 dark:text-gray-300 mb-2">{selectedMember.bio}</p>
-               </div>
-               
-           <br />
-                <div>
-                  <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="font-semibold">Email:</span> {selectedMember.email}
-                </div>
-                <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="font-semibold">Contact:</span> {selectedMember.contact}
-                </div>
-                <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="font-semibold">Year:</span> {selectedMember.year}
-                </div>
-                <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="font-semibold">Department:</span> {selectedMember.department}
-                </div>
-                </div>
-                <div className="flex gap-4 mt-4 w-full items-center justify-center text-xl text-gray-700 dark:text-gray-300">
-                  <a className='cursor-pointer hover:text-pink-600 ' href={selectedMember.github} target="_blank" rel="noopener noreferrer"><Github size={20} /></a>
-                  <a className='cursor-pointer hover:text-pink-600 ' href={selectedMember.linkedin} target="_blank" rel="noopener noreferrer"><Linkedin size={20} /></a>
-                  <a className='cursor-pointer hover:text-pink-600 ' href={selectedMember.instagram} target="_blank" rel="noopener noreferrer"><Instagram size={20} /></a>
+              <div className="text-center">
+                <div className="text-4xl mb-3">🎂</div>
+                <h3 className="text-xl font-bold mb-2 dark:text-white">{randomMsg}</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  Today is <span className="font-semibold">{birthdayMember.name}</span>'s birthday!
+                </p>
+                
+                <div className="flex justify-center gap-4">
+                  {birthdayMember.instagram && (
+                    <a
+                      href={birthdayMember.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-pink-600 px-4 py-2 rounded-lg flex items-center gap-2 transition"
+                    >
+                      <Instagram size={18} />
+                      Wish on Instagram
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setShowBirthday(false)}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-white dark:bg-gray-700 dark:hover:bg-gray-600 px-4 py-2 rounded-lg transition"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-    </div>
+
+      <div
+        className="min-h-screen py-10 px-6 bg-white dark:bg-gray-900 transition-colors duration-300"
+        style={{ scrollBehavior: 'smooth' }}
+      >
+        <h1 className="text-4xl font-bold text-center mb-12 text-gray-800 dark:text-white">Meet Our Team</h1>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          {teamData.map((member, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              whileHover={{
+                y: -5,
+                transition: { duration: 0.2 }
+              }}
+              className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden ${
+                birthdayMember && birthdayMember.name === member.name ? 'ring-4 ring-yellow-400' : ''
+              }`}
+            >
+              <div className="relative">
+                <img
+                  src={member.img}
+                  alt={member.name}
+                  className={`w-full rounded-lg h-80 object-cover ${
+                    birthdayMember && birthdayMember.name === member.name ? 'border-4 border-yellow-400' : ''
+                  }`}
+                  loading="lazy"
+                />
+                {birthdayMember && birthdayMember.name === member.name && (
+                  <div className="absolute top-2 right-2 bg-yellow-400 text-black px-2 py-1 rounded-full text-xs font-bold">
+                    BIRTHDAY!
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-between">
+                <div className='p-4'>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {member.name}
+                    {birthdayMember && birthdayMember.name === member.name && (
+                      <span className="ml-2 text-yellow-400">🎂</span>
+                    )}
+                  </h2>
+                  <p className="text-gray-500 dark:text-gray-400 mb-3">{member.position}</p>
+                  <div className="flex gap-4 text-xl text-gray-700 dark:text-gray-300">
+                    {member.github && (
+                      <a className='cursor-pointer hover:text-pink-600' href={member.github} target="_blank" rel="noopener noreferrer">
+                        <Github size={20} />
+                      </a>
+                    )}
+                    {member.linkedin && (
+                      <a className='cursor-pointer hover:text-pink-600' href={member.linkedin} target="_blank" rel="noopener noreferrer">
+                        <Linkedin size={20} />
+                      </a>
+                    )}
+                    {member.instagram && (
+                      <a className='cursor-pointer hover:text-pink-600' href={member.instagram} target="_blank" rel="noopener noreferrer">
+                        <Instagram size={20} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div
+                  onClick={() => handleInfoClick(member)}
+                  className='mr-3 duration-200 hover:text-green-600 cursor-pointer mt-6 text-blue-400'
+                >
+                  <Info />
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Popup for member info */}
+        <AnimatePresence>
+          {selectedMember && (
+            <div className="fixed px-2 md:px-0 inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+              <motion.div
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 50, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full relative"
+              >
+                <div
+                  onClick={closePopup}
+                  className="absolute top-4 right-4 text-gray-500 hover:text-red-500"
+                >
+                  <X size={24} />
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className='flex flex-col justify-center w-full items-center'>
+                    <img
+                      src={selectedMember.img}
+                      alt={selectedMember.name}
+                      className={`w-32 h-32 rounded-full object-cover mb-4 ${
+                        birthdayMember && birthdayMember.name === selectedMember.name ? 'border-4 border-yellow-400' : ''
+                      }`}
+                      loading="lazy"
+                    />
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                      {selectedMember.name}
+                    </h2>
+                    <p className="text-lg text-blue-500 dark:text-blue-300 mb-2">{selectedMember.position}</p>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">{selectedMember.bio}</p>
+                  </div>
+                  <br />
+                  <div>
+                    <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-semibold">Email:</span> {selectedMember.email}
+                    </div>
+                    <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-semibold">Date of Birth:</span> {selectedMember.dateOfBirth}
+                    </div>
+                    <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-semibold">Contact:</span> {selectedMember.contact}
+                    </div>
+                    <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-semibold">Year:</span> {selectedMember.year}
+                    </div>
+                    <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-semibold">Department:</span> {selectedMember.department}
+                    </div>
+                  </div>
+                  <div className="flex gap-4 mt-4 w-full items-center justify-center text-xl text-gray-700 dark:text-gray-300">
+                    {selectedMember.github && (
+                      <a className='cursor-pointer hover:text-pink-600' href={selectedMember.github} target="_blank" rel="noopener noreferrer">
+                        <Github size={20} />
+                      </a>
+                    )}
+                    {selectedMember.linkedin && (
+                      <a className='cursor-pointer hover:text-pink-600' href={selectedMember.linkedin} target="_blank" rel="noopener noreferrer">
+                        <Linkedin size={20} />
+                      </a>
+                    )}
+                    {selectedMember.instagram && (
+                      <a className='cursor-pointer hover:text-pink-600' href={selectedMember.instagram} target="_blank" rel="noopener noreferrer">
+                        <Instagram size={20} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 };
 
