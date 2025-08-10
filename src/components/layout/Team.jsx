@@ -97,7 +97,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "2006-08-10"
+    dateOfBirth: "2006-10-08"
   },
   {
     name: "Bhakti Huddar",
@@ -573,7 +573,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/sneha._.2006?igsh=aWpxenA5a2g2c2R5",
-    dateOfBirth: "2006-10-08"
+    dateOfBirth: "2006-08-10"
   },
   {
     name: "Swati Sanap",
