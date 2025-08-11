@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Image } from 'lucide-react';
+
 import {
   LayoutDashboard,
   Users,
@@ -13,12 +15,13 @@ import {
   CalendarClock,
   QrCode,
   Scan,
-  BadgeInfo ,
+  BadgeInfo,
   PanelsRightBottom,
   Shield
 } from 'lucide-react';
+
 import { useAuth } from '../../contexts/AuthContext';
-import { useEffect } from 'react';
+
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { currentUser, logout, userRole } = useAuth();
@@ -29,17 +32,16 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Members', href: '/members', icon: Users },
     { name: 'Meetings', href: '/meetings', icon: Calendar },
-     { name: 'Panels', href: '/panel', icon: PanelsRightBottom  },
+    { name: 'Panels', href: '/panel', icon: PanelsRightBottom },
+    { name: 'Gallery', href: '/teamgallary', icon: Image },
     { name: 'Calendar', href: '/calendar', icon: CalendarClock },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
-    // Admin dashboard - only for admins
     { name: 'Admin Dashboard', href: '/admin', icon: Shield, adminOnly: true },
-    // QR code features
     { name: 'Generate QR', href: '/generate-qr', icon: QrCode, adminOnly: true },
     { name: 'Mark Attendance', href: '/scan-qr', icon: Scan },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Mavericks Corner', href: '/about', icon: BadgeInfo  },
+    { name: 'Mavericks Corner', href: '/about', icon: BadgeInfo },
   ];
 
   const handleLogout = async () => {
@@ -50,52 +52,43 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   };
 
-  // Filter navigation items based on user role
   const filteredNavigation = navigation.filter(item => 
     !item.adminOnly || (item.adminOnly && isAdmin)
   );
 
- 
-
-
   return (
     <>
-      {/* Mobile backdrop */}
-    <AnimatePresence>
-  {isOpen && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 0.5 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-secondary-900 bg-opacity-50 lg:hidden z-40"
-      onClick={onClose}
-    />
-  )}
-</AnimatePresence>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-secondary-900 bg-opacity-50 lg:hidden z-40"
+            onClick={onClose}
+          />
+        )}
+      </AnimatePresence>
 
-
-
-
-      {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-secondary-800 border-r border-secondary-200 dark:border-secondary-700 transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 transition-transform duration-200 ease-in-out`}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
+          
+          {/* Logo and Close Button */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-secondary-200 dark:border-secondary-700">
             <Link to="/" className="flex items-center">
               <img
                 className="h-8 w-auto rounded-full"
                 src="/logo.png"
-                alt=""
+                alt="Team Mavericks Logo"
               />
               <span className="ml-2 text-lg font-semibold text-blue-700 flex gap-1 dark:text-primary-400">
-             <span className='font-semibold text-md text-blue-700 dark:text-primary-400'>Team</span>
-             <span className='font-semibold text-md text-blue-700 dark:text-primary-400'>Mavericks</span>
+                <span className="font-semibold text-md text-blue-700 dark:text-primary-400">Team</span>
+                <span className="font-semibold text-md text-blue-700 dark:text-primary-400">Mavericks</span>
               </span>
-             
             </Link>
             <button
               onClick={onClose}
@@ -110,37 +103,45 @@ const Sidebar = ({ isOpen, onClose }) => {
             <nav className="space-y-1">
               {filteredNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
-                
-              return (
-                <Link
+                return (
+                  <Link
                     key={item.name}
                     to={item.href}
                     onClick={onClose}
                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
+                      isActive
                         ? 'bg-primary-50 border-l-4 border-blue-500 rounded-l-none dark:bg-primary-900/20 text-primary-500 dark:text-primary-400'
                         : 'text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700/50 hover:text-secondary-900 dark:hover:text-secondary-200'
-                  } `}
-                >
+                    }`}
+                  >
                     <item.icon className="h-5 w-5 mr-3" />
                     {item.name}
-                    {
-                      item.name == "Panels" && <div className='ml-2 px-2 py-[2px]  bg-green-200 dark:text-white dark:bg-green-700 rounded-lg'>New</div>
-                    }
-                    
-                </Link>
-              );
-            })}
-          </nav>
+                    {item.name === 'Panels' && (
+                      <div className="ml-2 px-2 py-[2px] bg-green-200 dark:text-white dark:bg-green-700 rounded-lg">
+                        New
+                      </div>
+                    )}
+                     {item.name === 'Gallery' && (
+                      <div className="ml-2 px-2 py-[2px] bg-pink-300 dark:text-white dark:bg-pink-700 rounded-lg">
+                        New
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
 
-          {/* Footer with User Info and Logout */}
+          {/* User Info & Logout */}
           {currentUser && (
-          <div className="p-4 border-t border-secondary-200 overflow-hidden dark:border-secondary-700">
+            <div className="p-4 border-t border-secondary-200 overflow-hidden dark:border-secondary-700">
               <div className="flex items-center mb-4">
                 <img
                   className="h-10 w-10 rounded-full mr-3"
-                  src={currentUser.photoURL || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'User'}&size=40&background=0A66C2&color=fff`}
+                  src={
+                    currentUser.photoURL ||
+                    `https://ui-avatars.com/api/?name=${currentUser.displayName || 'User'}&size=40&background=0A66C2&color=fff`
+                  }
                   alt="Profile"
                 />
                 <div>
@@ -154,12 +155,12 @@ const Sidebar = ({ isOpen, onClose }) => {
               </div>
               <button
                 onClick={handleLogout}
-                className="flex w-full bg-red-50 items-center px-4  dark:bg-gray-700 py-2 text-sm font-medium hover:text-red-800 text-red-600 dark:text-red-200 rounded-lg hover:bg-red-200 dark:hover:bg-red-200 dark:hover:text-red-800 transition-colors"
+                className="flex w-full bg-red-50 items-center px-4 dark:bg-gray-700 py-2 text-sm font-medium hover:text-red-800 text-red-600 dark:text-red-200 rounded-lg hover:bg-red-200 dark:hover:bg-red-200 dark:hover:text-red-800 transition-colors"
               >
                 <LogOut className="h-5 w-5 mr-3" />
                 Sign Out
-            </button>
-          </div>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -167,4 +168,4 @@ const Sidebar = ({ isOpen, onClose }) => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

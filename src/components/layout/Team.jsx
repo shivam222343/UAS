@@ -487,7 +487,7 @@ const Team = () => {
     year: "Third Year",
     department: "Computer Engineering",
     github: "",
-    linkedin: "",
+    linkedin: "https://www.linkedin.com/in/shruti-narke-4a54a22b0/",
     instagram: "",
     dateOfBirth: "2005-07-10"
   },
@@ -501,7 +501,7 @@ const Team = () => {
     year: "Btech",
     department: "Computer Engineering",
     github: "",
-    linkedin: "",
+    linkedin: "https://www.linkedin.com/in/shrutipowar/",
     instagram: "",
     dateOfBirth: "2004-02-18"
   },
@@ -599,8 +599,8 @@ const Team = () => {
     year: "Btech",
     department: "Artificial Intelligence and Machine Learning",
     github: "",
-    linkedin: "",
-    instagram: "",
+    linkedin: "https://www.linkedin.com/in/veermetri05/",
+    instagram: "https://www.instagram.com/metri.veer/",
     dateOfBirth: "2005-05-10"
   },
   {

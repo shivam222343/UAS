@@ -10,18 +10,18 @@ const ClubCard = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="w-[280px] rounded-2xl shadow-gray-600 shadow-card overflow-hidden font-sans bg-gradient-to-br from-[#f5f7fa] to-[#c3cfe2] dark:from-gray-800 dark:to-gray-900 relative"
+      className="w-[280px] rounded-2xl overflow-hidden shadow-lg font-sans bg-gradient-to-br from-[#f5f7fa] to-[#c3cfe2] dark:from-gray-800 dark:to-gray-900 relative"
     >
       {/* Decorative elements */}
       <div className="absolute w-[100px] h-[100px] bg-white/10 rounded-full top-[-30px] right-[-30px]" />
       <div className="absolute w-[60px] h-[60px] bg-white/10 rounded-full bottom-[20px] left-[-20px]" />
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-orange-300 via-white to-green-300 dark:bg-gradient-to-br dark:from-orange-700 dark:via-white dark:to-green-700 text-blue-600 p-5 text-center relative ">
-        <div className="w-[60px] h-[60px] shadow-gray-800 shadow-lg overflow-hidden bg-white rounded-full mx-auto mb-3 flex items-center justify-center ">
+      <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white p-5 text-center relative dark:from-purple-700 dark:to-indigo-800">
+        <div className="w-[60px] h-[60px] overflow-hidden bg-white rounded-full mx-auto mb-3 flex items-center justify-center shadow-md">
         <img src={logo} alt="Logo" />
         </div>
-        <h3 className="text-xl font-semibold m-0 dark:text-blue-800 text-blue-800">Welcome to the Team Mavericks!</h3>
+        <h3 className="text-xl font-semibold m-0 text-white">Welcome to the Team Mavericks!</h3>
       </div>
 
       {/* Status */}
@@ -41,7 +41,7 @@ const ClubCard = () => {
         <motion.button
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
-          className="bg-gradient-to-r from-orange-600 via-orange-200 to-green-600 dark:from-orange-600 dark:via-orange-200 dark:to-green-600 text-white font-semibold text-base px-6 py-2.5 rounded-full shadow-md flex items-center justify-center gap-2 mx-auto"
+          className="bg-gradient-to-br from-blue-600 to-blue-400 dark:from-blue-600 dark:to-blue-400 text-white font-semibold text-base px-6 py-2.5 rounded-full shadow-md flex items-center justify-center gap-2 mx-auto"
         >
           <Plus size={18} />
           Join Another Club
