@@ -558,9 +558,9 @@ export default function Dashboard() {
           </div>
 
           <div className="w-full md:max-w-[900px] p-1 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 shadow-lg">
-            <div className="p-6 rounded-lg backdrop-blur-sm bg-gradient-to-br from-orange-300 via-white to-green-300 dark:bg-gradient-to-br dark:from-orange-700 dark:via-white dark:to-green-700 border-blue-200 dark:border-gray-700">
+            <div className="p-6 rounded-lg backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border border-blue-200 dark:border-gray-700">
               <div className="flex flex-col items-center justify-center">
-                <h2 className="text-2xl font-medium text-center mb-3 text-blue-800 dark:text-blue-600">
+                <h2 className="text-2xl font-medium text-center mb-3 text-blue-800 dark:text-blue-100">
                   {greeting}
                 </h2>
                 <div className="w-24 h-1 rounded-full my-2 bg-blue-300/50 dark:bg-blue-400/30"></div>
@@ -849,59 +849,45 @@ export default function Dashboard() {
       )}
 
       {(
-       <button
-  onClick={() => changeVal()}
-  className="fixed bottom-20 right-6 p-2 bg-white hover:text-white dark:bg-blue-500 dark:text-white text-blue-400 rounded-full shadow-black shadow-card focus:outline-none focus:ring-offset-2 focus:ring-blue-500 z-40"
-  aria-label="Join a club"
->
-  <div className="relative h-12 w-12 flex items-center justify-center">
-    {/* Chatbot Icon */}
-    <div className={`absolute h-full w-full rounded-full flex items-center justify-center bg-transparent`}>
-      <div className='text-3xl font-bold'><BadgePlus /></div>
-    </div>
+        <button
+          onClick={() => changeVal()}
+          className="fixed bottom-20 right-6 p-2 bg-blue-600 text-white rounded-full shadow-lg focus:outline-none focus:ring-offset-2 focus:ring-blue-500 z-40"
+          aria-label="Join a club"
+        >
+          <div className="relative h-12 w-12 flex items-center justify-center">
+            {/* Chatbot Icon */}
+            <div className={`absolute h-full w-full rounded-full flex items-center justify-center bg-transparent`}>
+              <div className='text-3xl font-bold'><BadgePlus /></div>
+            </div>
 
-    {/* Tiranga-Colored Waves (Interchanging) */}
-    {[0, 1, 2].map((i) => (
-      <div
-        key={i}
-        className={`absolute h-full w-full rounded-full border-2 bg-transparent`}
-        style={{
-          animation: `wave 3s ease-out infinite, colorChange 3s infinite`,
-          animationDelay: `${i * 1}s`,
-          borderColor: 'white' // Initial color (will be overridden by animation)
-        }}
-      />
-    ))}
+            {/* Water Drop Waves */}
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={`absolute h-full w-full rounded-full border-2 bg-transparent`}
+                style={{
+                  animation: `wave 3s ease-out infinite`,
+                  animationDelay: `${i * 1}s`,
+                  borderColor: 'white' // Added to make waves visible
+                }}
+              />
+            ))}
 
-    {/* CSS for the animations */}
-    <style>{`
-      @keyframes wave {
-        0% {
-          transform: scale(1);
-          opacity: 1;
+            {/* CSS for the animation */}
+            <style>{`
+        @keyframes wave {
+          0% {
+            transform: scale(1);
+            opacity: 0.7;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
         }
-        100% {
-          transform: scale(1.5);
-          opacity: 0.3;
-        }
-      }
-      @keyframes colorChange {
-        0% {
-          border-color: #FF9933; /* Saffron */
-        }
-        33% {
-          border-color: #FFFFFF; /* White */
-        }
-        66% {
-          border-color: #138808; /* Green */
-        }
-        100% {
-          border-color: #FF9933; /* Back to Saffron */
-        }
-      }
-    `}</style>
-  </div>
-</button>
+      `}</style>
+          </div>
+        </button>
       )}
     </motion.div>
   );

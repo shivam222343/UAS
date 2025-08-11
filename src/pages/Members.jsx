@@ -568,7 +568,7 @@ export default function Members() {
                           onClick={() => handleMarkOffline(selectedMember.id)}
                           className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
                         >
-                          <XCircle size={16} /> Mark as Offlin
+                          <XCircle size={16} /> Mark as Offline
                         </button>
                       </div>
                     )}
