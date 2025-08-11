@@ -27,7 +27,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/aakashdesai22/",
-    dateOfBirth: " "
+    dateOfBirth: "2005-12-22"
   },
   {
     name: "Aaryada Kajarekar",
@@ -55,7 +55,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "2005-01-12"
+    dateOfBirth: "2005-12-01"
   },
   {
     name: "Aditya Gawai",
@@ -66,10 +66,10 @@ const Team = () => {
     contact: "+91 91306 40827",
     year: "Second Year",
     department: "Computer Science and Business Systems",
-    github: "",
+    github: "https://github.com/aditya-gawai",
     linkedin: "https://www.linkedin.com/in/aditya-gawai-a4373532a/",
     instagram: "https://www.instagram.com/aditya__gawai/",
-    dateOfBirth: "2006-12-06"
+    dateOfBirth: "2006-06-12"
   },
   {
     name: "Advait Kulkarni",
@@ -83,7 +83,7 @@ const Team = () => {
     github: "",
     linkedin: "https://www.linkedin.com/in/advait-kulkarni-2617392b4/",
     instagram: "https://www.instagram.com/advait_kulkarni_47/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2006-06-14"
   },
   {
     name: "Ashka Chauhan",
@@ -125,21 +125,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/bhavesh.0326/",
-    dateOfBirth: "Not specified"
-  },
-  {
-    name: "Parth Chavan",
-    position: "Team Member",
-    email: "parthchavancds@gmail.com",
-    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1753886577/IMG_3966_qr4jts.jpg",
-    bio: "An adaptable problem-solver with a good sense of humor. Values both innovation and tradition.",
-    contact: "+91 96997 08599",
-    year: "Second Year",
-    department: "Civil and Environmental Engineering",
-    github: "",
-    linkedin: "",
-    instagram: "",
-    dateOfBirth: "2006-01-20"
+    dateOfBirth: "2004-07-03"
   },
   {
     name: "Chinmayee Pawar",
@@ -153,7 +139,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/chiiinmayi/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2005-06-30"
   },
   {
     name: "Haripriya Patil",
@@ -181,7 +167,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/hrushis_photography/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2005-12-29"
   },
   {
     name: "Ishwari Ambrale",
@@ -195,7 +181,7 @@ const Team = () => {
     github: "",
     linkedin:"https://www.linkedin.com/in/ishwari-ambrale-099b26320/",
     instagram: "https://www.instagram.com/ishwari_2924/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2005-12-29"
   },
   {
     name: "Jayesh Jagatkar",
@@ -209,7 +195,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2001-07-18"
   },
   {
     name: "Karan Gitte",
@@ -220,10 +206,10 @@ const Team = () => {
     contact: "+91 74209 03112",
     year: "Second Year",
     department: "Artificial Intelligence and Machine Learning",
-    github: "https://github.com/karangitte",
-    linkedin: "https://linkedin.com/in/karangitte",
-    instagram: "https://instagram.com/karangitte",
-    dateOfBirth: "2004-08-08"
+    github: "",
+    linkedin: "",
+    instagram: "https://www.instagram.com/its_karan158/",
+    dateOfBirth: "2006-08-08"
   },
   {
     name: "Karan Patil",
@@ -237,7 +223,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/karanpatil_03_/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2004-07-24"
   },
   {
     name: "Ketan Shingana",
@@ -251,7 +237,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2005-03-12"
   },
   {
     name: "Maithili Dhopate",
@@ -265,7 +251,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/dhopate_maithili9/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2005-02-09"
   },
   {
     name: "Mahika Savardekar",
@@ -276,10 +262,10 @@ const Team = () => {
     contact: "+91 72769 14050",
     year: "Second Year",
     department: "Mechanical Engineering",
-    github: "https://github.com/mahikasavardekar",
-    linkedin: "https://linkedin.com/in/mahikasavardekar",
-    instagram: "https://instagram.com/mahikasavardekar",
-    dateOfBirth: "2006-02-07"
+    github: "",
+    linkedin: "",
+    instagram: "",
+    dateOfBirth: "2006-07-02"
   },
   {
     name: "Mangeresh Prabhavalkar",
@@ -307,7 +293,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "2006-01-10"
+    dateOfBirth: "2006-10-01"
   },
   {
     name: "Niranjan Ambi",
@@ -321,7 +307,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/niranjanambi/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2005-07-18"
   },
   {
     name: "Om Mali",
@@ -335,7 +321,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/ommali031/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2004-12-31"
   },
   {
     name: "Parth Chavan",
@@ -363,7 +349,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2005-08-27"
   },
   {
     name: "Pranali Bedkyale",
@@ -405,7 +391,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/sakshigaikwad1694/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2004-09-16"
   },
   {
     name: "Sangram Nevase",
@@ -419,7 +405,7 @@ const Team = () => {
     github: "",
     linkedin: "https://www.linkedin.com/in/sangram-nevase/",
     instagram: "",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2004-09-28"
   },
   {
     name: "Sarthaki Dixit",
@@ -433,7 +419,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/sarthaki_dixit/",
-    dateOfBirth: "2006-07-02"
+    dateOfBirth: "2006-02-07"
   },
   {
     name: "Sayali Koshti",
@@ -447,7 +433,7 @@ const Team = () => {
     github: "",
     linkedin: "https://www.linkedin.com/in/sayali-koshti-08a33229a/",
     instagram: "https://www.instagram.com/sayali_koshti_987/",
-    dateOfBirth: "Not specified"
+    dateOfBirth: "2005-05-25"
   },
   {
     name: "Sayali Shinde",
@@ -489,7 +475,7 @@ const Team = () => {
     github: "",
     linkedin: "https://www.linkedin.com/in/shreeya-dhond-45576a2b0/",
     instagram: "",
-    dateOfBirth: ""
+    dateOfBirth: "2005-09-28"
   },
   {
     name: "Shruti Narke",
@@ -503,7 +489,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: ""
+    dateOfBirth: "2005-07-10"
   },
   {
     name: "Shruti Powar",
@@ -517,7 +503,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: ""
+    dateOfBirth: "2004-02-18"
   },
   {
     name: "Siddhant Sadalage",
@@ -531,7 +517,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: ""
+    dateOfBirth: "2004-02-15"
   },
   {
     name: "Siddhi Kumbhar",
@@ -545,7 +531,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: ""
+    dateOfBirth: "2005-12-20"
   },
   {
     name: "Siya Yaranalkar",
@@ -559,7 +545,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/see_yeah06/",
-    dateOfBirth: "2006-06-08"
+    dateOfBirth: "2006-08-06"
   },
   {
     name: "Sneha Inamdar",
@@ -615,7 +601,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "",
-    dateOfBirth: ""
+    dateOfBirth: "2005-05-10"
   },
   {
     name: "Vinayak Tale",
@@ -629,7 +615,7 @@ const Team = () => {
     github: "",
     linkedin: "https://www.linkedin.com/in/vinayak-tale-468794352?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
     instagram: "https://www.instagram.com/_vnykkk_?utm_source=qr&igsh=anQzdzcwZjBkdXNy",
-    dateOfBirth: "2005-09-12"
+    dateOfBirth: "2005-12-09"
   },
   {
     name: "Yashraj Kulgude",
@@ -643,7 +629,7 @@ const Team = () => {
     github: "",
     linkedin: "",
     instagram: "https://www.instagram.com/yashraj_kulgude/",
-    dateOfBirth: "2005-08-09"
+    dateOfBirth: "2005-04-10"
   }
 ];
 
