@@ -46,7 +46,10 @@ export default function Dashboard() {
   const [currentISTTime, setCurrentISTTime] = useState('');
   const [recentMeetings, setRecentMeetings] = useState([]);
   const [approvedAbsences, setApprovedAbsences] = useState([]);
+  // Original loading state for the entire page
   const [loading, setLoading] = useState(true);
+  // New loading state for the content below the main stats
+  const [contentLoading, setContentLoading] = useState(true);
   const [error, setError] = useState('');
   const [userClubs, setUserClubs] = useState([]);
   const [selectedClub, setSelectedClub] = useState(null);
@@ -194,6 +197,7 @@ export default function Dashboard() {
     }
   };
 
+  // The main effect to fetch data
   useEffect(() => {
     if (selectedClub) {
       fetchDashboardData();
@@ -287,32 +291,25 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
+      // Set both loading states to true initially
       setLoading(true);
-      const clubsRef = collection(db, 'clubs');
-      const clubsSnapshot = await getDocs(clubsRef);
-      const clubsList = clubsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      let allMeetings = [];
-      let memberCount = 0;
+      setContentLoading(true);
       const clubId = selectedClub;
 
+      // 1. Fetch all meetings for the selected club in one query
       const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
       const meetingsSnapshot = await getDocs(meetingsRef);
-      const clubMeetings = meetingsSnapshot.docs.map(doc => ({
+      const allMeetings = meetingsSnapshot.docs.map(doc => ({
         id: doc.id,
         clubId: clubId,
-        clubName: clubsList.find(club => club.id === clubId)?.name || 'Unknown Club',
         ...doc.data()
       }));
 
-      allMeetings = [...allMeetings, ...clubMeetings];
-
+      // 2. Fetch all members for the selected club in one query
       const membersRef = collection(db, 'clubs', clubId, 'members');
       const membersSnapshot = await getDocs(membersRef);
-      memberCount += membersSnapshot.size;
+      const members = membersSnapshot.docs.map(doc => doc.data());
+      const memberCount = members.length;
 
       const totalMeetings = allMeetings.length;
       const upcomingMeetings = allMeetings.filter(m => m.status === 'upcoming').length;
@@ -321,13 +318,10 @@ export default function Dashboard() {
       let totalAttendance = 0;
       let attendanceCount = 0;
 
+      // Now, iterate through meetings using the fetched member data (no more queries in the loop)
       for (const meeting of allMeetings) {
         if (meeting.attendanceMarked) {
           const attendeeCount = meeting.attendees ? Object.keys(meeting.attendees).length : 0;
-          const membersRef = collection(db, 'clubs', meeting.clubId, 'members');
-          const membersSnapshot = await getDocs(membersRef);
-          const memberCount = membersSnapshot.size;
-
           if (memberCount > 0) {
             totalAttendance += (attendeeCount / memberCount) * 100;
             attendanceCount++;
@@ -355,19 +349,28 @@ export default function Dashboard() {
       });
       setRecentMeetings(recentMeetingsList);
       setLoading(false);
+      // Set content loading to false after data is fetched
+      setContentLoading(false);
     } catch (err) {
       setError('Failed to fetch dashboard data');
       setLoading(false);
+      setContentLoading(false);
       console.error(err);
     }
   };
 
+
   const fetchApprovedAbsences = async () => {
     try {
-      if (!currentUser) return;
+      if (!currentUser || !selectedClub) return;
 
       const clubId = selectedClub;
       let allApprovedAbsences = [];
+
+      // Fetch all absences for the user across all meetings in a single query (if possible)
+      // This part is the most complex to optimize without a data model change.
+      // A better way would be a 'userAbsences' subcollection on the user document.
+      // For now, let's keep the original logic but be aware of its inefficiency.
 
       const clubDoc = await getDoc(doc(db, 'clubs', clubId));
       const clubName = clubDoc.exists() ? clubDoc.data().name : 'Unknown Club';
@@ -375,7 +378,7 @@ export default function Dashboard() {
       const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
       const meetingsSnapshot = await getDocs(meetingsRef);
 
-      for (const meetingDoc of meetingsSnapshot.docs) {
+      const approvedAbsencePromises = meetingsSnapshot.docs.map(async (meetingDoc) => {
         const meetingId = meetingDoc.id;
         const meetingData = meetingDoc.data();
 
@@ -384,21 +387,23 @@ export default function Dashboard() {
         const absencesSnapshot = await getDocs(q);
 
         if (!absencesSnapshot.empty) {
-          absencesSnapshot.forEach(absenceDoc => {
-            allApprovedAbsences.push({
-              id: absenceDoc.id,
-              meetingId: meetingId,
-              meetingName: meetingData.name,
-              clubId: clubId,
-              clubName: clubName,
-              date: meetingData.date,
-              time: meetingData.time,
-              reason: absenceDoc.data().reason,
-              approvedAt: absenceDoc.data().approvedAt?.toDate()
-            });
-          });
+          return absencesSnapshot.docs.map(absenceDoc => ({
+            id: absenceDoc.id,
+            meetingId: meetingId,
+            meetingName: meetingData.name,
+            clubId: clubId,
+            clubName: clubName,
+            date: meetingData.date,
+            time: meetingData.time,
+            reason: absenceDoc.data().reason,
+            approvedAt: absenceDoc.data().approvedAt?.toDate()
+          }));
         }
-      }
+        return [];
+      });
+
+      const results = await Promise.all(approvedAbsencePromises);
+      allApprovedAbsences = results.flat();
 
       allApprovedAbsences.sort((a, b) => {
         return new Date(b.date) - new Date(a.date);
@@ -424,25 +429,32 @@ export default function Dashboard() {
       let approved = 0;
       let unauthorized = 0;
 
-      for (const meetingDoc of meetingsSnapshot.docs) {
+      // Use Promise.all to fetch all necessary absence documents concurrently
+      const absencePromises = meetingsSnapshot.docs.map(async (meetingDoc) => {
         const meetingId = meetingDoc.id;
         const meetingData = meetingDoc.data();
 
         if (meetingData.attendees && meetingData.attendees[currentUser.uid]) {
-          attended++;
+          return 'attended';
         } else {
-          missed++;
-
           const absenceRef = doc(db, 'clubs', clubId, 'meetings', meetingId, 'absences', currentUser.uid);
           const absenceDoc = await getDoc(absenceRef);
-
           if (absenceDoc.exists() && absenceDoc.data().status === 'approved') {
-            approved++;
+            return 'approved';
           } else {
-            unauthorized++;
+            return 'unauthorized';
           }
         }
-      }
+      });
+
+      const results = await Promise.all(absencePromises);
+      results.forEach(status => {
+        if (status === 'attended') attended++;
+        else if (status === 'approved') approved++;
+        else if (status === 'unauthorized') unauthorized++;
+      });
+
+      missed = approved + unauthorized;
 
       const pieChartData = [
         { name: 'Attended', value: attended },
@@ -511,6 +523,7 @@ export default function Dashboard() {
     );
   };
 
+  // This condition should only check for the initial loading state
   if (loading && userClubIds.length > 0) {
     return (
       <div className="flex flex-col gap-10 items-center justify-center min-h-screen">
@@ -521,6 +534,7 @@ export default function Dashboard() {
     );
   }
 
+  // This condition handles the case where the user has no clubs and the popup is not set to "Don't show again"
   if (loading && userClubIds.length === 0 && !dontShowAgain) {
     return (
       <div className="flex flex-col gap-10 items-center justify-center min-h-screen">
@@ -654,194 +668,205 @@ export default function Dashboard() {
           </div>
         </Link>
       </div>
-
-      {selectedClub && (
-        <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-bold mb-6 dark:text-white">My Attendance Stats</h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <Calendar className="w-5 h-5 text-blue-500 mr-2" />
-                  <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300">Total</h3>
-                </div>
-                <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">{userAttendanceStats.totalMeetings}</p>
-                <p className="text-sm text-blue-600 dark:text-blue-300">meetings</p>
-              </div>
-
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <h3 className="text-lg font-semibold text-green-800 dark:text-green-300">Attended</h3>
-                </div>
-                <p className="text-3xl font-bold text-green-700 dark:text-green-400">{userAttendanceStats.attended}</p>
-                <p className="text-sm text-green-600 dark:text-green-300">
-                  {userAttendanceStats.totalMeetings > 0
-                    ? `${Math.round((userAttendanceStats.attended / userAttendanceStats.totalMeetings) * 100)}%`
-                    : '0%'}
-                </p>
-              </div>
-
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <Clock className="w-5 h-5 text-yellow-500 mr-2" />
-                  <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300">Approved</h3>
-                </div>
-                <p className="text-3xl font-bold text-yellow-700 dark:text-yellow-400">{userAttendanceStats.approved}</p>
-                <p className="text-sm text-yellow-600 dark:text-yellow-300">absences</p>
-              </div>
-
-              <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <XCircle className="w-5 h-5 text-red-500 mr-2" />
-                  <h3 className="text-lg font-semibold text-red-800 dark:text-red-300">Missed</h3>
-                </div>
-                <p className="text-3xl font-bold text-red-700 dark:text-red-400">{userAttendanceStats.unauthorized}</p>
-                <p className="text-sm text-red-600 dark:text-red-300">unauthorized</p>
-              </div>
-            </div>
-
-            <div className="lg:col-span-2">
-              <h3 className="text-lg font-semibold mb-4 dark:text-white">Attendance Breakdown</h3>
-              <div className="h-64">
-                {attendancePieData.length > 0 && userAttendanceStats.totalMeetings > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={attendancePieData}
-                        cx="50%"
-                        cy="50%"
-                        labelPosition="inside"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {attendancePieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => [`${value} meetings`, '']} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <p className="text-gray-500 dark:text-gray-400">No attendance data available</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+      
+      {/* Conditionally render content below the stats based on contentLoading */}
+      {contentLoading ? (
+        <div className="flex flex-col gap-10 items-center justify-center min-h-[50vh]">
+          <Loader />
+          <div className='lg:hidden'><MobileProgressLoader /></div>
+          <div className='hidden lg:block'><AnalyticalLoader size="large" /></div>
         </div>
-      )}
+      ) : (
+        <>
+          {selectedClub && (
+            <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold mb-6 dark:text-white">My Attendance Stats</h2>
 
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4 dark:text-white">Attendance Warnings</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          The following members have missed 3 or more consecutive meetings in their clubs and have been notified:
-        </p>
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <Calendar className="w-5 h-5 text-blue-500 mr-2" />
+                      <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300">Total</h3>
+                    </div>
+                    <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">{userAttendanceStats.totalMeetings}</p>
+                    <p className="text-sm text-blue-600 dark:text-blue-300">meetings</p>
+                  </div>
 
-        {userClubIds.length > 0 ? (
-          <div className="space-y-6">
-            {selectedClub ? (
-              <PublicAttendanceWarnings key={selectedClub} clubId={selectedClub} />
-            ) : (
-              userClubIds.map(clubId => (
-                <PublicAttendanceWarnings key={clubId} clubId={clubId} />
-              ))
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <AlertCircle className="h-12 w-12 mx-auto text-gray-400" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">No Clubs Joined</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Join a club to see attendance warnings
-            </p>
-            <button
-              onClick={() => setShowJoinClubPopup(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Join a Club
-            </button>
-          </div>
-        )}
-      </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                      <h3 className="text-lg font-semibold text-green-800 dark:text-green-300">Attended</h3>
+                    </div>
+                    <p className="text-3xl font-bold text-green-700 dark:text-green-400">{userAttendanceStats.attended}</p>
+                    <p className="text-sm text-green-600 dark:text-green-300">
+                      {userAttendanceStats.totalMeetings > 0
+                        ? `${Math.round((userAttendanceStats.attended / userAttendanceStats.totalMeetings) * 100)}%`
+                        : '0%'}
+                    </p>
+                  </div>
 
-      <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6 mt-8">
-        <h2 className="text-xl dark:text-white font-semibold mb-4">Recent Meetings</h2>
-        <div className="space-y-4">
-          {recentMeetings.map(meeting => (
-            <div
-              key={meeting.id}
-              className="flex items-center justify-between p-2 flex-wrap gap-2 md:p-4 border dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <div>
-                <h3 className="font-medium">{meeting.name}</h3>
-                <div className="text-sm dark:text-white text-gray-500 flex items-center gap-2">
-                  <span>{meeting.date} at {meeting.time}</span>
-                  <span>•</span>
-                  <Link to="/about"><span className="font-medium text-blue-600 dark:text-blue-400">{meeting.clubName}</span></Link>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <Clock className="w-5 h-5 text-yellow-500 mr-2" />
+                      <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300">Approved</h3>
+                    </div>
+                    <p className="text-3xl font-bold text-yellow-700 dark:text-yellow-400">{userAttendanceStats.approved}</p>
+                    <p className="text-sm text-yellow-600 dark:text-yellow-300">absences</p>
+                  </div>
+
+                  <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <XCircle className="w-5 h-5 text-red-500 mr-2" />
+                      <h3 className="text-lg font-semibold text-red-800 dark:text-red-300">Missed</h3>
+                    </div>
+                    <p className="text-3xl font-bold text-red-700 dark:text-red-400">{userAttendanceStats.unauthorized}</p>
+                    <p className="text-sm text-red-600 dark:text-red-300">unauthorized</p>
+                  </div>
                 </div>
-                <div className="text-xs dark:text-white text-gray-500 mt-1">
-                  {meeting.mode === 'offline' ? (
-                    <span>Location: {meeting.location}{meeting.location === 'Classroom' && meeting.classroomNumber ? ` (${meeting.classroomNumber})` : ''}</span>
-                  ) : (
-                    <span>Platform: {meeting.platform}</span>
-                  )}
+
+                <div className="lg:col-span-2">
+                  <h3 className="text-lg font-semibold mb-4 dark:text-white">Attendance Breakdown</h3>
+                  <div className="h-64">
+                    {attendancePieData.length > 0 && userAttendanceStats.totalMeetings > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={attendancePieData}
+                            cx="50%"
+                            cy="50%"
+                            labelPosition="inside"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {attendancePieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => [`${value} meetings`, '']} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <p className="text-gray-500 dark:text-gray-400">No attendance data available</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${meeting.status === 'upcoming'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                  : meeting.status === 'cancelled'
-                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                  }`}>
-                  {meeting.status.charAt(0).toUpperCase() + meeting.status.slice(1)}
-                </span>
-                <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">
-                  {meeting.attendees ? Object.keys(meeting.attendees).length : 0} attendees
-                </span>
-              </div>
-            </div>
-          ))}
-
-          {recentMeetings.length === 0 && (
-            <div className="text-center py-4">
-              <p className="text-gray-500 dark:text-white">No meetings found</p>
             </div>
           )}
-        </div>
-        <Link to="/meetings"> <div className='w-full mt-2 h-auto flex justify-end text-blue-500 underline'>view all</div></Link>
-      </div>
 
-      {approvedAbsences.length > 0 && (
-        <div className="bg-white mt-5 dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
-            <AlertTriangle className="mr-2 text-amber-500" />
-            Approved Absences
-          </h2>
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4 dark:text-white">Attendance Warnings</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              The following members have missed 3 or more consecutive meetings in their clubs and have been notified:
+            </p>
 
-          <div className="space-y-4">
-            {approvedAbsences.map(absence => (
-              <div
-                key={absence.id}
-                className="border-l-4 border-amber-500 pl-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-r-md"
-              >
-                <div className="flex justify-between">
-                  <h3 className="font-medium text-gray-800 dark:text-white">{absence.meetingName}</h3>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{absence.date}</span>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Club: {absence.clubName}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 italic">"{absence.reason}"</p>
+            {userClubIds.length > 0 ? (
+              <div className="space-y-6">
+                {selectedClub ? (
+                  <PublicAttendanceWarnings key={selectedClub} clubId={selectedClub} />
+                ) : (
+                  userClubIds.map(clubId => (
+                    <PublicAttendanceWarnings key={clubId} clubId={clubId} />
+                  ))
+                )}
               </div>
-            ))}
+            ) : (
+              <div className="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <AlertCircle className="h-12 w-12 mx-auto text-gray-400" />
+                <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">No Clubs Joined</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Join a club to see attendance warnings
+                </p>
+                <button
+                  onClick={() => setShowJoinClubPopup(true)}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Join a Club
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+
+          <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6 mt-8">
+            <h2 className="text-xl dark:text-white font-semibold mb-4">Recent Meetings</h2>
+            <div className="space-y-4">
+              {recentMeetings.map(meeting => (
+                <div
+                  key={meeting.id}
+                  className="flex items-center justify-between p-2 flex-wrap gap-2 md:p-4 border dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <div>
+                    <h3 className="font-medium">{meeting.name}</h3>
+                    <div className="text-sm dark:text-white text-gray-500 flex items-center gap-2">
+                      <span>{meeting.date} at {meeting.time}</span>
+                      <span>•</span>
+                      <Link to="/about"><span className="font-medium text-blue-600 dark:text-blue-400">{meeting.clubName}</span></Link>
+                    </div>
+                    <div className="text-xs dark:text-white text-gray-500 mt-1">
+                      {meeting.mode === 'offline' ? (
+                        <span>Location: {meeting.location}{meeting.location === 'Classroom' && meeting.classroomNumber ? ` (${meeting.classroomNumber})` : ''}</span>
+                      ) : (
+                        <span>Platform: {meeting.platform}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${meeting.status === 'upcoming'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                      : meeting.status === 'cancelled'
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      }`}>
+                      {meeting.status.charAt(0).toUpperCase() + meeting.status.slice(1)}
+                    </span>
+                    <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">
+                      {meeting.attendees ? Object.keys(meeting.attendees).length : 0} attendees
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              {recentMeetings.length === 0 && (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 dark:text-white">No meetings found</p>
+                </div>
+              )}
+            </div>
+            <Link to="/meetings"> <div className='w-full mt-2 h-auto flex justify-end text-blue-500 underline'>view all</div></Link>
+          </div>
+
+          {approvedAbsences.length > 0 && (
+            <div className="bg-white mt-5 dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                <AlertTriangle className="mr-2 text-amber-500" />
+                Approved Absences
+              </h2>
+
+              <div className="space-y-4">
+                {approvedAbsences.map(absence => (
+                  <div
+                    key={absence.id}
+                    className="border-l-4 border-amber-500 pl-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-r-md"
+                  >
+                    <div className="flex justify-between">
+                      <h3 className="font-medium text-gray-800 dark:text-white">{absence.meetingName}</h3>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{absence.date}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Club: {absence.clubName}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 italic">"{absence.reason}"</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {showJoinClubPopup && dontShowAgain == false && (
@@ -892,4 +917,3 @@ export default function Dashboard() {
     </motion.div>
   );
 }
-

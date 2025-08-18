@@ -6,18 +6,16 @@ import Loader from '../components/Loader';
 import { useAuth } from '../contexts/AuthContext';
 import { useGallery } from '../contexts/GalleryContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { UploadCloud, XCircle, Heart, MessageCircle, Download, Send, Trash2, ArrowDownUp, Search, Loader2 } from 'lucide-react';
-import { initializeApp, getApps, getApp } from 'firebase/app'; // Import getApps
-import { getFirestore, doc, updateDoc, arrayUnion, arrayRemove, collection, onSnapshot, addDoc, serverTimestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { UploadCloud, XCircle, Heart, MessageCircle, Download, Send, Trash2, ArrowDownUp, Search, Loader2, Edit2, Users, MoreHorizontal, CheckCircle2 } from 'lucide-react';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore, doc, updateDoc, arrayUnion, arrayRemove, collection, onSnapshot, addDoc, serverTimestamp, query, orderBy, deleteDoc, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-
 import toast, { Toaster } from 'react-hot-toast';
 
 // Initializing Firebase from the global config
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 
 let app;
-// Use getApps() to check if an app has already been initialized
 if (getApps().length === 0) {
     app = initializeApp(firebaseConfig);
 } else {
@@ -27,7 +25,7 @@ if (getApps().length === 0) {
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Animation variants (No changes needed here)
+// Animation variants
 const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -51,8 +49,6 @@ const itemVariants = {
         },
     },
 };
-
-
 
 const backdropVariants = {
     hidden: { opacity: 0 },
@@ -81,7 +77,6 @@ const LikeAnimation = ({ isVisible }) => {
     );
 };
 
-
 function TeamGallery() {
     const { userRole, currentUser } = useAuth();
     const { images, loading, uploading, addNewImage, deleteImage, sortBy, setSortBy } = useGallery();
@@ -95,14 +90,90 @@ function TeamGallery() {
     const [lastClickTime, setLastClickTime] = useState(0);
     const [likedByDoubleClick, setLikedByDoubleClick] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-
+    const [showLikedUsers, setShowLikedUsers] = useState(false);
+    const [likedUsersList, setLikedUsersList] = useState([]);
+    const [editingDescription, setEditingDescription] = useState(false);
+    const [newDescription, setNewDescription] = useState('');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [imageToDelete, setImageToDelete] = useState(null);
+
+    // New: For admin to manage upload access
+    const [showAccessModal, setShowAccessModal] = useState(false);
+    const [clubMembers, setClubMembers] = useState([]);
+    const [uploadAccess, setUploadAccess] = useState([]);
+    const [accessLoading, setAccessLoading] = useState(false);
+
+    // New: For showing all liked users popup
+    const [showAllLikedUsers, setShowAllLikedUsers] = useState(false);
 
     const commentsEndRef = useRef(null);
 
     const isAdmin = userRole === 'admin';
+    // Upload access: admin or user in uploadAccess array
+    const canUpload = isAdmin || uploadAccess.includes(currentUser?.uid);
     const userId = currentUser?.uid;
+
+    // Fetch upload access list and club members for admin
+    useEffect(() => {
+        if (isAdmin) {
+            setAccessLoading(true);
+            // Fetch club members
+            const fetchMembers = async () => {
+                const usersCollection = collection(db, 'users');
+                const usersSnapshot = await getDocs(usersCollection);
+                const members = usersSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(user => user.role === 'clubMember');
+                setClubMembers(members);
+
+                // Fetch upload access list (from a doc in Firestore)
+                const accessDocRef = doc(db, 'gallerySettings', 'uploadAccess');
+                const accessSnap = await getDocs(collection(db, 'gallerySettings'));
+                let accessArr = [];
+                accessSnap.forEach(docSnap => {
+                    if (docSnap.id === 'uploadAccess') {
+                        accessArr = docSnap.data().uids || [];
+                    }
+                });
+                setUploadAccess(accessArr);
+                setAccessLoading(false);
+            };
+            fetchMembers();
+        } else if (currentUser?.uid) {
+            // For non-admins, fetch upload access
+            const fetchAccess = async () => {
+                const accessSnap = await getDocs(collection(db, 'gallerySettings'));
+                let accessArr = [];
+                accessSnap.forEach(docSnap => {
+                    if (docSnap.id === 'uploadAccess') {
+                        accessArr = docSnap.data().uids || [];
+                    }
+                });
+                setUploadAccess(accessArr);
+            };
+            fetchAccess();
+        }
+    }, [isAdmin, currentUser]);
+
+    // Save upload access (admin only)
+    const handleSaveAccess = async () => {
+        setAccessLoading(true);
+        try {
+            const accessDocRef = doc(db, 'gallerySettings', 'uploadAccess');
+            await updateDoc(accessDocRef, { uids: uploadAccess });
+            toast.success('Upload access updated!');
+        } catch (e) {
+            toast.error('Failed to update access');
+        }
+        setAccessLoading(false);
+        setShowAccessModal(false);
+    };
+
+    const handleToggleAccess = (uid) => {
+        setUploadAccess(prev =>
+            prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
+        );
+    };
 
     const filteredImages = images.filter(img =>
         img.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -139,9 +210,40 @@ function TeamGallery() {
             const updatedImage = images.find(img => img.id === selectedImage.id);
             if (updatedImage) {
                 setSelectedImage(updatedImage);
+                setNewDescription(updatedImage.description);
             }
         }
     }, [images, selectedImage]);
+
+    // Fetch liked users for a given likes array
+    const fetchLikedUsers = async (likesArray) => {
+        if (!likesArray || likesArray.length === 0) {
+            setLikedUsersList([]);
+            return;
+        }
+
+        console.log(likedUsersList);
+        
+
+        try {
+            const usersCollection = collection(db, 'users');
+            const usersSnapshot = await getDocs(usersCollection);
+            const usersData = usersSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            const likedUsers = likesArray.map(userId => {
+                const user = usersData.find(u => u.id === userId);
+                return user || { id: userId, firstName: 'Unknown', photoURL: null };
+            });
+
+            setLikedUsersList(likedUsers);
+        } catch (error) {
+            console.error('Error fetching liked users:', error);
+            setLikedUsersList([]);
+        }
+    };
 
     const handleFileChange = (e) => {
         if (e.target.files[0]) {
@@ -273,6 +375,65 @@ function TeamGallery() {
         }
     };
 
+
+    
+
+    // Show liked users popup (all)
+    const handleShowLikedUsers = async (likesArray, e) => {
+        if (e) e.stopPropagation();
+        await fetchLikedUsers(likesArray);
+        setShowAllLikedUsers(true);
+    };
+
+    // Show liked users preview (max 3) for each image
+    const renderLikedUsersPreview = (img) => {
+        if (!img.likes || img.likes.length === 0) return null;
+        // Find user objects for preview
+        const previewUsers = likedUsersList.filter(u => img.likes.includes(u.id)).slice(0, 3);
+        return (
+            <div className="flex items-center -space-x-2">
+                {previewUsers.map((user, idx) => (
+                    <img
+                        key={user.id}
+                        src={user.photoURL || 'https://via.placeholder.com/32'}
+                        alt={user.firstName || 'User'}
+                        className="w-6 h-6 rounded-full border-2 border-white shadow"
+                        title={user.firstName}
+                    />
+                ))}
+                {img.likes.length > 3 && (
+                    <span className="ml-1 text-xs font-semibold text-gray-500 dark:text-gray-300">+{img.likes.length - 3}</span>
+                )}
+            </div>
+        );
+    };
+    
+
+    const handleEditDescription = () => {
+        setEditingDescription(true);
+    };
+
+    const handleSaveDescription = async () => {
+        if (!selectedImage || !newDescription.trim()) return;
+
+        try {
+            const imageRef = doc(db, 'gallery', selectedImage.id);
+            await updateDoc(imageRef, {
+                description: newDescription
+            });
+            setEditingDescription(false);
+            toast.success('Description updated successfully!');
+        } catch (error) {
+            console.error('Error updating description:', error);
+            toast.error('Failed to update description');
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingDescription(false);
+        setNewDescription(selectedImage.description);
+    };
+
     const bgClass = darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-800';
     const cardBgClass = darkMode ? 'bg-gray-800' : 'bg-white';
     const inputClass = darkMode
@@ -283,7 +444,6 @@ function TeamGallery() {
         : 'bg-blue-600 hover:bg-blue-700';
     const modalBgClass = darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-800';
 
-    // FIX: Change 'isLoading' to 'loading'
     if (loading) {
         return (
             <motion.div
@@ -298,10 +458,7 @@ function TeamGallery() {
     }
 
     return (
-        <div
-            className={`min-h-screen py-8 px-4 dark:bg-slate-900 transition-colors duration-500 ${bgClass}`}
-            
-        >
+        <div className={`min-h-screen py-8 px-4 dark:bg-slate-900 transition-colors duration-500 ${bgClass}`}>
             <Toaster position="top-right" />
 
             <motion.h1
@@ -313,8 +470,10 @@ function TeamGallery() {
                 Team Gallery
             </motion.h1>
 
+           
+
             <AnimatePresence>
-                {isAdmin && (
+                {canUpload && (
                     <motion.div
                         className={`mb-12 max-w-lg mx-auto p-6 dark:bg-slate-600 rounded-xl shadow-lg transition-colors duration-500 ${cardBgClass}`}
                         initial={{ opacity: 0, y: 50 }}
@@ -412,7 +571,7 @@ function TeamGallery() {
                     {filteredImages.map((img) => (
                         <motion.div
                             key={img.id}
-                            className={`relative dark:bg-slate-700 break-inside-avoid p-2 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer group ${cardBgClass}`}
+                            className={`relative dark:bg-slate-800 break-inside-avoid p-2 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer group ${cardBgClass}`}
                             variants={itemVariants}
                             onClick={() => setSelectedImage(img)}
                             onDoubleClick={(e) => handleImageDoubleClick(img, e)}
@@ -427,34 +586,57 @@ function TeamGallery() {
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0.5 }}
                             />
-                            <div className='flex flex-col '>
+                            <div className='flex flex-col'>
                                 <div className="p-4">
                                     <p className={`text-md dark:text-white font-bold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{img.description}</p>
                                 </div>
-
                                 <motion.div
                                     className={`flex justify-end gap-1 rounded-b-lg transition-opacity duration-300`}
                                 >
+                                    {/* Liked users preview and popup trigger */}
+                                    <div
+                                        className={`flex items-center dark:bg-slate-500 gap-1 cursor-pointer px-3 py-1 rounded-full ${darkMode ? 'bg-gray-700 bg-opacity-70 text-white' : 'bg-white bg-opacity-70 text-gray-900'}`}
+                                        onClick={(e) => handleShowLikedUsers(img.likes, e)}
+                                    >
+                                        {
+                                            img.likes.length == 0 && <Users size={18} />
+                                        }
+                                        {/* Show up to 3 liked users' avatars and ... if more */}
+                                        {img.likes && img.likes.length > 0 && (
+                                            <>
+                                                {likedUsersList
+                                                    .filter(u => img.likes.includes(u.id))
+                                                    .sort((a, b) => b.likedAt - a.likedAt)
+                                                    .slice(0, 3)
+                                                    .map(user => (
+                                                        <img
+                                                            key={user.id}
+                                                            src={user.photoURL || 'https://via.placeholder.com/24'}
+                                                            alt={user.displayName || 'User'}
+                                                            className="w-5 h-5 rounded-full border-2 border-white shadow -ml-2"
+                                                            title={user.firstName}
+                                                        />
+                                                    ))}
+                                                {img.likes.length > 0 && (
+                                                    <MoreHorizontal size={16} className="ml-1" />
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
                                     <div
                                         className={`flex items-center dark:bg-slate-700 dark:text-white gap-1 cursor-pointer px-2 py-1 rounded-full ${darkMode ? 'bg-gray-700 bg-opacity-70 text-white' : 'bg-white bg-opacity-70 text-gray-900'}`}
                                         onClick={(e) => handleLike(img.id, e)}
                                     >
                                         <Heart
                                             size={20}
-                                            className={
-                                                ` ${img.likes?.includes(userId)
-                                                    ? 'text-red-500 fill-red-500'
-                                                    : ''}`
-                                            }
+                                            className={img.likes?.includes(userId)
+                                                ? 'text-red-500 fill-red-500'
+                                                : ''}
                                         />
                                         <span>{img.likes?.length || 0}</span>
                                     </div>
                                     <div
                                         className={`flex items-center gap-1 dark:bg-slate-700 dark:text-white cursor-pointer px-2 py-1 rounded-full ${darkMode ? 'bg-gray-700 bg-opacity-70 text-white' : 'bg-white bg-opacity-70 text-gray-900'}`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedImage(img);
-                                        }}
                                     >
                                         <MessageCircle size={20} />
                                     </div>
@@ -483,6 +665,124 @@ function TeamGallery() {
                 </motion.div>
             )}
 
+            {/* Liked Users Modal */}
+            <AnimatePresence>
+                {showAllLikedUsers && (
+                    <motion.div
+                        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50"
+                        variants={backdropVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        onClick={() => setShowAllLikedUsers(false)}
+                    >
+                        <motion.div
+                            className={`relative max-w-md w-full p-6 dark:bg-slate-800 dark:text-white rounded-xl shadow-2xl transition-colors duration-500 ${modalBgClass}`}
+                            variants={modalContentVariants}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button
+                                className={`absolute dark:bg-slate-900 dark:text-white top-4 right-4 p-2 rounded-full transition-colors ${
+                                    darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
+                                }`}
+                                onClick={() => setShowAllLikedUsers(false)}
+                            >
+                                <XCircle size={24} className={`dark:text-white ${darkMode ? 'text-white' : 'text-gray-700'}`} />
+                            </button>
+
+                            <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                Liked by ({likedUsersList.length})
+                            </h3>
+
+                            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                                {likedUsersList.length > 0 ? (
+                                    likedUsersList.map((user) => (
+                                        <div key={user.id} className="flex items-center gap-3 p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg">
+                                            <img
+                                                src={user.photoURL || 'https://via.placeholder.com/40'}
+                                                alt={user.displayName || 'User'}
+                                                className="w-10 h-10 rounded-full object-cover"
+                                            />
+                                            <span className={`dark:text-white font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                {user.displayName || 'Anonymous'}
+                                            </span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>No users found.</p>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Admin: Upload Access Modal */}
+            <AnimatePresence>
+                {showAccessModal && (
+                    <motion.div
+                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black bg-opacity-50"
+                        variants={backdropVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        onClick={() => setShowAccessModal(false)}
+                    >
+                        <motion.div
+                            className={`relative max-w-lg w-full p-6 rounded-xl shadow-2xl transition-colors duration-500 ${modalBgClass}`}
+                            variants={modalContentVariants}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button
+                                className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${
+                                    darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
+                                }`}
+                                onClick={() => setShowAccessModal(false)}
+                            >
+                                <XCircle size={24} className={darkMode ? 'text-white' : 'text-gray-700'} />
+                            </button>
+                            <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                Manage Club Members' Upload Access
+                            </h3>
+                            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                                {clubMembers.map(member => (
+                                    <div key={member.id} className="flex items-center gap-3 p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg">
+                                        <img
+                                            src={member.photoURL || 'https://via.placeholder.com/40'}
+                                            alt={member.firstName || 'User'}
+                                            className="w-10 h-10 rounded-full object-cover"
+                                        />
+                                        <span className={`font-medium flex-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {member.firstName || 'Anonymous'}
+                                        </span>
+                                        <button
+                                            onClick={() => handleToggleAccess(member.id)}
+                                            className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1 ${
+                                                uploadAccess.includes(member.id)
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-white'
+                                            }`}
+                                        >
+                                            {uploadAccess.includes(member.id) ? <CheckCircle2 size={18} /> : null}
+                                            {uploadAccess.includes(member.id) ? 'Can Upload' : 'No Access'}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={handleSaveAccess}
+                                    disabled={accessLoading}
+                                    className="px-4 py-2 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                >
+                                    {accessLoading ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <AnimatePresence>
                 {selectedImage && (
                     <motion.div
@@ -499,7 +799,7 @@ function TeamGallery() {
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button
-                                className={`absolute z-40 dark:bg-slate-500  top-4 right-4 p-2 rounded-full transition-colors duration-200 ${
+                                className={`absolute z-40 dark:bg-slate-800 top-4 right-4 p-2 rounded-full transition-colors duration-200 ${
                                     darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
                                 }`}
                                 onClick={() => setSelectedImage(null)}
@@ -514,7 +814,7 @@ function TeamGallery() {
                                         alt={selectedImage.description}
                                         className="max-h-[80vh] object-contain rounded-lg shadow-lg"
                                     />
-                                    {isAdmin && (
+                                    {(isAdmin || selectedImage.uploaderId === userId) && (
                                         <button
                                             className="absolute bottom-4 right-4 p-2 rounded-full bg-white text-red-400 hover:bg-gray-300 transition-colors"
                                             onClick={() => handleDeleteImageWithConfirmation(selectedImage.id)}
@@ -541,9 +841,45 @@ function TeamGallery() {
                                         </div>
                                     </div>
 
-                                    <h3 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {selectedImage.description}
-                                    </h3>
+                                    {editingDescription ? (
+                                        <div className="mb-4">
+                                            <textarea
+                                                value={newDescription}
+                                                onChange={(e) => setNewDescription(e.target.value)}
+                                                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-300 ${inputClass}`}
+                                                rows="3"
+                                            />
+                                            <div className="flex gap-2 mt-2">
+                                                <button
+                                                    onClick={handleSaveDescription}
+                                                    className={`px-3 py-1 rounded-lg text-white ${buttonClass}`}
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    onClick={handleCancelEdit}
+                                                    className={`px-3 py-1 rounded-lg ${darkMode ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-start justify-between mb-2">
+                                            <h3 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                {selectedImage.description}
+                                            </h3>
+                                            {selectedImage.uploaderId === userId && (
+                                                <button
+                                                    onClick={handleEditDescription}
+                                                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
+                                                >
+                                                    <Edit2 size={18} className={`text-white`} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center gap-4 mb-6 text-sm">
                                         <button
                                             onClick={() => handleDownload(selectedImage.url)}
@@ -554,18 +890,17 @@ function TeamGallery() {
                                         <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleLike(selectedImage.id)}>
                                             <Heart
                                                 size={20}
-                                                // FIX: Corrected classname for heart icon
                                                 className={
                                                     selectedImage.likes?.includes(userId)
                                                         ? 'text-red-500 fill-red-500'
-                                                        : darkMode ? 'text-gray-400' : 'text-gray-500' // Better default color
+                                                        : darkMode ? 'text-gray-400' : 'text-gray-500'
                                                 }
                                             />
-                                            {/* FIX: Corrected classname for span */}
                                             <span className={`dark:text-white ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                                 {selectedImage.likes?.length || 0} Likes
                                             </span>
                                         </div>
+                                        
                                     </div>
 
                                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-64">
@@ -669,7 +1004,6 @@ function TeamGallery() {
                     </motion.div>
                 )}
             </AnimatePresence>
-
         </div>
     );
 }
