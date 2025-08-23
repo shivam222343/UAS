@@ -461,7 +461,7 @@ const Team = () => {
     github: "https://github.com/shivam222343",
     linkedin: "https://www.linkedin.com/in/shivam-dombe-390798296/",
     instagram: "https://www.instagram.com/shivam_dombe0077/",
-    dateOfBirth: "2005-10-19"
+    dateOfBirth: "2005-08-21"
   },
   {
     name: "Shreeya Dhond",

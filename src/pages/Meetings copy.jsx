@@ -7,8 +7,6 @@ import { Calendar, Clock, Users, MapPin, Laptop, FileText, Check, X, ChevronDown
 import AbsenceRequestModal from '../components/meetings/AbsenceRequestModal';
 import TaskModal from '../components/meetings/TaskModal';
 import Loader from '../components/Loader';
-// Add this import for notification (implement sendNotification in your services)
-import { sendNotification } from '../services/SendNotification';
 
 export default function Meetings() {
   const [meetings, setMeetings] = useState([]);
@@ -39,12 +37,6 @@ export default function Meetings() {
   // New: Sort order state
   const [sortOrder, setSortOrder] = useState('newest');
 
-  // New: Pending tasks state
-  const [pendingTasksCount, setPendingTasksCount] = useState(0);
-  const [userPendingTasksCount, setUserPendingTasksCount] = useState(0);
-  const [showPendingTasksPopup, setShowPendingTasksPopup] = useState(false);
-  const [pendingTasksList, setPendingTasksList] = useState([]);
-
   useEffect(() => {
     const loadingTimeout = setTimeout(() => {
       setTimeoutReached(true);
@@ -66,48 +58,6 @@ export default function Meetings() {
     }
     // eslint-disable-next-line
   }, [selectedClub, sortOrder]);
-
-  // Calculate pending tasks counts whenever meetingTasks or selectedClub changes
-  useEffect(() => {
-    if (!selectedClub || !meetingTasks) {
-      setPendingTasksCount(0);
-      setUserPendingTasksCount(0);
-      setPendingTasksList([]);
-      return;
-    }
-    let totalPending = 0;
-    let userPending = 0;
-    let pendingList = [];
-
-    Object.entries(meetingTasks).forEach(([meetingId, tasks]) => {
-      Object.values(tasks).forEach(task => {
-        if (task.assignedTo) {
-          Object.entries(task.assignedTo).forEach(([userId, isAssigned]) => {
-            if (isAssigned) {
-              const isCompleted = task.completion?.[userId] || false;
-              if (!isCompleted) {
-                totalPending++;
-                pendingList.push({
-                  ...task,
-                  meetingId,
-                  assignedUserId: userId,
-                  assignedUserName: clubMembers[userId]?.displayName || 'Unknown',
-                  meetingName: meetings.find(m => m.id === meetingId)?.name || '',
-                  meetingDate: meetings.find(m => m.id === meetingId)?.date || '',
-                });
-                if (userId === currentUser.uid) {
-                  userPending++;
-                }
-              }
-            }
-          });
-        }
-      });
-    });
-    setPendingTasksCount(totalPending);
-    setUserPendingTasksCount(userPending);
-    setPendingTasksList(pendingList);
-  }, [meetingTasks, selectedClub, clubMembers, meetings, currentUser]);
 
   const fetchUserClubs = async () => {
     try {
@@ -317,7 +267,6 @@ export default function Meetings() {
     fetchUserAbsenceRequests();
   };
 
-  // Modified: handleManageTasks to send notification if task assigned to user
   const handleManageTasks = (meeting) => {
     setSelectedMeetingForTask({
       id: meeting.id,
@@ -357,7 +306,6 @@ export default function Meetings() {
     setShowAllTasksPopup(true);
   };
 
-  // Modified: handleTaskStatusChange to send notification if assigned
   const handleTaskStatusChange = async (meetingId, taskId, userId, isCompleted) => {
     try {
       const taskRef = doc(db, 'clubs', selectedClub, 'meetings', meetingId, 'tasks', taskId);
@@ -369,26 +317,6 @@ export default function Meetings() {
       fetchMeetingTasks(meetingId);
     } catch (err) {
       console.error('Error updating task status:', err);
-    }
-  };
-
-  // Example: Call this function when assigning a task to a user (implement in your TaskModal or admin UI)
-  const handleAssignTask = async (meetingId, taskId, userId) => {
-    try {
-      const taskRef = doc(db, 'clubs', selectedClub, 'meetings', meetingId, 'tasks', taskId);
-      await updateDoc(taskRef, {
-        [`assignedTo.${userId}`]: true
-      });
-      // Send notification to user
-      await sendNotification({
-        toUserId: userId,
-        title: 'New Task Assigned',
-        message: `A new task has been assigned to you for meeting: ${meetings.find(m => m.id === meetingId)?.name || ''}`,
-        link: `/meetings`
-      });
-      fetchMeetingTasks(meetingId);
-    } catch (err) {
-      console.error('Error assigning task:', err);
     }
   };
 
@@ -419,6 +347,7 @@ export default function Meetings() {
   // Function to render text with preserved formatting
   const renderFormattedText = (text) => {
     if (!text) return null;
+    
     return text.split('\n').map((line, i) => (
       <span key={i}>
         {line}
@@ -430,8 +359,10 @@ export default function Meetings() {
   // Function to render task description with limited lines
   const renderTaskDescriptionPreview = (description) => {
     if (!description) return null;
+    
     const lines = description.split('\n');
     const previewLines = lines.slice(0, 2); // Show first 2 lines
+    
     return (
       <>
         {previewLines.map((line, i) => (
@@ -444,9 +375,6 @@ export default function Meetings() {
       </>
     );
   };
-
-  
-    
 
   return (
     <motion.div
@@ -475,119 +403,6 @@ export default function Meetings() {
           <option value="oldest">Oldest First</option>
         </select>
       </div>
-
-    <AnimatePresence>
-  {showPendingTasksPopup && (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
-      >
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h3 className="text-xl font-bold dark:text-white">
-            All Pending Tasks ({pendingTasksCount})
-          </h3>
-          <button
-            onClick={() => setShowPendingTasksPopup(false)}
-            className="text-gray-500 hover:text-gray-700 bg-transparent hover:bg-transparent dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <X className="h-6 w-6 text-blue-500 hover:text-purple-600 bg-transparent" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          {pendingTasksList.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No pending tasks found</p>
-            </div>
-          ) : (
-            <ul className="space-y-4">
-              {/* Only show each task once, with all assigned members */}
-              {Array.from(
-                new Map(
-                  pendingTasksList.map(task => [task.id, task])
-                ).values()
-              ).map((task, idx) => (
-                <li key={task.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="font-medium text-lg dark:text-white">{task.title}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Meeting: <span className="font-semibold text-orange-500">{task.meetingName}</span> ({task.meetingDate})
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Assigned to:
-                        <ul className="ml-2 mt-1">
-                          {task.assignedTo && Object.entries(task.assignedTo)
-                            .filter(([userId, isAssigned]) => isAssigned && clubMembers[userId])
-                            .map(([userId]) => (
-                              <li key={userId} className="flex items-center text-xs">
-                                <span className={userId === currentUser.uid ? "text-blue-600 font-semibold" : ""}>
-                                  {clubMembers[userId]?.displayName || 'Unknown'}
-                                  {userId === currentUser.uid && " (You)"}
-                                </span>
-                                {task.completion?.[userId] ? (
-                                  <span className="ml-2 text-green-600">✔️</span>
-                                ) : (
-                                  <span className="ml-2 text-yellow-600">⏳</span>
-                                )}
-                                {userId === currentUser.uid && !task.completion?.[userId] && (
-                                  <button
-                                    onClick={() => handleTaskStatusChange(task.meetingId, task.id, userId, true)}
-                                    className="ml-3 px-2 py-0.5 bg-green-100 text-green-800 rounded hover:bg-green-200 text-xs"
-                                  >
-                                    Mark as Completed
-                                  </button>
-                                )}
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
-                        {renderFormattedText(task.description)}
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-          <button
-            onClick={() => setShowPendingTasksPopup(false)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Close
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  )}
-</AnimatePresence>
-
-      {/* Pending Tasks Summary Bar */}
-      {selectedClub && (
-        <div className="flex flex-col mb-5">
-          <div className='flex flex-wrap justify-between md:justify-normal items-center gap-4 mb-6'>
-            <div className="bg-yellow-100 flex-col h-36 w-40 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded flex items-center">
-            <span className="font-semibold mr-2">All Pending Tasks:</span>
-            <span className="font-bold text-yellow-800/70 dark:text-yellow-200/70 text-7xl mt-2">{pendingTasksCount}</span>
-          </div>
-          <div className="bg-blue-100 flex-col h-36 w-40 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-4 py-2 rounded flex items-center">
-            <span className="font-semibold mr-2">Your Pending Tasks:</span>
-            <span className="font-bold text-blue-800/70 dark:text-blue-200/70 text-7xl mt-2">{userPendingTasksCount}</span>
-          </div>
-          </div>
-          <button
-            onClick={() => setShowPendingTasksPopup(true)}
-            className="px-4 py-2 w-full md:w-fit bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
-          >
-            View All Pending Tasks
-          </button>
-        </div>
-      )}
 
       <div className="mb-8">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -635,7 +450,8 @@ export default function Meetings() {
           </p>
         </motion.div>
       )}
-  {selectedClub && meetings.length > 0 && (
+
+      {selectedClub && meetings.length > 0 && (
         <div className="space-y-8">
           <div>
             <h2 className="text-xl font-semibold mb-4">Upcoming Meetings</h2>

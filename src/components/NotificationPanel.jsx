@@ -2,7 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, query, orderBy, limit, onSnapshot, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { Bell, Calendar as CalendarIcon, AlertTriangle, CheckCircle, Trash2, X, Users } from 'lucide-react';
+import { 
+  Bell, 
+  Calendar as CalendarIcon, 
+  AlertTriangle, 
+  CheckCircle, 
+  Trash2, 
+  X, 
+  Users, 
+  ClipboardList // <-- Added for task_assigned icon
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './NotificationPanel.css';
 
@@ -54,6 +63,7 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
     if (notification.type === 'new_meeting') navigate(`/meetings`);
     else if (notification.type === 'attendance_warning') navigate('/analytics');
     else if (notification.type === 'interview_completed') navigate('/panel-management');
+    else if (notification.type === 'task_assigned' && notification.link) navigate(notification.link);
     onClose();
   };
 
@@ -79,6 +89,8 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
         return <AlertTriangle className="text-red-500 w-5 h-5 mt-1" />;
       case 'interview_completed':
         return <CheckCircle className="text-green-500 w-5 h-5 mt-1" />;
+      case 'task_assigned':
+        return <ClipboardList className="text-purple-600 w-5 h-5 mt-1" />; // <-- Added for task notification
       default:
         return <Bell className="text-gray-500 w-5 h-5 mt-1" />;
     }
@@ -147,6 +159,22 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
                               <span className="text-xs text-gray-500 dark:text-gray-400">
                                 Next: {n.nextCandidateName}
                               </span>
+                            </>
+                          )}
+                          {n.type === 'task_assigned' && n.taskTitle && (
+                            <>
+                              <br />
+                              <span className="text-xs text-purple-700 dark:text-purple-300">
+                                Task: {n.taskTitle}
+                              </span>
+                              {n.meetingName && (
+                                <>
+                                  <br />
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    Meeting: {n.meetingName}
+                                  </span>
+                                </>
+                              )}
                             </>
                           )}
                         </p>

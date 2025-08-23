@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { User, UserX, AlertTriangle, Shield, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Loader from '../Loader';
+import AttendanceWarnings from './AttendanceWarnings';
 
 const ClubMemberManagement = () => {
   const [clubs, setClubs] = useState([]);
@@ -119,6 +120,9 @@ const ClubMemberManagement = () => {
       setLoading(false);
     }
   };
+
+
+  
 
   const handleRoleChange = async (userId, newRole) => {
     try {
@@ -257,6 +261,8 @@ const ClubMemberManagement = () => {
           ))}
         </select>
       </div>
+
+<AttendanceWarnings clubId={selectedClub} />
       
       {/* Members list */}
       {selectedClub ? (

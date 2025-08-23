@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
-import { db } from '../../services/firebase';
-import { AlertTriangle, Mail, Calendar, UserX, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Mail, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getWarningEmailsList, resetMissedMeetingCount } from '../../utils/attendanceUtils';
 import Loader from '../Loader';
@@ -26,6 +24,7 @@ const AttendanceWarnings = ({ clubId }) => {
     try {
       setLoading(true);
       setError('');
+      setSuccess('');
       
       const warningsList = await getWarningEmailsList(clubId);
       setWarnings(warningsList);
@@ -42,16 +41,12 @@ const AttendanceWarnings = ({ clubId }) => {
       setLoading(true);
       await resetMissedMeetingCount(clubId, memberId, resetAll);
       
-      // Update UI
+      // Remove the member from the UI list after manual reset.
       setWarnings(prevWarnings => 
-        prevWarnings.map(warning => 
-          warning.userId === memberId 
-            ? { ...warning, reset: true } 
-            : warning
-        )
+        prevWarnings.filter(warning => warning.userId !== memberId)
       );
       
-      setSuccess(`Reset ${resetAll ? 'all counts' : 'consecutive count'} for member`);
+      setSuccess(`Successfully reset ${resetAll ? 'all' : 'consecutive'} counts for member.`);
       setTimeout(() => setSuccess(''), 3000);
       setLoading(false);
     } catch (err) {
@@ -138,7 +133,7 @@ const AttendanceWarnings = ({ clubId }) => {
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {warnings.map(warning => (
-                <tr key={warning.id} className={warning.reset ? "bg-gray-50 dark:bg-gray-700 opacity-70" : ""}>
+                <tr key={warning.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {warning.displayName}
@@ -167,21 +162,14 @@ const AttendanceWarnings = ({ clubId }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {!warning.reset && (
-                      <button
-                        onClick={() => handleResetCount(warning.userId)}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
-                        title={`Reset ${resetAll ? 'all' : 'consecutive'} missed meetings count`}
-                      >
-                        <RotateCcw className="h-4 w-4 mr-1" />
-                        <span className="text-xs">Reset {resetAll ? 'All' : 'Count'}</span>
-                      </button>
-                    )}
-                    {warning.reset && (
-                      <span className="text-xs text-green-600 dark:text-green-400">
-                        Reset completed
-                      </span>
-                    )}
+                    <button
+                      onClick={() => handleResetCount(warning.userId)}
+                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                      title={`Reset ${resetAll ? 'all' : 'consecutive'} missed meetings count`}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-1" />
+                      <span className="text-xs">Reset {resetAll ? 'All' : 'Count'}</span>
+                    </button>
                   </td>
                 </tr>
               ))}

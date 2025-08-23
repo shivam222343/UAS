@@ -1087,6 +1087,7 @@ const AdminDashboard = () => {
         </>
       )}
 
+ <AttendanceWarnings/>
       {activeTab === 'panels' && <PanelManagement />}
 
       {/* Analytics Section */}
