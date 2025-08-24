@@ -63,7 +63,8 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
     if (notification.type === 'new_meeting') navigate(`/meetings`);
     else if (notification.type === 'attendance_warning') navigate('/analytics');
     else if (notification.type === 'interview_completed') navigate('/panel-management');
-    else if (notification.type === 'task_assigned' && notification.link) navigate(notification.link);
+    else if (notification.type === 'task_assignment' && notification.link) navigate(notification.link);
+    else if (notification.type === 'task_reminder' && notification.link) navigate(notification.link);
     onClose();
   };
 
@@ -89,8 +90,10 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
         return <AlertTriangle className="text-red-500 w-5 h-5 mt-1" />;
       case 'interview_completed':
         return <CheckCircle className="text-green-500 w-5 h-5 mt-1" />;
-      case 'task_assigned':
-        return <ClipboardList className="text-purple-600 w-5 h-5 mt-1" />; // <-- Added for task notification
+      case 'task_assignment':
+        return <ClipboardList className="text-purple-600 w-5 h-5 mt-1" />;
+      case 'task_reminder':
+        return <AlertTriangle className="text-orange-500 w-5 h-5 mt-1" />;
       default:
         return <Bell className="text-gray-500 w-5 h-5 mt-1" />;
     }
@@ -161,7 +164,7 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
                               </span>
                             </>
                           )}
-                          {n.type === 'task_assigned' && n.taskTitle && (
+                          {(n.type === 'task_assignment' || n.type === 'task_reminder') && n.taskTitle && (
                             <>
                               <br />
                               <span className="text-xs text-purple-700 dark:text-purple-300">
@@ -172,6 +175,14 @@ const NotificationPanel = ({ isOpen, onClose, currentUser }) => {
                                   <br />
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
                                     Meeting: {n.meetingName}
+                                  </span>
+                                </>
+                              )}
+                              {n.dueDate && (
+                                <>
+                                  <br />
+                                  <span className="text-xs text-orange-600 dark:text-orange-400">
+                                    Due: {new Date(n.dueDate).toLocaleDateString()}
                                   </span>
                                 </>
                               )}

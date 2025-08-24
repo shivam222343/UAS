@@ -1,32 +1,33 @@
 // src/App.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { GalleryProvider } from './contexts/GalleryContext'; // Import GalleryProvider
+import { GalleryProvider } from './contexts/GalleryContext';
 import Layout from './components/layout/Layout';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
-import Members from './pages/Members';
 import Meetings from './pages/Meetings';
-import Analytics from './pages/Analytics';
-import Settings from './pages/Settings';
+import Members from './pages/Members';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
+import AIChatbot from './pages/AIChatbot';
 import CalendarView from './pages/CalendarView';
+import Analytics from './pages/Analytics';
+import TeamGallary from './pages/TeamGallary';
+import Nexus from './pages/Nexus';
+import { Toaster, toast } from 'react-hot-toast';
+import { TaskReminderProcessor } from './services/taskReminderProcessor';
 import QRGenerator from './pages/QRGenerator';
 import QRScanner from './pages/QRScanner';
 import AdminDashboard from './pages/AdminDashboard';
 import Mavericks from './pages/Mavericks';
 import Info from './components/layout/Info';
 import Panel from './pages/Panel';
-import TeamGallary from './pages/TeamGallary';
+import { useAuth } from './contexts/AuthContext';
 
 import './styles/Forms.css';
-
-import { Toaster, toast } from 'react-hot-toast';
-import { startPresenceTracking } from './services/presence';
-import { startPresenceListener } from './services/presenceListener';
 
 // ✅ Route protection
 const ProtectedRoute = ({ children }) => {
@@ -76,9 +77,12 @@ const ToastQueue = () => {
 
 const App = () => {
   useEffect(() => {
-    startPresenceTracking();
-    const unsubscribe = startPresenceListener();
-    return () => unsubscribe && unsubscribe();
+    // Initialize task reminder processor
+    const cleanupProcessor = TaskReminderProcessor.startProcessor();
+    
+    return () => {
+      cleanupProcessor && cleanupProcessor();
+    };
   }, []);
 
   return (
@@ -110,6 +114,8 @@ const App = () => {
                 <Route path="panel" element={<Panel />} />
                 <Route path="info" element={<Info />} />
                 <Route path="teamgallary" element={<TeamGallary />} /> {/* TeamGallary is now inside GalleryProvider */}
+                <Route path="nexus" element={<Nexus />} />
+                <Route path="ai-chat" element={<AIChatbot />} />
                 <Route path="generate-qr" element={<AdminRoute><QRGenerator /></AdminRoute>} />
                 <Route path="scan-qr" element={<QRScanner />} />
                 <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

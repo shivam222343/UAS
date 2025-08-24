@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, addDoc, doc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { ListTodo, Plus, Trash2, Edit, Check, X, ArrowUpDown } from 'lucide-react';
+import { TaskNotificationService } from '../../services/taskNotificationService';
 
 export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingName, clubMembers }) {
   const [tasks, setTasks] = useState([]);
@@ -63,7 +64,7 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
           return acc;
         }, {});
 
-      await addDoc(tasksRef, {
+      const taskDoc = await addDoc(tasksRef, {
         title: newTask.title,
         description: newTask.description,
         assignedTo: assignedMembers,
@@ -71,6 +72,43 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
         createdAt: new Date().toISOString(),
         completion: completionStatus
       });
+
+      // Send notifications to assigned members
+      const assignedUserIds = Object.keys(assignedMembers);
+      for (const userId of assignedUserIds) {
+        try {
+          await TaskNotificationService.sendTaskAssignmentNotification(
+            userId,
+            {
+              id: taskDoc.id,
+              title: newTask.title,
+              description: newTask.description,
+              dueDate: newTask.dueDate,
+              meetingName: meetingName,
+              clubId: clubId
+            }
+          );
+        } catch (notificationError) {
+          console.error(`Failed to send notification to user ${userId}:`, notificationError);
+        }
+      }
+
+      // Schedule reminder notifications if due date is set
+      if (newTask.dueDate) {
+        try {
+          await TaskNotificationService.scheduleTaskReminders(
+            taskDoc.id,
+            {
+              title: newTask.title,
+              dueDate: newTask.dueDate,
+              meetingName: meetingName,
+              assignedUsers: assignedUserIds
+            }
+          );
+        } catch (reminderError) {
+          console.error('Failed to schedule task reminders:', reminderError);
+        }
+      }
       
       setNewTask({
         title: '',
@@ -100,8 +138,8 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
         }, {});
 
       // Preserve existing completion status for already assigned members
-      const currentTask = tasks.find(task => task.id === taskId);
-      const completionStatus = { ...currentTask.completion };
+      const existingTask = tasks.find(task => task.id === taskId);
+      const completionStatus = { ...existingTask.completion };
       
       // Add new members with default false status
       Object.keys(assignedMembers).forEach(userId => {
@@ -124,6 +162,47 @@ export default function TaskModal({ isOpen, onClose, meetingId, clubId, meetingN
         dueDate: newTask.dueDate,
         completion: completionStatus
       });
+
+      // Send notifications to newly assigned members
+      const previouslyAssigned = Object.keys(existingTask.assignedTo || {});
+      const newlyAssigned = Object.keys(assignedMembers).filter(userId => 
+        !previouslyAssigned.includes(userId)
+      );
+
+      for (const userId of newlyAssigned) {
+        try {
+          await TaskNotificationService.sendTaskAssignmentNotification(
+            userId,
+            {
+              id: taskId,
+              title: newTask.title,
+              description: newTask.description,
+              dueDate: newTask.dueDate,
+              meetingName: meetingName,
+              clubId: clubId
+            }
+          );
+        } catch (notificationError) {
+          console.error(`Failed to send notification to user ${userId}:`, notificationError);
+        }
+      }
+
+      // Update reminder notifications if due date changed
+      if (newTask.dueDate && newTask.dueDate !== existingTask.dueDate) {
+        try {
+          await TaskNotificationService.scheduleTaskReminders(
+            taskId,
+            {
+              title: newTask.title,
+              dueDate: newTask.dueDate,
+              meetingName: meetingName,
+              assignedUsers: Object.keys(assignedMembers)
+            }
+          );
+        } catch (reminderError) {
+          console.error('Failed to update task reminders:', reminderError);
+        }
+      }
       
       setEditingTaskId(null);
       setNewTask({

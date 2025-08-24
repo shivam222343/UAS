@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore'; // Added updateDoc
+import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'; // Added updateDoc
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Mail, UserCheck, Calendar, Search, Shield, Users, Eye, X, BarChart2, Award, Clock, Check, XCircle } from 'lucide-react';
+import BulkActionsBar from '../components/members/BulkActionsBar';
+import MemberCard from '../components/members/MemberCard';
 import Loader from '../components/Loader';
 import {
   BarChart,
@@ -261,19 +263,18 @@ export default function Members() {
   const handleMarkOffline = async (memberId) => {
     if (!selectedClub || !memberId) return;
 
-
-
     try {
       // Update the user's document
       const userRef = doc(db, 'users', memberId);
       await updateDoc(userRef, {
         isOnline: false,
+        lastSeen: serverTimestamp()
       });
 
       // Update the state to reflect the change immediately
       setMembers(prevMembers =>
         prevMembers.map(member =>
-          member.id === memberId ? { ...member, isOnline: false } : member
+          member.id === memberId ? { ...member, isOnline: false, lastSeen: { seconds: Math.floor(new Date().getTime() / 1000) } } : member
         )
       );
 
@@ -288,6 +289,47 @@ export default function Members() {
       console.log(`Member ${memberId} marked as offline.`);
     } catch (error) {
       console.error('Error marking member offline:', error);
+    }
+  };
+
+  // Bulk mark all members offline
+  const handleMarkAllOffline = async () => {
+    if (!selectedClub || !members.length) return;
+
+    try {
+      const updatePromises = members
+        .filter(member => member.isOnline === true)
+        .map(async (member) => {
+          const userRef = doc(db, 'users', member.id);
+          return updateDoc(userRef, {
+            isOnline: false,
+            lastSeen: serverTimestamp()
+          });
+        });
+
+      await Promise.all(updatePromises);
+
+      // Update the state to reflect the changes
+      setMembers(prevMembers =>
+        prevMembers.map(member => ({
+          ...member,
+          isOnline: false,
+          lastSeen: { seconds: Math.floor(new Date().getTime() / 1000) }
+        }))
+      );
+
+      // Update selected member if it was online
+      if (selectedMember && selectedMember.isOnline === true) {
+        setSelectedMember(prev => ({
+          ...prev,
+          isOnline: false,
+          lastSeen: { toDate: () => new Date(), seconds: Math.floor(new Date().getTime() / 1000) }
+        }));
+      }
+
+      console.log('All members marked as offline.');
+    } catch (error) {
+      console.error('Error marking all members offline:', error);
     }
   };
 

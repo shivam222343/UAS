@@ -17,7 +17,9 @@ import {
   Scan,
   BadgeInfo,
   PanelsRightBottom,
-  Shield
+  Shield,
+  Bot,
+  Network
 } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,6 +36,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Meetings', href: '/meetings', icon: Calendar },
     { name: 'Panels', href: '/panel', icon: PanelsRightBottom },
     { name: 'Gallery', href: '/teamgallary', icon: Image },
+    { name: 'Nexus', href: '/nexus', icon: Network },
+    { name: 'Eta AI', href: '/ai-chat', icon: Bot },
     { name: 'Calendar', href: '/calendar', icon: CalendarClock },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
     { name: 'Admin Dashboard', href: '/admin', icon: Shield, adminOnly: true },
@@ -123,6 +127,16 @@ const Sidebar = ({ isOpen, onClose }) => {
                     )}
                      {item.name === 'Gallery' && (
                       <div className="ml-2 px-2 py-[2px] bg-pink-300 dark:text-white dark:bg-pink-700 rounded-lg">
+                        New
+                      </div>
+                    )}
+                    {item.name === 'Nexus' && (
+                      <div className="ml-2 px-2 py-[2px] bg-purple-200 dark:text-white dark:bg-purple-700 rounded-lg">
+                        New
+                      </div>
+                    )}
+                    {item.name === 'AI Chat' && (
+                      <div className="ml-2 px-2 py-[2px] bg-blue-200 dark:text-white dark:bg-blue-700 rounded-lg">
                         New
                       </div>
                     )}
