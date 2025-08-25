@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'; // Added updateDoc
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { usePresence } from '../contexts/PresenceContext';
 import { User, Mail, UserCheck, Calendar, Search, Shield, Users, Eye, X, BarChart2, Award, Clock, Check, XCircle } from 'lucide-react';
 import BulkActionsBar from '../components/members/BulkActionsBar';
 import MemberCard from '../components/members/MemberCard';
@@ -30,6 +31,7 @@ export default function Members() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [memberAnalytics, setMemberAnalytics] = useState(null);
   const { currentUser } = useAuth();
+  const { getAllMembersForClub, getOnlineCountForClub, isMemberOnline } = usePresence();
   const [userRoleInClub, setUserRoleInClub] = useState(null);
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
@@ -39,84 +41,118 @@ export default function Members() {
   }, []);
 
   useEffect(() => {
-    if (selectedClub) {
-      fetchMembers(selectedClub);
-    } else {
-      setMembers([]);
-    }
-  }, [selectedClub]);
+    if (selectedClub) {
+      fetchMembers(selectedClub);
+    } else {
+      setMembers([]);
+    }
+  }, [selectedClub]);
+
+  useEffect(() => {
+    if (selectedClub) {
+      const presenceMembers = getAllMembersForClub(selectedClub);
+      if (presenceMembers.length > 0) {
+        setMembers(prevMembers => 
+          prevMembers.map(member => {
+            const presenceMember = presenceMembers.find(pm => pm.userId === member.id);
+            if (presenceMember) {
+              return {
+                ...member,
+                isOnline: presenceMember.isOnline,
+                lastSeen: presenceMember.lastSeen
+              };
+            }
+            return member;
+          })
+        );
+      }
+    }
+  }, [selectedClub, getAllMembersForClub]);
 
   const fetchUserClubs = async () => {
-    try {
-      setLoading(true);
+    try {
+      setLoading(true);
 
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      const userData = userDoc.data();
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      const userData = userDoc.data();
 
-      let userClubIds = [];
+      let userClubIds = [];
 
-      if (userData?.clubsJoined && Object.keys(userData.clubsJoined).length > 0) {
-        userClubIds = Object.keys(userData.clubsJoined);
-      } else if (userData?.clubs && Array.isArray(userData.clubs) && userData.clubs.length > 0) {
-        userClubIds = userData.clubs;
-      } else {
-        const clubsRef = collection(db, 'clubs');
-        const clubsSnapshot = await getDocs(clubsRef);
+      if (userData?.clubsJoined && Object.keys(userData.clubsJoined).length > 0) {
+        userClubIds = Object.keys(userData.clubsJoined);
+      } else if (userData?.clubs && Array.isArray(userData.clubs) && userData.clubs.length > 0) {
+        userClubIds = userData.clubs;
+      } else {
+        const clubsRef = collection(db, 'clubs');
+        const clubsSnapshot = await getDocs(clubsRef);
 
-        for (const clubDoc of clubsSnapshot.docs) {
-          const memberRef = doc(db, 'clubs', clubDoc.id, 'members', currentUser.uid);
-          const memberDoc = await getDoc(memberRef);
-          if (memberDoc.exists()) {
-            userClubIds.push(clubDoc.id);
-          }
-        }
-      }
+        for (const clubDoc of clubsSnapshot.docs) {
+          const memberRef = doc(db, 'clubs', clubDoc.id, 'members', currentUser.uid);
+          const memberDoc = await getDoc(memberRef);
+          if (memberDoc.exists()) {
+            userClubIds.push(clubDoc.id);
+          }
+        }
+      }
 
-      const clubsData = [];
-      for (const clubId of userClubIds) {
-        const clubDoc = await getDoc(doc(db, 'clubs', clubId));
-        if (clubDoc.exists()) {
-          clubsData.push({
-            id: clubId,
-            name: clubDoc.data().name,
-            ...clubDoc.data()
-          });
-        }
-      }
+      const clubsData = [];
+      for (const clubId of userClubIds) {
+        const clubDoc = await getDoc(doc(db, 'clubs', clubId));
+        if (clubDoc.exists()) {
+          clubsData.push({
+            id: clubId,
+            name: clubDoc.data().name,
+            ...clubDoc.data()
+          });
+        }
+      }
 
-      setClubs(clubsData);
-      if (clubsData.length > 0) {
-        setSelectedClub(clubsData[0].id);
-      } else {
-        setLoading(false);
-      }
+      setClubs(clubsData);
+      if (clubsData.length > 0) {
+        setSelectedClub(clubsData[0].id);
+        setLoading(false);
+      } else {
+        setLoading(false);
+      }
 
-    } catch (err) {
-      console.error('Error fetching clubs:', err);
-      setError('Failed to fetch clubs: ' + err.message);
-      setLoading(false);
-    }
-  };
+    } catch (err) {
+      console.error('Error fetching clubs:', err);
+      setError('Failed to fetch clubs: ' + err.message);
+      setLoading(false);
+    }
+  };
 
   const fetchMembers = async (clubId) => {
-    try {
-      setLoading(true);
-      setMembers([]);
-      setError('');
-    
-      // Get the current user's role in the selected club
-      const currentUserMemberRef = doc(db, 'clubs', clubId, 'members', currentUser.uid);
-      const currentUserMemberDoc = await getDoc(currentUserMemberRef);
-      const role = currentUserMemberDoc.exists() ? currentUserMemberDoc.data().role : null;
-      setUserRoleInClub(role);
+    try {
+      setLoading(true);
+      setMembers([]);
+      setError('');
+    
+      // Get the current user's role in the selected club
+      const currentUserMemberRef = doc(db, 'clubs', clubId, 'members', currentUser.uid);
+      const currentUserMemberDoc = await getDoc(currentUserMemberRef);
+      const role = currentUserMemberDoc.exists() ? currentUserMemberDoc.data().role : null;
+      setUserRoleInClub(role);
 
-      const membersRef = collection(db, 'clubs', clubId, 'members');
-      const membersSnapshot = await getDocs(membersRef);
+      const membersRef = collection(db, 'clubs', clubId, 'members');
+      const membersSnapshot = await getDocs(membersRef);
 
-      const memberPromises = membersSnapshot.docs.map(async (memberDoc) => {
-        const userId = memberDoc.data().userId || memberDoc.data().uid || memberDoc.id;
-        const userDoc = await getDoc(doc(db, 'users', userId));
-        
+      const memberPromises = membersSnapshot.docs.map(async (memberDoc) => {
+        const userId = memberDoc.data().userId || memberDoc.data().uid || memberDoc.id;
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        
+        if (!userDoc.exists()) {
+          return {
+            id: userId,
+            displayName: memberDoc.data().displayName || 'Unknown User',
+            email: memberDoc.data().email || 'No email',
+            memberSince: memberDoc.data().joinedAt?.toDate(),
+            role: memberDoc.data().role || 'member',
+            attendanceRate: 0,
+            attendedCount: 0,
+            totalMeetings: 0
+          };
+        }
         if (!userDoc.exists()) {
           return {
             id: userId,

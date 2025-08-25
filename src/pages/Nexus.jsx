@@ -19,8 +19,10 @@ import {
   List,
   Download
 } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, where, doc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, doc, getDoc, getDocs, deleteDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import { CloudinaryService } from '../services/cloudinaryService';
+import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import DomainRulesModal from '../components/nexus/DomainRulesModal';
 import FileUploadModal from '../components/nexus/FileUploadModal';
@@ -30,6 +32,7 @@ import ResourceCard from '../components/nexus/ResourceCard';
 import DomainAnalytics from '../components/nexus/DomainAnalytics';
 import DomainTemplates from '../components/nexus/DomainTemplates';
 import AccessControlModal from '../components/nexus/AccessControlModal';
+import EditResourceModal from '../components/nexus/EditResourceModal';
 import Loader from '../components/Loader';
 
 const DOMAINS = [
@@ -91,7 +94,9 @@ export default function Nexus() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showViewerModal, setShowViewerModal] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [resourceToEdit, setResourceToEdit] = useState(null);
 
   const isAdmin = userProfile?.role === 'admin';
 
@@ -177,13 +182,31 @@ export default function Nexus() {
     fetchDomainRules();
   }, [selectedDomain, selectedClub]);
 
-  const handleResourceView = (resource) => {
+  const handleResourceView = async (resource) => {
+    // Increment view count
+    try {
+      const resourceRef = doc(db, 'clubs', selectedClub, 'nexus', selectedDomain.id, 'resources', resource.id);
+      await updateDoc(resourceRef, {
+        views: increment(1),
+        lastViewed: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error updating view count:', error);
+    }
+    
     setSelectedResource(resource);
     setShowViewerModal(true);
   };
 
   const handleResourceDownload = async (resource) => {
     try {
+      // Increment download count
+      const resourceRef = doc(db, 'clubs', selectedClub, 'nexus', selectedDomain.id, 'resources', resource.id);
+      await updateDoc(resourceRef, {
+        downloads: increment(1),
+        lastDownloaded: new Date().toISOString()
+      });
+      
       const link = document.createElement('a');
       link.href = resource.fileUrl;
       link.download = resource.fileName;
@@ -193,6 +216,35 @@ export default function Nexus() {
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error downloading resource:', error);
+    }
+  };
+
+  const handleResourceEdit = (resource) => {
+    setResourceToEdit(resource);
+    setShowEditModal(true);
+  };
+
+  const handleResourceDelete = async (resource) => {
+    if (!window.confirm(`Are you sure you want to delete "${resource.title}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Delete from Cloudinary if public ID exists
+      if (resource.cloudinaryPublicId) {
+        const resourceType = resource.fileType?.startsWith('image/') ? 'image' : 
+                           resource.fileType?.startsWith('video/') ? 'video' : 'raw';
+        await CloudinaryService.deleteFile(resource.cloudinaryPublicId, resourceType);
+      }
+
+      // Delete from Firestore
+      const resourceRef = doc(db, 'clubs', selectedClub, 'nexus', selectedDomain.id, 'resources', resource.id);
+      await deleteDoc(resourceRef);
+
+      toast.success('Resource deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+      toast.error('Failed to delete resource. Please try again.');
     }
   };
 
@@ -530,6 +582,8 @@ export default function Nexus() {
                     viewMode={viewMode}
                     onView={() => handleResourceView(resource)}
                     onDownload={() => handleResourceDownload(resource)}
+                    onEdit={handleResourceEdit}
+                    onDelete={handleResourceDelete}
                     isAdmin={isAdmin}
                   />
                 ))}
@@ -548,6 +602,7 @@ export default function Nexus() {
         <DomainAnalytics 
           domain={selectedDomain}
           isVisible={activeTab === 'analytics'}
+          clubId={selectedClub}
         />
       </div>
 
@@ -581,6 +636,21 @@ export default function Nexus() {
         onClose={() => setShowAccessModal(false)}
         domain={selectedDomain}
         clubId={selectedClub}
+      />
+
+      <EditResourceModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setResourceToEdit(null);
+        }}
+        resource={resourceToEdit}
+        domain={selectedDomain}
+        clubId={selectedClub}
+        onUpdateSuccess={() => {
+          setShowEditModal(false);
+          setResourceToEdit(null);
+        }}
       />
     </motion.div>
   );

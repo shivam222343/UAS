@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
 import { User, Mail, Clock, Wifi, WifiOff, Shield, Award } from 'lucide-react';
+import { usePresence } from '../../contexts/PresenceContext';
 
-const MemberCard = ({ member, onClick, isAdmin, onMarkOffline }) => {
+const MemberCard = ({ member, onClick, isAdmin, onMarkOffline, clubId }) => {
+  const { isMemberOnline } = usePresence();
   const formatLastSeen = (lastSeen) => {
     if (!lastSeen) return 'Never';
     
@@ -48,7 +50,7 @@ const MemberCard = ({ member, onClick, isAdmin, onMarkOffline }) => {
             </div>
             {/* Online status indicator */}
             <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 ${
-              member.isOnline === true ? 'bg-green-500' : 'bg-gray-400'
+              isMemberOnline(clubId, member.id) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
             }`}></div>
           </div>
 
@@ -73,7 +75,7 @@ const MemberCard = ({ member, onClick, isAdmin, onMarkOffline }) => {
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3 text-gray-400" />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {member.isOnline === true ? (
+                  {isMemberOnline(clubId, member.id) ? (
                     <span className="text-green-600 dark:text-green-400 font-medium">Online</span>
                   ) : (
                     <span>Last seen: {formatLastSeen(member.lastSeen)}</span>
@@ -87,11 +89,11 @@ const MemberCard = ({ member, onClick, isAdmin, onMarkOffline }) => {
         <div className="flex items-center gap-2">
           {/* Online/Offline status with icon */}
           <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-            member.isOnline === true 
+            isMemberOnline(clubId, member.id)
               ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
               : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
           }`}>
-            {member.isOnline === true ? (
+            {isMemberOnline(clubId, member.id) ? (
               <>
                 <Wifi className="h-3 w-3" />
                 Online
@@ -105,7 +107,7 @@ const MemberCard = ({ member, onClick, isAdmin, onMarkOffline }) => {
           </div>
 
           {/* Admin actions */}
-          {isAdmin && member.isOnline === true && (
+          {isAdmin && isMemberOnline(clubId, member.id) && (
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

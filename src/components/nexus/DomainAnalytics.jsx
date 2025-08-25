@@ -10,10 +10,13 @@ import {
   PieChart,
   Activity
 } from 'lucide-react';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../services/firebase';
+import { useAuth } from '../../contexts/AuthContext';
+import Loader from '../Loader';
 
-export default function DomainAnalytics({ domain, isVisible }) {
+export default function DomainAnalytics({ domain, isVisible, clubId }) {
+  const { currentUser } = useAuth();
   const [analytics, setAnalytics] = useState({
     totalResources: 0,
     totalViews: 0,
@@ -27,24 +30,27 @@ export default function DomainAnalytics({ domain, isVisible }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isVisible && domain) {
+    if (isVisible && domain && clubId) {
       fetchAnalytics();
     }
-  }, [isVisible, domain]);
+  }, [isVisible, domain, clubId]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
       
-      // Fetch all resources for this domain
-      const resourcesRef = collection(db, 'nexus', domain.id, 'resources');
+      // Fetch all resources for this domain and club
+      const resourcesRef = collection(db, 'clubs', clubId, 'nexus', domain.id, 'resources');
       const resourcesSnapshot = await getDocs(resourcesRef);
       
-      const resources = resourcesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate()
-      }));
+      const resources = resourcesSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt ? (typeof data.createdAt.toDate === 'function' ? data.createdAt.toDate() : new Date(data.createdAt)) : new Date()
+        };
+      });
 
       // Calculate analytics
       const totalResources = resources.length;
@@ -87,15 +93,16 @@ export default function DomainAnalytics({ domain, isVisible }) {
 
       // Recent activity (last 10 activities)
       const recentActivity = resources
+        .filter(r => r.createdAt) // Only include resources with valid dates
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 10)
         .map(r => ({
           id: r.id,
           type: 'upload',
-          title: r.title,
-          user: r.uploadedBy?.name || 'Unknown',
+          title: r.title || 'Untitled',
+          user: r.uploadedBy?.name || 'Unknown User',
           timestamp: r.createdAt,
-          category: r.category
+          category: r.category || 'Uncategorized'
         }));
 
       setAnalytics({
@@ -127,6 +134,14 @@ export default function DomainAnalytics({ domain, isVisible }) {
   };
 
   if (!isVisible) return null;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader size="medium" />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -200,33 +215,39 @@ export default function DomainAnalytics({ domain, isVisible }) {
             Most Popular Resources
           </h3>
           <div className="space-y-3">
-            {analytics.topResources.map((resource, index) => (
-              <div key={resource.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 bg-${domain.color}-100 dark:bg-${domain.color}-900 rounded-lg flex items-center justify-center`}>
-                    <span className={`text-${domain.color}-600 font-medium text-sm`}>
-                      {index + 1}
-                    </span>
+            {analytics.topResources.length > 0 ? (
+              analytics.topResources.map((resource, index) => (
+                <div key={resource.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 bg-${domain.color}-100 dark:bg-${domain.color}-900 rounded-lg flex items-center justify-center`}>
+                      <span className={`text-${domain.color}-600 font-medium text-sm`}>
+                        {index + 1}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">
+                        {resource.title || 'Untitled'}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {resource.category || 'Uncategorized'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">
-                      {resource.title}
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {resource.views || 0} views
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {resource.category}
+                      {resource.downloads || 0} downloads
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {resource.views || 0} views
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {resource.downloads || 0} downloads
-                  </p>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <p>No resources available yet</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -236,24 +257,30 @@ export default function DomainAnalytics({ domain, isVisible }) {
             Resources by Category
           </h3>
           <div className="space-y-3">
-            {Object.entries(analytics.categoryBreakdown).map(([category, count]) => (
-              <div key={category} className="flex items-center justify-between">
-                <span className="text-sm text-gray-700 dark:text-gray-300">{category}</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div
-                      className={`bg-${domain.color}-500 h-2 rounded-full`}
-                      style={{
-                        width: `${(count / analytics.totalResources) * 100}%`
-                      }}
-                    />
+            {Object.keys(analytics.categoryBreakdown).length > 0 ? (
+              Object.entries(analytics.categoryBreakdown).map(([category, count]) => (
+                <div key={category} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{category}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div
+                        className={`bg-${domain.color}-500 h-2 rounded-full`}
+                        style={{
+                          width: `${analytics.totalResources > 0 ? (count / analytics.totalResources) * 100 : 0}%`
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white w-8">
+                      {count}
+                    </span>
                   </div>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white w-8">
-                    {count}
-                  </span>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <p>No categories available yet</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -264,20 +291,25 @@ export default function DomainAnalytics({ domain, isVisible }) {
           Upload Trend (Last 6 Months)
         </h3>
         <div className="flex items-end justify-between h-32 gap-2">
-          {analytics.monthlyUploads.map((month, index) => (
-            <div key={index} className="flex flex-col items-center flex-1">
-              <div
-                className={`w-full bg-${domain.color}-500 rounded-t-lg transition-all duration-300 hover:bg-${domain.color}-600`}
-                style={{
-                  height: `${Math.max((month.count / Math.max(...analytics.monthlyUploads.map(m => m.count))) * 100, 5)}%`
-                }}
-                title={`${month.count} uploads`}
-              />
-              <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                {month.month}
-              </span>
-            </div>
-          ))}
+          {analytics.monthlyUploads.map((month, index) => {
+            const maxCount = Math.max(...analytics.monthlyUploads.map(m => m.count), 1);
+            const heightPercentage = Math.max((month.count / maxCount) * 100, 5);
+            
+            return (
+              <div key={index} className="flex flex-col items-center flex-1">
+                <div
+                  className={`w-full bg-${domain.color}-500 rounded-t-lg transition-all duration-300 hover:bg-${domain.color}-600`}
+                  style={{
+                    height: `${heightPercentage}%`
+                  }}
+                  title={`${month.count} uploads`}
+                />
+                <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                  {month.month}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -287,22 +319,28 @@ export default function DomainAnalytics({ domain, isVisible }) {
           Recent Activity
         </h3>
         <div className="space-y-3">
-          {analytics.recentActivity.map((activity) => (
-            <div key={activity.id} className="flex items-center gap-3">
-              <div className={`p-2 bg-${domain.color}-100 dark:bg-${domain.color}-900 rounded-lg`}>
-                <Activity className={`h-4 w-4 text-${domain.color}-600`} />
+          {analytics.recentActivity.length > 0 ? (
+            analytics.recentActivity.map((activity) => (
+              <div key={activity.id} className="flex items-center gap-3">
+                <div className={`p-2 bg-${domain.color}-100 dark:bg-${domain.color}-900 rounded-lg`}>
+                  <Activity className={`h-4 w-4 text-${domain.color}-600`} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    <span className="font-medium">{activity.user}</span> uploaded{' '}
+                    <span className="font-medium">{activity.title}</span>
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {activity.category} • {formatDate(activity.timestamp)}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900 dark:text-white">
-                  <span className="font-medium">{activity.user}</span> uploaded{' '}
-                  <span className="font-medium">{activity.title}</span>
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {activity.category} • {formatDate(activity.timestamp)}
-                </p>
-              </div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <p>No recent activity</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </motion.div>

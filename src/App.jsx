@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { GalleryProvider } from './contexts/GalleryContext';
+import { PresenceProvider } from './contexts/PresenceContext';
 import Layout from './components/layout/Layout';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
@@ -89,8 +90,8 @@ const App = () => {
     <Router>
       <ThemeProvider>
         <AuthProvider>
-          
-          <GalleryProvider> 
+          <PresenceProvider>
+            <GalleryProvider> 
             {/* ✅ Toast system */}
             <Toaster position="top-right" />
             <ToastQueue />
@@ -124,7 +125,8 @@ const App = () => {
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </GalleryProvider>
+            </GalleryProvider>
+          </PresenceProvider>
         </AuthProvider>
       </ThemeProvider>
     </Router>

@@ -294,36 +294,41 @@ const AttendanceChart = ({ clubId }) => {
       ]);
       
       // Add member attendance data with conditional formatting
-      let currentName = '';
+      // Sort meetings by date for each member
       attendanceData.members.forEach((member, memberIndex) => {
-        member.meetings.forEach((meeting, meetingIndex) => {
-          if (filteredMeetings.some(m => m.id === meeting.meetingId)) {
-            const meetingDate = meeting.date instanceof Date ? meeting.date : new Date(meeting.date);
-            
-            // Only include name and email for first row of each member
-            const name = meetingIndex === 0 ? member.name : '';
-            const email = meetingIndex === 0 ? member.email : '';
-            
-            // Determine cell background based on status
-            const statusBg = meeting.status === 'Present' ? theme.presentBg : theme.absentBg;
-            
-            detailedData.push([
-              { v: name, t: 's', s: { 
-                fill: { fgColor: { rgb: memberIndex % 2 === 0 ? theme.background : theme.alternateRowBg } }
-              }},
-              { v: email, t: 's', s: { 
-                fill: { fgColor: { rgb: memberIndex % 2 === 0 ? theme.background : theme.alternateRowBg } }
-              }},
-              meeting.meetingName,
-              meetingDate.toLocaleDateString(),
-              { v: meeting.status, t: 's', s: { 
-                fill: { fgColor: { rgb: statusBg } },
-                alignment: { horizontal: 'center' }
-              }}
-            ]);
-            
-            currentName = member.name;
-          }
+        // Sort member's meetings by date
+        const sortedMeetings = member.meetings
+          .filter(meeting => filteredMeetings.some(m => m.id === meeting.meetingId))
+          .sort((a, b) => {
+            const dateA = a.date instanceof Date ? a.date : new Date(a.date);
+            const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+            return dateA - dateB;
+          });
+
+        sortedMeetings.forEach((meeting, meetingIndex) => {
+          const meetingDate = meeting.date instanceof Date ? meeting.date : new Date(meeting.date);
+          
+          // Only include name and email for first row of each member
+          const name = meetingIndex === 0 ? member.name : '';
+          const email = meetingIndex === 0 ? member.email : '';
+          
+          // Determine cell background based on status
+          const statusBg = meeting.status === 'Present' ? theme.presentBg : theme.absentBg;
+          
+          detailedData.push([
+            { v: name, t: 's', s: { 
+              fill: { fgColor: { rgb: memberIndex % 2 === 0 ? theme.background : theme.alternateRowBg } }
+            }},
+            { v: email, t: 's', s: { 
+              fill: { fgColor: { rgb: memberIndex % 2 === 0 ? theme.background : theme.alternateRowBg } }
+            }},
+            meeting.meetingName,
+            meetingDate.toLocaleDateString(),
+            { v: meeting.status, t: 's', s: { 
+              fill: { fgColor: { rgb: statusBg } },
+              alignment: { horizontal: 'center' }
+            }}
+          ]);
         });
       });
       
@@ -409,15 +414,22 @@ const AttendanceChart = ({ clubId }) => {
       
       // Add member attendance data
       attendanceData.members.forEach(member => {
+        // Sort member's meetings by date
+        const sortedMeetings = member.meetings
+          .filter(meeting => filteredMeetings.some(m => m.id === meeting.meetingId))
+          .sort((a, b) => {
+            const dateA = a.date instanceof Date ? a.date : new Date(a.date);
+            const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+            return dateA - dateB;
+          });
+
         let firstRow = true;
-        member.meetings.forEach(meeting => {
-          if (filteredMeetings.some(m => m.id === meeting.meetingId)) {
-            const meetingDate = meeting.date instanceof Date ? meeting.date : new Date(meeting.date);
-            const name = firstRow ? member.name : '';
-            const email = firstRow ? member.email : '';
-            csvContent += `"${name}","${email}","${meeting.meetingName}","${meetingDate.toLocaleDateString()}","${meeting.status}"\n`;
-            firstRow = false;
-          }
+        sortedMeetings.forEach(meeting => {
+          const meetingDate = meeting.date instanceof Date ? meeting.date : new Date(meeting.date);
+          const name = firstRow ? member.name : '';
+          const email = firstRow ? member.email : '';
+          csvContent += `"${name}","${email}","${meeting.meetingName}","${meetingDate.toLocaleDateString()}","${meeting.status}"\n`;
+          firstRow = false;
         });
       });
       
