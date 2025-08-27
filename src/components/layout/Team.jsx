@@ -44,20 +44,6 @@ const Team = () => {
     dateOfBirth: "2006-11-22"
   },
   {
-    name: "Aaryan Yerudkar",
-    position: "Team Member",
-    email: "yerudkaraaryan@gmail.com",
-    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754764778/IMG_3919_pbjcii.jpg",
-    bio: "A cheerful team player who brings positive energy everywhere. Loves outdoor activities and is always ready for an adventure.",
-    contact: "+91 72191 68635",
-    year: "Second Year",
-    department: "Computer Science and Business Systems",
-    github: "",
-    linkedin: "",
-    instagram: "",
-    dateOfBirth: "2005-12-01"
-  },
-  {
     name: "Aditya Gawai",
     position: "Team Member",
     email: "adityagawai9d@gmail.com",
@@ -268,20 +254,6 @@ const Team = () => {
     dateOfBirth: "2006-07-02"
   },
   {
-    name: "Mangeresh Prabhavalkar",
-    position: "Team Member",
-    email: "mangereshprabhavalkar@gmail.com",
-    img: "https://pics.craiyon.com/2023-06-19/ebf9234749da4c1bb18b1d24a462e0d2.webp",
-    bio: "An innovative thinker who connects seemingly unrelated ideas. Finds inspiration in both technology and nature.",
-    contact: "9876543228",
-    year: "Second Year",
-    department: "Computer Engineering",
-    github: "",
-    linkedin: "",
-    instagram: "",
-    dateOfBirth: "Not specified"
-  },
-  {
     name: "Neha Jagtap",
     position: "Team Member",
     email: "jagtapneha54@gmail.com",
@@ -369,7 +341,7 @@ const Team = () => {
     name: "Rahul Patil",
     position: "Team Member",
     email: "rahulpadmakarpatil41@gmail.com",
-    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1753892014/IMG_3907_hefnxm.jpg",
+    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1756323237/WhatsApp_Image_2025-08-20_at_22.03.41_3ee707063_obhfa2.jpg",
     bio: "A determined individual with a collaborative spirit. Believes in the power of teamwork and persistence.",
     contact: "+91 78759 21162",
     year: "Second Year",
@@ -561,34 +533,7 @@ const Team = () => {
     instagram: "https://www.instagram.com/sneha._.2006?igsh=aWpxenA5a2g2c2R5",
     dateOfBirth: "2006-08-10"
   },
-  {
-    name: "Swati Sanap",
-    position: "Team Member",
-    email: "swatisanap2005@gmail.com",
-    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1754574024/Untitled_design_4_ndfcrg.png",
-    bio: "An organized individual with a creative flair. Balances structure with spontaneity in both work and life.",
-    contact: "+91 97643 41424",
-    year: "Third Year",
-    department: "Computer Science and Engineering",
-    github: "",
-    linkedin: "",
-    instagram: "",
-    dateOfBirth: "2005-01-07"
-  },
-  {
-    name: "Venu Kamble",
-    position: "Team Member",
-    email: "kamblevenu204@gmail.com",
-    img: "https://res.cloudinary.com/dwsddmatc/image/upload/v1753890758/IMG_3949_vgn5jm.jpg",
-    bio: "A resilient individual with a solutions-oriented mindset. Faces challenges with calm determination.",
-    contact: "+91 91569 81383",
-    year: "Third Year",
-    department: "Computer Science and Engineering",
-    github: "",
-    linkedin: "",
-    instagram: "",
-    dateOfBirth: "2004-06-28"
-  },
+  
   {
     name: "Veer Metri",
     position: "Team Member",
