@@ -44,10 +44,10 @@ const COLOR_THEMES = {
     accent: '#f59e0b',
     text: '#1f2937',
     background: '#ffffff',
-    headerBg: '#4472C4',       // Dark blue header background
-    headerText: '#FFFFFF',     // White header text
-    presentBg: '#C6E0B4',      // Light green for present
-    absentBg: '#F8CBAD',       // Light orange for absent
+    headerBg: '#4472C4',      // Dark blue header background
+    headerText: '#FFFFFF',    // White header text
+    presentBg: '#C6E0B4',     // Light green for present
+    absentBg: '#F8CBAD',      // Light orange for absent
     summaryHeaderBg: '#70AD47', // Green summary header
     alternateRowBg: '#E9E9E9'  // Light gray for alternate rows
   }
@@ -345,7 +345,7 @@ const AttendanceChart = ({ clubId }) => {
           member.email,
           member.attended,
           member.total,
-          member.total > 0 ? (member.attended / member.total) : 0  // As decimal for percentage formatting
+          member.total > 0 ? (member.attended / member.total) : 0   // As decimal for percentage formatting
         ])
       ];
       
@@ -477,40 +477,75 @@ const AttendanceChart = ({ clubId }) => {
   };
 
   // Export chart as SVG
-  const exportAsSVG = (chartRef, fileName) => {
+  const exportAsSVG = async (chartRef, fileName) => {
     if (!chartRef.current) return;
     
-    const svgElement = chartRef.current.querySelector('svg');
-    if (!svgElement) {
-      alert('No SVG element found to export');
-      return;
+    try {
+      // Use html2canvas to capture the entire chart container as an image first
+      if (html2canvas) {
+        const canvas = await html2canvas(chartRef.current, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          allowTaint: true
+        });
+        
+        // Convert canvas to SVG
+        const imgData = canvas.toDataURL('image/png');
+        const svgContent = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
+            <image href="${imgData}" width="${canvas.width}" height="${canvas.height}"/>
+          </svg>
+        `;
+        
+        // Create download link
+        const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = url;
+        downloadLink.download = `${fileName}.svg`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(url);
+      } else {
+        // Fallback to original SVG method if html2canvas is not available
+        const svgElement = chartRef.current.querySelector('svg');
+        if (!svgElement) {
+          alert('No chart found to export');
+          return;
+        }
+        
+        // Get SVG source
+        const serializer = new XMLSerializer();
+        let source = serializer.serializeToString(svgElement);
+        
+        // Add namespace
+        if(!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+          source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        
+        // Add XML declaration
+        source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
+        
+        // Convert SVG source to URI data scheme
+        const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
+        
+        // Create download link
+        const downloadLink = document.createElement("a");
+        downloadLink.href = url;
+        downloadLink.download = `${fileName}.svg`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      }
+    } catch (error) {
+      console.error('Error exporting SVG:', error);
+      alert('Failed to export SVG. Please try again.');
     }
-    
-    // Get SVG source
-    const serializer = new XMLSerializer();
-    let source = serializer.serializeToString(svgElement);
-    
-    // Add namespace
-    if(!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
-      source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
-    }
-    
-    // Add XML declaration
-    source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
-    
-    // Convert SVG source to URI data scheme
-    const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
-    
-    // Create download link
-    const downloadLink = document.createElement("a");
-    downloadLink.href = url;
-    downloadLink.download = `${fileName}.svg`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
   };
 
-  // Export chart as PDF
+  // Export chart as PDF with landscape orientation
   const exportAsPDF = async (chartRef, fileName) => {
     if (!jsPDF || !html2canvas) {
       alert('PDF export is not available. Required packages are not installed.');
@@ -520,19 +555,127 @@ const AttendanceChart = ({ clubId }) => {
     if (!chartRef.current) return;
     
     try {
-      const canvas = await html2canvas(chartRef.current);
+      const canvas = await html2canvas(chartRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: true,
+        width: chartRef.current.offsetWidth,
+        height: chartRef.current.offsetHeight
+      });
       const imgData = canvas.toDataURL('image/png');
       
-      const pdf = new jsPDF('l', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
+      // Create a new jsPDF instance with landscape orientation
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = imgProps.width;
+      const imgHeight = imgProps.height;
+
+      // Calculate the dimensions to fit the image while maintaining aspect ratio
+      const ratio = Math.min((pdfWidth - 20) / imgWidth, (pdfHeight - 20) / imgHeight);
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+
+      // Calculate the center position for the image on the page
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = (pdfHeight - finalHeight) / 2;
+
+      // Add title
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(fileName.replace(/_/g, ' ').toUpperCase(), pdfWidth / 2, 15, { align: 'center' });
+      
+      // Add the image to the PDF
+      pdf.addImage(imgData, 'PNG', x, y + 10, finalWidth, finalHeight - 10);
+      
+      // Add timestamp
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Generated on: ${new Date().toLocaleString()}`, 10, pdfHeight - 5);
+      
       pdf.save(`${fileName}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again later.');
+    }
+  };
+
+  // Export all charts as combined PDF
+  const exportAllChartsAsPDF = async () => {
+    if (!jsPDF || !html2canvas) {
+      alert('PDF export is not available. Required packages are not installed.');
+      return;
+    }
+    
+    try {
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Add title page
+      pdf.setFontSize(24);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ATTENDANCE ANALYTICS REPORT', pdfWidth / 2, 50, { align: 'center' });
+      
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Generated on: ${new Date().toLocaleString()}`, pdfWidth / 2, 70, { align: 'center' });
+      
+      // Add overview stats
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Overview Statistics', 20, 100);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Total Meetings: ${attendanceData.overview.totalMeetings}`, 20, 115);
+      pdf.text(`Total Members: ${attendanceData.overview.totalMembers}`, 20, 125);
+      pdf.text(`Average Attendance: ${attendanceData.overview.averageAttendance}%`, 20, 135);
+      pdf.text(`Members with Low Attendance: ${attendanceData.overview.lowAttendanceMembers.length}`, 20, 145);
+      
+      const charts = [
+        { ref: trendChartRef, name: 'Attendance Trend' },
+        { ref: meetingChartRef, name: 'Meeting Attendance' },
+        { ref: memberChartRef, name: 'Member Performance' }
+      ];
+      
+      for (let i = 0; i < charts.length; i++) {
+        const chart = charts[i];
+        if (chart.ref.current) {
+          pdf.addPage();
+          
+          const canvas = await html2canvas(chart.ref.current, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            allowTaint: true
+          });
+          const imgData = canvas.toDataURL('image/png');
+          
+          const imgProps = pdf.getImageProperties(imgData);
+          const ratio = Math.min((pdfWidth - 20) / imgProps.width, (pdfHeight - 40) / imgProps.height);
+          const finalWidth = imgProps.width * ratio;
+          const finalHeight = imgProps.height * ratio;
+          
+          const x = (pdfWidth - finalWidth) / 2;
+          const y = (pdfHeight - finalHeight) / 2;
+          
+          // Add chart title
+          pdf.setFontSize(16);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(chart.name, pdfWidth / 2, 15, { align: 'center' });
+          
+          pdf.addImage(imgData, 'PNG', x, y + 10, finalWidth, finalHeight - 10);
+        }
+      }
+      
+      pdf.save('attendance_analytics_complete_report.pdf');
+    } catch (error) {
+      console.error('Error generating combined PDF:', error);
+      alert('Failed to generate combined PDF. Please try again later.');
     }
   };
 
@@ -554,75 +697,102 @@ const AttendanceChart = ({ clubId }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 lg:p-3">
-      <div className="flex p-1 justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Attendance Analytics</h2>
-        
-        <div className="relative">
-          <button 
-            onClick={toggleExportModal}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            <div className='hidden md:block'>Export</div>
-            <ChevronDown className="w-4 h-4 ml-1" />
-          </button>
-          
-          {/* Export Options Modal */}
-          {exportOptions.showExportModal && (
-            <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-700 rounded-md shadow-lg z-10 p-4">
-              <h3 className="font-semibold mb-3 dark:text-white">Export Options</h3>
-              
-              <div className="mb-3">
-                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Format</label>
-                <select
-                  name="format"
-                  value={exportOptions.format}
-                  onChange={handleExportOptionChange}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  {XLSX && <option value="excel">Excel (.xlsx)</option>}
-                  <option value="csv">CSV (.csv)</option>
-                </select>
-              </div>
-              
-              <div className="mb-3">
-                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Time Range</label>
-                <select
-                  name="timeRange"
-                  value={exportOptions.timeRange}
-                  onChange={handleExportOptionChange}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  <option value="lastMonth">Last Month</option>
-                  <option value="lastTwoMonths">Last Two Months</option>
-                  <option value="lastSixMonths">Last Six Months</option>
-                  <option value="lastYear">Last Year</option>
-                  <option value="overall">Overall</option>
-                </select>
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Color Theme</label>
-                <select
-                  name="colorTheme"
-                  value={exportOptions.colorTheme}
-                  onChange={handleExportOptionChange}
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  <option value="default">Default</option>
-                </select>
-              </div>
-              
-              <button
-                onClick={exportAttendanceData}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded"
-              >
-                Generate Report
-              </button>
-            </div>
-          )}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-blue-100 dark:border-gray-600">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-blue-500 rounded-lg">
+            <Users className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Attendance Analytics</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Comprehensive attendance insights and reports</p>
+          </div>
         </div>
-      </div>
+        
+        <div className="flex flex-wrap gap-2">
+          {/* Combined PDF Export */}
+          {jsPDF && html2canvas && (
+            <button 
+              onClick={exportAllChartsAsPDF}
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 flex items-center shadow-md transition-all duration-200 transform hover:scale-105"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              <span className='hidden sm:block'>Export All PDF</span>
+              <span className='sm:hidden'>PDF</span>
+            </button>
+          )}
+          
+          <div className="relative">
+            <button 
+              onClick={toggleExportModal}
+              className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 flex items-center shadow-md transition-all duration-200 transform hover:scale-105"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              <span className='hidden sm:block'>Export Data</span>
+              <span className='sm:hidden'>Data</span>
+              <ChevronDown className="w-4 h-4 ml-1" />
+            </button>
+          
+            {/* Export Options Modal */}
+            {exportOptions.showExportModal && (
+              <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-700 rounded-xl shadow-xl z-10 p-5 border border-gray-200 dark:border-gray-600">
+                <div className="flex items-center mb-4">
+                  <Download className="w-5 h-5 text-blue-500 mr-2" />
+                  <h3 className="font-semibold text-gray-800 dark:text-white">Export Data Options</h3>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Format</label>
+                  <select
+                    name="format"
+                    value={exportOptions.format}
+                    onChange={handleExportOptionChange}
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 dark:text-white transition-all duration-200"
+                  >
+                    {XLSX && <option value="excel">Excel (.xlsx)</option>}
+                    <option value="csv">CSV (.csv)</option>
+                  </select>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Time Range</label>
+                  <select
+                    name="timeRange"
+                    value={exportOptions.timeRange}
+                    onChange={handleExportOptionChange}
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 dark:text-white transition-all duration-200"
+                  >
+                    <option value="lastMonth">Last Month</option>
+                    <option value="lastTwoMonths">Last Two Months</option>
+                    <option value="lastSixMonths">Last Six Months</option>
+                    <option value="lastYear">Last Year</option>
+                    <option value="overall">Overall</option>
+                  </select>
+                </div>
+                
+                <div className="mb-5">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Color Theme</label>
+                  <select
+                    name="colorTheme"
+                    value={exportOptions.colorTheme}
+                    onChange={handleExportOptionChange}
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 dark:text-white transition-all duration-200"
+                  >
+                    <option value="default">Default</option>
+                  </select>
+                </div>
+                
+                <button
+                  onClick={exportAttendanceData}
+                  className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-2.5 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
+                  Generate Report
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        </div>
+    
       
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -717,8 +887,28 @@ const AttendanceChart = ({ clubId }) => {
       </div>
       
       {/* Meeting Attendance Bar Chart */}
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Meeting Attendance</h3>
+      <div className="mb-8" ref={meetingChartRef}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Meeting Attendance</h3>
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => exportAsSVG(meetingChartRef, 'meeting_attendance')}
+              className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 flex items-center text-sm transition-all duration-200"
+            >
+              <Download className="w-3 h-3 mr-1" />
+              SVG
+            </button>
+            {jsPDF && html2canvas && (
+              <button 
+                onClick={() => exportAsPDF(meetingChartRef, 'meeting_attendance')}
+                className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 flex items-center text-sm transition-all duration-200"
+              >
+                <Download className="w-3 h-3 mr-1" />
+                PDF
+              </button>
+            )}
+          </div>
+        </div>
         <div className="h-64">
           {attendanceData.meetings.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -754,6 +944,69 @@ const AttendanceChart = ({ clubId }) => {
           ) : (
             <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
               <p className="text-gray-500">No meeting attendance data available</p>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Member Performance Chart */}
+      <div className="mb-8" ref={memberChartRef}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Member Performance</h3>
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => exportAsSVG(memberChartRef, 'member_performance')}
+              className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 flex items-center text-sm transition-all duration-200"
+            >
+              <Download className="w-3 h-3 mr-1" />
+              SVG
+            </button>
+            {jsPDF && html2canvas && (
+              <button 
+                onClick={() => exportAsPDF(memberChartRef, 'member_performance')}
+                className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 flex items-center text-sm transition-all duration-200"
+              >
+                <Download className="w-3 h-3 mr-1" />
+                PDF
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="h-64">
+          {attendanceData.members.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={attendanceData.members.slice(0, 10)} // Show top 10 members
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="name" 
+                  tick={props => (
+                    <text {...props} fill="#666" fontSize={10} textAnchor="end" angle={-45} dy={10} dx={-10}>
+                      {props.payload.value.length > 15 
+                        ? `${props.payload.value.substring(0, 15)}...` 
+                        : props.payload.value}
+                    </text>
+                  )}
+                  height={60}
+                />
+                <YAxis domain={[0, 100]} label={{ value: 'Attendance %', angle: -90, position: 'insideLeft' }} />
+                <Tooltip 
+                  formatter={(value, name) => {
+                    if (name === 'rate') return [`${value}%`, 'Attendance Rate'];
+                    if (name === 'attended') return [value, 'Meetings Attended'];
+                    return [value, name];
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="rate" name="Attendance Rate (%)" fill="#8b5cf6" />
+                <Bar dataKey="attended" name="Meetings Attended" fill="#06d6a0" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
+              <p className="text-gray-500">No member performance data available</p>
             </div>
           )}
         </div>
