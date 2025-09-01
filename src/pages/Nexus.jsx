@@ -17,7 +17,8 @@ import {
   Filter,
   Grid,
   List,
-  Download
+  Download,
+  Link2
 } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, where, doc, getDoc, getDocs, deleteDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -26,6 +27,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import DomainRulesModal from '../components/nexus/DomainRulesModal';
 import FileUploadModal from '../components/nexus/FileUploadModal';
+import LinkUploadModal from '../components/nexus/LinkUploadModal';
 import FileViewerModal from '../components/nexus/FileViewerModal';
 import DomainCard from '../components/nexus/DomainCard';
 import ResourceCard from '../components/nexus/ResourceCard';
@@ -71,6 +73,16 @@ const DOMAINS = [
     description: 'Code snippets, technical docs and development resources',
     allowedExtensions: ['.js', '.jsx', '.py', '.java', '.cpp', '.html', '.css', '.json', '.xml'],
     categories: ['Code', 'Tutorials', 'APIs','Documentation', 'Tools']
+  }
+  ,
+  {
+    id: 'links',
+    name: 'Links',
+    icon: Link2,
+    color: 'teal',
+    description: 'Save Google Drive/Docs/Sheets, Canva and other useful URLs in one place',
+    allowedExtensions: ['url'],
+    categories: ['Google Drive', 'Google Docs', 'Google Sheets', 'Google Slides', 'Google Forms', 'Canva', 'Figma', 'Notion', 'Dropbox', 'OneDrive', 'GitHub', 'Trello', 'Slack', 'Airtable', 'Miro', 'Other']
   }
 ];
 
@@ -131,6 +143,17 @@ export default function Nexus() {
         setClubsLoading(false);
       }
     };
+
+  const handleCopyLink = async (resource) => {
+    try {
+      if (!resource?.fileUrl) return;
+      await navigator.clipboard.writeText(resource.fileUrl);
+      toast.success('Link copied to clipboard');
+    } catch (e) {
+      console.error('Copy failed', e);
+      toast.error('Failed to copy link');
+    }
+  };
     
     fetchUserClubs();
   }, [currentUser]);
@@ -183,7 +206,24 @@ export default function Nexus() {
   }, [selectedDomain, selectedClub]);
 
   const handleResourceView = async (resource) => {
-    // Increment view count
+    // If Links domain, open URL directly
+    if (selectedDomain?.id === 'links') {
+      try {
+        const resourceRef = doc(db, 'clubs', selectedClub, 'nexus', selectedDomain.id, 'resources', resource.id);
+        await updateDoc(resourceRef, {
+          views: increment(1),
+          lastViewed: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Error updating view count:', error);
+      }
+      if (resource.fileUrl) {
+        window.open(resource.fileUrl, '_blank', 'noopener');
+      }
+      return;
+    }
+
+    // Default behavior (files) -> open viewer modal
     try {
       const resourceRef = doc(db, 'clubs', selectedClub, 'nexus', selectedDomain.id, 'resources', resource.id);
       await updateDoc(resourceRef, {
@@ -193,20 +233,25 @@ export default function Nexus() {
     } catch (error) {
       console.error('Error updating view count:', error);
     }
-    
     setSelectedResource(resource);
     setShowViewerModal(true);
   };
 
   const handleResourceDownload = async (resource) => {
     try {
-      // Increment download count
       const resourceRef = doc(db, 'clubs', selectedClub, 'nexus', selectedDomain.id, 'resources', resource.id);
       await updateDoc(resourceRef, {
         downloads: increment(1),
         lastDownloaded: new Date().toISOString()
       });
-      
+
+      // For links, just open the URL
+      if (selectedDomain?.id === 'links') {
+        if (resource.fileUrl) window.open(resource.fileUrl, '_blank', 'noopener');
+        return;
+      }
+
+      // For files, proceed with download
       const link = document.createElement('a');
       link.href = resource.fileUrl;
       link.download = resource.fileName;
@@ -582,6 +627,7 @@ export default function Nexus() {
                     viewMode={viewMode}
                     onView={() => handleResourceView(resource)}
                     onDownload={() => handleResourceDownload(resource)}
+                    onCopy={() => handleCopyLink(resource)}
                     onEdit={handleResourceEdit}
                     onDelete={handleResourceDelete}
                     isAdmin={isAdmin}
@@ -616,13 +662,23 @@ export default function Nexus() {
         onRulesUpdate={fetchDomainRules}
       />
 
-      <FileUploadModal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        domain={selectedDomain}
-        clubId={selectedClub}
-        onUploadSuccess={() => {}}
-      />
+      {selectedDomain?.id === 'links' ? (
+        <LinkUploadModal
+          isOpen={showUploadModal}
+          onClose={() => setShowUploadModal(false)}
+          domain={selectedDomain}
+          clubId={selectedClub}
+          onUploadSuccess={() => {}}
+        />
+      ) : (
+        <FileUploadModal
+          isOpen={showUploadModal}
+          onClose={() => setShowUploadModal(false)}
+          domain={selectedDomain}
+          clubId={selectedClub}
+          onUploadSuccess={() => {}}
+        />
+      )}
 
       <FileViewerModal
         isOpen={showViewerModal}

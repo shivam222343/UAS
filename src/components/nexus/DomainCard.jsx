@@ -6,7 +6,8 @@ export default function DomainCard({ domain, onClick, isAdmin }) {
     blue: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
     purple: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
     green: 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700',
-    orange: 'from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
+    orange: 'from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700',
+    teal: 'from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700'
   };
 
   return (

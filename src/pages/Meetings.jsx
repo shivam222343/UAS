@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, getDocs, query, where, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -7,6 +7,7 @@ import { Calendar, Clock, Users, MapPin, Laptop, FileText, Check, X, ChevronDown
 import AbsenceRequestModal from '../components/meetings/AbsenceRequestModal';
 import TaskModal from '../components/meetings/TaskModal';
 import Loader from '../components/Loader';
+import html2canvas from 'html2canvas';
 // Add this import for notification (implement sendNotification in your services)
 import { sendNotification } from '../services/SendNotification';
 
@@ -36,6 +37,15 @@ export default function Meetings() {
   const [showAllTasksPopup, setShowAllTasksPopup] = useState(false);
   const [selectedMeetingForTasksPopup, setSelectedMeetingForTasksPopup] = useState(null);
 
+  // Screenshot ref for All Tasks popup
+  const allTasksScreenshotRef = useRef(null);
+  const allTasksModalRef = useRef(null);
+  const allTasksScrollRef = useRef(null);
+
+  // Store last generated screenshot for sharing
+  const [lastScreenshotBlob, setLastScreenshotBlob] = useState(null);
+  const [lastScreenshotName, setLastScreenshotName] = useState('');
+
   // New: Sort order state
   const [sortOrder, setSortOrder] = useState('newest');
 
@@ -44,6 +54,12 @@ export default function Meetings() {
   const [userPendingTasksCount, setUserPendingTasksCount] = useState(0);
   const [showPendingTasksPopup, setShowPendingTasksPopup] = useState(false);
   const [pendingTasksList, setPendingTasksList] = useState([]);
+
+  // My Tasks modal state
+  const [showMyTasksPopup, setShowMyTasksPopup] = useState(false);
+  const [myTasksList, setMyTasksList] = useState([]);
+  const [myTasksFilter, setMyTasksFilter] = useState('pending'); // 'pending' | 'completed'
+  const [myTasksSort, setMyTasksSort] = useState('dueDate'); // 'dueDate' | 'meetingDate' | 'title'
 
   useEffect(() => {
     const loadingTimeout = setTimeout(() => {
@@ -73,41 +89,71 @@ export default function Meetings() {
       setPendingTasksCount(0);
       setUserPendingTasksCount(0);
       setPendingTasksList([]);
+      setMyTasksList([]);
       return;
     }
-    let totalPending = 0;
-    let userPending = 0;
-    let pendingList = [];
+    // Count each task once only
+    const pendingTaskIds = new Set();
+    const userPendingTaskIds = new Set();
+    const pendingListMap = new Map(); // key: taskId -> task info once
+    const myTasks = [];
 
     Object.entries(meetingTasks).forEach(([meetingId, tasks]) => {
+      const meetingMeta = meetings.find(m => m.id === meetingId) || {};
       Object.values(tasks).forEach(task => {
-        if (task.assignedTo) {
-          Object.entries(task.assignedTo).forEach(([userId, isAssigned]) => {
-            if (isAssigned) {
-              const isCompleted = task.completion?.[userId] || false;
-              if (!isCompleted) {
-                totalPending++;
-                pendingList.push({
-                  ...task,
-                  meetingId,
-                  assignedUserId: userId,
-                  assignedUserName: clubMembers[userId]?.displayName || 'Unknown',
-                  meetingName: meetings.find(m => m.id === meetingId)?.name || '',
-                  meetingDate: meetings.find(m => m.id === meetingId)?.date || '',
-                });
-                if (userId === currentUser.uid) {
-                  userPending++;
-                }
-              }
-            }
+        const assignedEntries = Object.entries(task.assignedTo || {});
+        // Determine pending for ANY assignee for global pending count
+        const hasAnyPending = assignedEntries.some(([uid, assigned]) => assigned && !((task.completion || {})[uid]));
+        if (hasAnyPending) {
+          pendingTaskIds.add(task.id);
+          if (!pendingListMap.has(task.id)) {
+            pendingListMap.set(task.id, {
+              ...task,
+              meetingId,
+              meetingName: meetingMeta.name || '',
+              meetingDate: meetingMeta.date || '',
+            });
+          }
+        }
+
+        // Build My Tasks list (one entry per task for current user)
+        const meAssigned = (task.assignedTo || {})[currentUser?.uid];
+        if (meAssigned) {
+          const isCompletedForMe = (task.completion || {})[currentUser.uid] || false;
+          myTasks.push({
+            ...task,
+            meetingId,
+            meetingName: meetingMeta.name || '',
+            meetingDate: meetingMeta.date || '',
+            isCompletedForMe,
           });
+          if (!isCompletedForMe) {
+            userPendingTaskIds.add(task.id);
+          }
         }
       });
     });
-    setPendingTasksCount(totalPending);
-    setUserPendingTasksCount(userPending);
-    setPendingTasksList(pendingList);
+
+    setPendingTasksCount(pendingTaskIds.size);
+    setUserPendingTasksCount(userPendingTaskIds.size);
+    setPendingTasksList(Array.from(pendingListMap.values()));
+    setMyTasksList(myTasks);
   }, [meetingTasks, selectedClub, clubMembers, meetings, currentUser]);
+
+  // Derived filtered/sorted My Tasks
+  const myTasksFilteredSorted = useMemo(() => {
+    const list = (myTasksList || []).filter(t => (myTasksFilter === 'pending' ? !t.isCompletedForMe : t.isCompletedForMe));
+    switch (myTasksSort) {
+      case 'title':
+        return [...list].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      case 'meetingDate': {
+        return [...list].sort((a, b) => new Date(a.meetingDate) - new Date(b.meetingDate));
+      }
+      case 'dueDate':
+      default:
+        return [...list].sort((a, b) => new Date(a.dueDate || 0) - new Date(b.dueDate || 0));
+    }
+  }, [myTasksList, myTasksFilter, myTasksSort]);
 
   const fetchUserClubs = async () => {
     try {
@@ -357,6 +403,148 @@ export default function Meetings() {
     setShowAllTasksPopup(true);
   };
 
+  // Helper: capture all tasks area into canvas covering all content
+  const captureAllTasksCanvas = async () => {
+    if (!allTasksScreenshotRef.current) return null;
+
+    // Temporarily expand modal and content to avoid clipping
+    const modalEl = allTasksModalRef.current;
+    const scrollEl = allTasksScrollRef.current;
+    const prevModalMaxH = modalEl ? modalEl.style.maxHeight : '';
+    const prevModalOverflow = modalEl ? modalEl.style.overflow : '';
+    const prevScrollOverflow = scrollEl ? scrollEl.style.overflow : '';
+    const prevScrollMaxH = scrollEl ? scrollEl.style.maxHeight : '';
+
+    if (modalEl) {
+      modalEl.style.maxHeight = 'none';
+      modalEl.style.overflow = 'visible';
+    }
+    if (scrollEl) {
+      scrollEl.style.overflow = 'visible';
+      scrollEl.style.maxHeight = 'none';
+    }
+
+    try {
+      const canvas = await html2canvas(allTasksScreenshotRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        windowWidth: allTasksScreenshotRef.current.scrollWidth,
+        windowHeight: allTasksScreenshotRef.current.scrollHeight,
+      });
+      return canvas;
+    } finally {
+      // Restore styles
+      if (modalEl) {
+        modalEl.style.maxHeight = prevModalMaxH;
+        modalEl.style.overflow = prevModalOverflow;
+      }
+      if (scrollEl) {
+        scrollEl.style.overflow = prevScrollOverflow;
+        scrollEl.style.maxHeight = prevScrollMaxH;
+      }
+    }
+  };
+
+  const handleDownloadAllTasksScreenshot = async () => {
+    try {
+      const canvas = await captureAllTasksCanvas();
+      if (!canvas) return;
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      const safeName = (selectedMeetingForTasksPopup?.name || 'meeting').replace(/[^a-z0-9-_]/gi, '_');
+      link.download = `tasks_${safeName}_${selectedMeetingForTasksPopup?.date || ''}.png`;
+      link.href = dataUrl;
+      link.click();
+
+      // Also store blob for sharing
+      canvas.toBlob((blob) => {
+        if (blob) {
+          setLastScreenshotBlob(blob);
+          setLastScreenshotName(link.download);
+        }
+      }, 'image/png');
+    } catch (e) {
+      console.error('Failed to generate screenshot', e);
+    }
+  };
+
+  const ensureScreenshotBlob = async () => {
+    if (lastScreenshotBlob && lastScreenshotName) return { blob: lastScreenshotBlob, name: lastScreenshotName };
+    const canvas = await captureAllTasksCanvas();
+    if (!canvas) return null;
+    const safeName = (selectedMeetingForTasksPopup?.name || 'meeting').replace(/[^a-z0-9-_]/gi, '_');
+    const filename = `tasks_${safeName}_${selectedMeetingForTasksPopup?.date || ''}.png`;
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          setLastScreenshotBlob(blob);
+          setLastScreenshotName(filename);
+          resolve({ blob, name: filename });
+        } else {
+          resolve(null);
+        }
+      }, 'image/png');
+    });
+  };
+
+  const handleCopyImageToClipboard = async () => {
+    try {
+      const result = await ensureScreenshotBlob();
+      if (!result) return;
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new window.ClipboardItem({ 'image/png': result.blob })
+        ]);
+        // Optionally, show toast (omitted)
+      } else {
+        console.warn('Clipboard image copy not supported in this browser');
+      }
+    } catch (e) {
+      console.error('Failed to copy image', e);
+    }
+  };
+
+  const handleSystemShare = async () => {
+    try {
+      const result = await ensureScreenshotBlob();
+      if (!result) return;
+      const file = new File([result.blob], result.name, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'Meeting Tasks',
+          text: `All tasks for ${selectedMeetingForTasksPopup?.name} (${selectedMeetingForTasksPopup?.date})`,
+          files: [file],
+        });
+      } else {
+        console.warn('System share with files not supported');
+      }
+    } catch (e) {
+      console.error('Failed to share', e);
+    }
+  };
+
+  const handleShareWhatsApp = async () => {
+    try {
+      const text = `All tasks for ${selectedMeetingForTasksPopup?.name} (${selectedMeetingForTasksPopup?.date}). Image attached if supported.`;
+      // Try system share with file first (mobile browsers)
+      const result = await ensureScreenshotBlob();
+      if (result) {
+        const file = new File([result.blob], result.name, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ title: 'WhatsApp', text, files: [file] });
+          return;
+        }
+      }
+      // Fallback to WhatsApp Web with text (cannot pre-attach image programmatically)
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    } catch (e) {
+      console.error('Failed to open WhatsApp share', e);
+    }
+  };
+
   // Modified: handleTaskStatusChange to send notification if assigned
   const handleTaskStatusChange = async (meetingId, taskId, userId, isCompleted) => {
     try {
@@ -445,9 +633,6 @@ export default function Meetings() {
     );
   };
 
-  
-    
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -476,96 +661,96 @@ export default function Meetings() {
         </select>
       </div>
 
-    <AnimatePresence>
-  {showPendingTasksPopup && (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
-      >
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h3 className="text-xl font-bold dark:text-white">
-            All Pending Tasks ({pendingTasksCount})
-          </h3>
-          <button
-            onClick={() => setShowPendingTasksPopup(false)}
-            className="text-gray-500 hover:text-gray-700 bg-transparent hover:bg-transparent dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <X className="h-6 w-6 text-blue-500 hover:text-purple-600 bg-transparent" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          {pendingTasksList.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No pending tasks found</p>
-            </div>
-          ) : (
-            <ul className="space-y-4">
-              {/* Only show each task once, with all assigned members */}
-              {Array.from(
-                new Map(
-                  pendingTasksList.map(task => [task.id, task])
-                ).values()
-              ).map((task, idx) => (
-                <li key={task.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="font-medium text-lg dark:text-white">{task.title}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Meeting: <span className="font-semibold text-orange-500">{task.meetingName}</span> ({task.meetingDate})
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Assigned to:
-                        <ul className="ml-2 mt-1">
-                          {task.assignedTo && Object.entries(task.assignedTo)
-                            .filter(([userId, isAssigned]) => isAssigned && clubMembers[userId])
-                            .map(([userId]) => (
-                              <li key={userId} className="flex items-center text-xs">
-                                <span className={userId === currentUser.uid ? "text-blue-600 font-semibold" : ""}>
-                                  {clubMembers[userId]?.displayName || 'Unknown'}
-                                  {userId === currentUser.uid && " (You)"}
-                                </span>
-                                {task.completion?.[userId] ? (
-                                  <span className="ml-2 text-green-600">✔️</span>
-                                ) : (
-                                  <span className="ml-2 text-yellow-600">⏳</span>
-                                )}
-                                {userId === currentUser.uid && !task.completion?.[userId] && (
-                                  <button
-                                    onClick={() => handleTaskStatusChange(task.meetingId, task.id, userId, true)}
-                                    className="ml-3 px-2 py-0.5 bg-green-100 text-green-800 rounded hover:bg-green-200 text-xs"
-                                  >
-                                    Mark as Completed
-                                  </button>
-                                )}
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
-                        {renderFormattedText(task.description)}
-                      </div>
-                    </div>
+      <AnimatePresence>
+        {showPendingTasksPopup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
+            >
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 className="text-xl font-bold dark:text-white">
+                  All Pending Tasks ({pendingTasksCount})
+                </h3>
+                <button
+                  onClick={() => setShowPendingTasksPopup(false)}
+                  className="text-gray-500 hover:text-gray-700 bg-transparent hover:bg-transparent dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X className="h-6 w-6 text-blue-500 hover:text-purple-600 bg-transparent" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                {pendingTasksList.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">No pending tasks found</p>
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-          <button
-            onClick={() => setShowPendingTasksPopup(false)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Close
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  )}
-</AnimatePresence>
+                ) : (
+                  <ul className="space-y-4">
+                    {/* Only show each task once, with all assigned members */}
+                    {Array.from(
+                      new Map(
+                        pendingTasksList.map(task => [task.id, task])
+                      ).values()
+                    ).map((task, idx) => (
+                      <li key={task.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <div className="font-medium text-lg dark:text-white">{task.title}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Meeting: <span className="font-semibold text-orange-500">{task.meetingName}</span> ({task.meetingDate})
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              Assigned to:
+                              <ul className="ml-2 mt-1">
+                                {task.assignedTo && Object.entries(task.assignedTo)
+                                  .filter(([userId, isAssigned]) => isAssigned && clubMembers[userId])
+                                  .map(([userId]) => (
+                                    <li key={userId} className="flex items-center text-xs">
+                                      <span className={userId === currentUser.uid ? "text-blue-600 font-semibold" : ""}>
+                                        {clubMembers[userId]?.displayName || 'Unknown'}
+                                        {userId === currentUser.uid && " (You)"}
+                                      </span>
+                                      {task.completion?.[userId] ? (
+                                        <span className="ml-2 text-green-600">✔️</span>
+                                      ) : (
+                                        <span className="ml-2 text-yellow-600">⏳</span>
+                                      )}
+                                      {userId === currentUser.uid && !task.completion?.[userId] && (
+                                        <button
+                                          onClick={() => handleTaskStatusChange(task.meetingId, task.id, userId, true)}
+                                          className="ml-3 px-2 py-0.5 bg-green-100 text-green-800 rounded hover:bg-green-200 text-xs"
+                                        >
+                                          Mark as Completed
+                                        </button>
+                                      )}
+                                    </li>
+                                  ))}
+                              </ul>
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
+                              {renderFormattedText(task.description)}
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <button
+                  onClick={() => setShowPendingTasksPopup(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Pending Tasks Summary Bar */}
       {selectedClub && (
@@ -585,6 +770,12 @@ export default function Meetings() {
             className="px-4 py-2 w-full md:w-fit bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
           >
             View All Pending Tasks
+          </button>
+          <button
+            onClick={() => setShowMyTasksPopup(true)}
+            className="mt-2 px-4 py-2 w-full md:w-fit bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          >
+            View My Tasks
           </button>
         </div>
       )}
@@ -635,7 +826,7 @@ export default function Meetings() {
           </p>
         </motion.div>
       )}
-  {selectedClub && meetings.length > 0 && (
+      {selectedClub && meetings.length > 0 && (
         <div className="space-y-8">
           <div>
             <h2 className="text-xl font-semibold mb-4">Upcoming Meetings</h2>
@@ -1044,28 +1235,56 @@ export default function Meetings() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
+              ref={allTasksModalRef}
             >
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-bold dark:text-white">
                     All Tasks for {selectedMeetingForTasksPopup.name}
                   </h3>
-                  <button
-                    onClick={() => setShowAllTasksPopup(false)}
-                    className="text-gray-500 hover:text-gray-700 bg-transparent hover:bg-transparent dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    <X className="h-6 w-6 text-blue-500 hover:text-purple-600 bg-transparent" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDownloadAllTasksScreenshot}
+                      className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                    >
+                      Download Screenshot
+                    </button>
+                    <button
+                      onClick={handleCopyImageToClipboard}
+                      className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+                    >
+                      Copy Image
+                    </button>
+                    <button
+                      onClick={handleSystemShare}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                    >
+                      Share
+                    </button>
+                    <button
+                      onClick={handleShareWhatsApp}
+                      className="px-3 py-1 bg-[#25D366] text-white rounded-md hover:opacity-90 text-sm"
+                    >
+                      WhatsApp
+                    </button>
+                    <button
+                      onClick={() => setShowAllTasksPopup(false)}
+                      className="text-gray-500 hover:text-gray-700 bg-transparent hover:bg-transparent dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      <X className="h-6 w-6 text-blue-500 hover:text-purple-600 bg-transparent" />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 mt-1">
                   Meeting Date: {selectedMeetingForTasksPopup.date}
                 </p>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6">
-                {meetingTasks[selectedMeetingForTasksPopup.id] ? (
-                  Object.values(meetingTasks[selectedMeetingForTasksPopup.id]).length > 0 ? (
-                    <ul className="space-y-4">
+              <div className="flex-1 overflow-y-auto p-6" ref={allTasksScrollRef}>
+                <div ref={allTasksScreenshotRef} className="relative">
+                  {meetingTasks[selectedMeetingForTasksPopup.id] ? (
+                    Object.values(meetingTasks[selectedMeetingForTasksPopup.id]).length > 0 ? (
+                      <ul className="space-y-4">
                       {Object.values(meetingTasks[selectedMeetingForTasksPopup.id]).map((task) => {
                         // Get emoji based on task status
                         let emoji = '📝'; // Default emoji
@@ -1178,6 +1397,8 @@ export default function Meetings() {
                   </div>
                 )}
               </div>
+              {/* Close scroll container */}
+              </div>
 
               <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
                 <button
@@ -1186,6 +1407,96 @@ export default function Meetings() {
                 >
                   Close
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* My Tasks Popup */}
+      <AnimatePresence>
+        {showMyTasksPopup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-3xl w-full max-h-[85vh] flex flex-col"
+            >
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <h3 className="text-xl font-bold dark:text-white">My Tasks</h3>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm dark:text-gray-300">Show</label>
+                    <select value={myTasksFilter} onChange={e => setMyTasksFilter(e.target.value)} className="p-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-sm">
+                      <option value="pending">Pending</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm dark:text-gray-300">Sort</label>
+                    <select value={myTasksSort} onChange={e => setMyTasksSort(e.target.value)} className="p-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-sm">
+                      <option value="dueDate">Due Date</option>
+                      <option value="meetingDate">Meeting Date</option>
+                      <option value="title">Title</option>
+                    </select>
+                  </div>
+                  <button onClick={() => setShowMyTasksPopup(false)} className="ml-auto px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Close</button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                {myTasksFilteredSorted.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">No tasks found</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-4">
+                    {myTasksFilteredSorted.map(task => (
+                      <li key={task.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-medium text-lg dark:text-white">{task.title}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Meeting: <span className="font-semibold text-orange-500">{task.meetingName}</span> ({task.meetingDate})
+                            </div>
+                            {task.dueDate && (
+                              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Due: {task.dueDate}</div>
+                            )}
+                            <div className="text-sm text-gray-600 dark:text-gray-300 mt-2 whitespace-pre-wrap">
+                              {renderFormattedText(task.description)}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className={`px-2 py-0.5 rounded text-xs ${task.isCompletedForMe ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}`}>
+                              {task.isCompletedForMe ? 'Completed' : 'Pending'}
+                            </span>
+                            <button
+                              onClick={() => handleTaskStatusChange(task.meetingId, task.id, currentUser.uid, !task.isCompletedForMe)}
+                              className={`px-3 py-1 rounded text-xs ${task.isCompletedForMe ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}`}
+                            >
+                              Mark as {task.isCompletedForMe ? 'Pending' : 'Completed'}
+                            </button>
+                          </div>
+                        </div>
+                        {task.assignedTo && (
+                          <div className="mt-3">
+                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Assigned Members</div>
+                            <ul className="flex flex-wrap gap-2 text-xs">
+                              {Object.entries(task.assignedTo)
+                                .filter(([uid, assigned]) => assigned && clubMembers[uid])
+                                .map(([uid]) => (
+                                  <li key={uid} className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 dark:text-gray-200">
+                                    {clubMembers[uid]?.displayName}{uid === currentUser.uid ? ' (You)' : ''}
+                                  </li>
+                                ))}
+                            </ul>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </motion.div>
           </div>

@@ -12,6 +12,9 @@ import {
   Edit,
   Trash2,
   X,
+  Link2,
+  Globe,
+  Copy,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -21,6 +24,7 @@ export default function ResourceCard({
   viewMode,
   onView,
   onDownload,
+  onCopy,
   onEdit,
   onDelete,
   isAdmin,
@@ -29,9 +33,19 @@ export default function ResourceCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const getFileIcon = (fileType) => {
+    if (fileType === 'url') return Link2;
     if (fileType?.startsWith("image/")) return Image;
     if (fileType?.includes("pdf") || fileType?.includes("document")) return FileText;
     return File;
+  };
+
+  const getFavicon = (url) => {
+    try {
+      const u = new URL(url);
+      return `https://www.google.com/s2/favicons?sz=128&domain=${u.hostname}`;
+    } catch {
+      return null;
+    }
   };
 
   const formatFileSize = (bytes) => {
@@ -206,6 +220,16 @@ export default function ResourceCard({
                 <Download className="h-4 w-4" />
               </div>
 
+              {resource.fileType === 'url' && (
+                <div
+                  onClick={onCopy}
+                  className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors cursor-pointer"
+                  title="Copy Link"
+                >
+                  <Copy className="h-4 w-4" />
+                </div>
+              )}
+
               {resource.featured && (
                 <Star className="h-4 w-4 text-yellow-500 fill-current" />
               )}
@@ -277,6 +301,16 @@ export default function ResourceCard({
               >
                 <Download className="h-5 w-5" />
               </div>
+
+              {resource.fileType === 'url' && (
+                <div
+                  onClick={onCopy}
+                  className="p-3 bg-white text-gray-900 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+                  title="Copy Link"
+                >
+                  <Copy className="h-5 w-5" />
+                </div>
+              )}
             </div>
           </div>
         </div>
