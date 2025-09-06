@@ -45,6 +45,7 @@ import ClubMemberManagement from '../components/admin/ClubMemberManagement';
 import AttendanceMarker from '../components/admin/AttendanceMarker';
 import AttendanceWarnings from '../components/admin/AttendanceWarnings';
 import Loader from '../components/Loader';
+import { sendMeetingAnnouncement } from '../services/emailService';
 
 const AdminDashboard = () => {
   const [error, setError] = useState('');
@@ -204,6 +205,14 @@ const AdminDashboard = () => {
         clubId: newMeeting.clubId,
         createdAt: serverTimestamp()
       });
+
+      // Send email announcement to all club members via EmailJS
+      try {
+        await sendMeetingAnnouncement(newMeeting.clubId, meetingRef.id, meetingData);
+      } catch (emailErr) {
+        console.error('Failed to send meeting announcement emails:', emailErr);
+        // Do not block meeting creation on email failures
+      }
 
       // Reset form and close modal
       setShowMeetingModal(false);
