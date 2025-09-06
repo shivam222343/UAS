@@ -78,6 +78,7 @@ const AdminDashboard = () => {
     status: 'upcoming',
     clubId: ''
   });
+  const [creatingMeeting, setCreatingMeeting] = useState(false);
 
   // State for access keys
   const [accessKeys, setAccessKeys] = useState([
@@ -162,6 +163,7 @@ const AdminDashboard = () => {
     }
 
     try {
+      setCreatingMeeting(true);
       // Create a meeting object with only the necessary fields based on mode
       const meetingData = {
         name: newMeeting.name,
@@ -235,6 +237,8 @@ const AdminDashboard = () => {
     } catch (err) {
       setError('Failed to create meeting');
       console.error(err);
+    } finally {
+      setCreatingMeeting(false);
     }
   };
 
@@ -666,9 +670,11 @@ const AdminDashboard = () => {
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={creatingMeeting}
+              aria-busy={creatingMeeting}
+              className={`px-6 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white ${creatingMeeting ? 'bg-blue-400 cursor-not-allowed opacity-70' : 'bg-blue-600 hover:bg-blue-700'}`}
             >
-              Create Meeting
+              {creatingMeeting ? 'Creating…' : 'Create Meeting'}
             </button>
           </div>
         </form>
