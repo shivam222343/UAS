@@ -18,6 +18,7 @@ import CalendarView from './pages/CalendarView';
 import Analytics from './pages/Analytics';
 import TeamGallary from './pages/TeamGallary';
 import Nexus from './pages/Nexus';
+import TaskTrack from './pages/TaskTrack';
 import { Toaster, toast } from 'react-hot-toast';
 import { TaskReminderProcessor } from './services/taskReminderProcessor';
 import QRGenerator from './pages/QRGenerator';
@@ -108,6 +109,7 @@ const App = () => {
                 <Route path="members" element={<Members />} />
                 <Route path="meetings" element={<Meetings />} />
                 <Route path="calendar" element={<CalendarView />} />
+                <Route path="task-track" element={<TaskTrack />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="profile" element={<Profile />} />

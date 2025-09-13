@@ -19,7 +19,8 @@ import {
   PanelsRightBottom,
   Shield,
   Bot,
-  Network
+  Network,
+  Target
 } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,6 +35,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Members', href: '/members', icon: Users },
     { name: 'Meetings', href: '/meetings', icon: Calendar },
+    { name: 'Task Track', href: '/task-track', icon: Target },
     { name: 'Panels', href: '/panel', icon: PanelsRightBottom },
     { name: 'Gallery', href: '/teamgallary', icon: Image },
     { name: 'Nexus', href: '/nexus', icon: Network },
@@ -132,6 +134,11 @@ const Sidebar = ({ isOpen, onClose }) => {
                     )}
                     {item.name === 'Nexus' && (
                       <div className="ml-2 px-2 py-[2px] bg-purple-200 dark:text-white dark:bg-purple-700 rounded-lg">
+                        New
+                      </div>
+                    )}
+                    {item.name === 'Task Track' && (
+                      <div className="ml-2 px-2 py-[2px] bg-orange-200 dark:text-white dark:bg-orange-700 rounded-lg">
                         New
                       </div>
                     )}
