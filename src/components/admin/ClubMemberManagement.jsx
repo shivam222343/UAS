@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, getDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, UserX, AlertTriangle, Shield, Users } from 'lucide-react';
+import { User, UserX, AlertTriangle, Shield, Users, RotateCcw, Lock, Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Loader from '../Loader';
 import AttendanceWarnings from './AttendanceWarnings';
@@ -19,6 +19,11 @@ const ClubMemberManagement = () => {
   // Remove member modal state
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState(null);
+  
+  // Reset count modal state
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     fetchClubs();
@@ -70,6 +75,25 @@ const ClubMemberManagement = () => {
         const memberId = memberDoc.id;
         const memberData = memberDoc.data();
         
+        // Check if count reached 3 and handle auto-reset with warning
+        let missedCount = memberData.missedMeetingCount || 0;
+        if (missedCount >= 3) {
+          // Send warning notification if not already sent for this cycle
+          if (!memberData.warningEmailSent) {
+            await sendWarningNotification(memberId, memberData.displayName || 'Member');
+            await updateDoc(doc(db, 'clubs', selectedClub, 'members', memberId), {
+              warningEmailSent: true
+            });
+          }
+          
+          // Reset count to 0 after warning
+          missedCount = 0;
+          await updateDoc(doc(db, 'clubs', selectedClub, 'members', memberId), {
+            missedMeetingCount: 0,
+            warningEmailSent: false // Reset for next cycle
+          });
+        }
+        
         // Get user details from users collection
         let userDetails = {
           id: memberId,
@@ -78,7 +102,7 @@ const ClubMemberManagement = () => {
           photoURL: null,
           role: memberData.role || 'member',
           joinedAt: memberData.joinedAt?.toDate() || null,
-          missedMeetingCount: memberData.missedMeetingCount || 0,
+          missedMeetingCount: missedCount,
           warningEmailSent: memberData.warningEmailSent || false
         };
         
@@ -121,9 +145,6 @@ const ClubMemberManagement = () => {
     }
   };
 
-
-  
-
   const handleRoleChange = async (userId, newRole) => {
     try {
       // Update role in club member subcollection
@@ -162,13 +183,70 @@ const ClubMemberManagement = () => {
     }
   };
 
-  // Handle opening remove member modal
   const handleOpenRemoveModal = (member) => {
     setMemberToRemove(member);
     setShowRemoveModal(true);
   };
 
-  // Handle removing a member from club
+  // Send warning notification to member
+  const sendWarningNotification = async (userId, userName) => {
+    try {
+      await addDoc(collection(db, 'users', userId, 'notifications'), {
+        type: 'attendance_warning',
+        title: 'Attendance Warning',
+        message: `You have missed 3 meetings. Please improve your attendance to avoid removal from the club.`,
+        read: false,
+        createdAt: serverTimestamp(),
+        priority: 'high'
+      });
+      console.log(`Warning notification sent to ${userName}`);
+    } catch (error) {
+      console.error('Error sending warning notification:', error);
+    }
+  };
+
+  // Handle resetting all member counts
+  const handleResetAllCounts = async () => {
+    if (resetPassword !== 'RESET_MAVERICKS_COUNT') {
+      setError('Incorrect password. Please enter the correct password.');
+      return;
+    }
+
+    try {
+      setResetting(true);
+      
+      // Reset all members' missed meeting counts to 0
+      const membersRef = collection(db, 'clubs', selectedClub, 'members');
+      const membersSnapshot = await getDocs(membersRef);
+      
+      const resetPromises = membersSnapshot.docs.map(async memberDoc => {
+        await updateDoc(doc(db, 'clubs', selectedClub, 'members', memberDoc.id), {
+          missedMeetingCount: 0,
+          warningEmailSent: false
+        });
+      });
+      
+      await Promise.all(resetPromises);
+      
+      // Refresh the members list
+      await fetchClubMembers();
+      
+      setSuccess(`Successfully reset missed meeting counts for all ${membersSnapshot.size} members`);
+      setShowResetModal(false);
+      setResetPassword('');
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
+    } catch (err) {
+      console.error('Error resetting counts:', err);
+      setError('Failed to reset member counts');
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const handleRemoveMember = async () => {
     if (!memberToRemove) return;
     
@@ -247,22 +325,34 @@ const ClubMemberManagement = () => {
         </div>
       )}
       
-      {/* Club selection */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Club</label>
-        <select
-          value={selectedClub}
-          onChange={(e) => setSelectedClub(e.target.value)}
-          className="w-full md:w-1/3 border border-gray-300 rounded-md px-3 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Select a club</option>
-          {clubs.map(club => (
-            <option key={club.id} value={club.id}>{club.name}</option>
-          ))}
-        </select>
+      {/* Club selection and Reset Button */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Club</label>
+          <select
+            value={selectedClub}
+            onChange={(e) => setSelectedClub(e.target.value)}
+            className="w-full md:w-2/3 border border-gray-300 rounded-md px-3 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select a club</option>
+            {clubs.map(club => (
+              <option key={club.id} value={club.id}>{club.name}</option>
+            ))}
+          </select>
+        </div>
+        
+        {selectedClub && members.length > 0 && (
+          <button
+            onClick={() => setShowResetModal(true)}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center gap-2 transition-colors"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reset All Counts
+          </button>
+        )}
       </div>
 
-<AttendanceWarnings clubId={selectedClub} />
+      <AttendanceWarnings clubId={selectedClub} />
       
       {/* Members list */}
       {selectedClub ? (
@@ -435,8 +525,94 @@ const ClubMemberManagement = () => {
           </motion.div>
         </div>
       )}
+
+      {/* Reset Count Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4 w-full"
+          >
+            <div className="text-center mb-4">
+              <div className="flex items-center justify-center mb-3">
+                <Lock className="h-12 w-12 text-red-500 mr-2" />
+                <Bell className="h-8 w-8 text-yellow-500" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                Reset All Member Counts
+              </h3>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                This will reset the missed meeting count to 0 for all {members.length} members in this club.
+              </p>
+              
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
+                <div className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mr-2" />
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                    This action cannot be undone!
+                  </p>
+                </div>
+              </div>
+              
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Enter password to confirm:
+              </label>
+              <input
+                type="password"
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+                placeholder="RESET_MAVERICKS_COUNT"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleResetAllCounts();
+                  }
+                }}
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Password: RESET_MAVERICKS_COUNT
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowResetModal(false);
+                  setResetPassword('');
+                  setError('');
+                }}
+                disabled={resetting}
+                className="px-4 py-2 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetAllCounts}
+                disabled={resetting || !resetPassword}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {resetting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Resetting...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="h-4 w-4" />
+                    Reset All Counts
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default ClubMemberManagement; 
+export default ClubMemberManagement;

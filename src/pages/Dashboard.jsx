@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import AnalyticalLoader from '../components/AnalyticalLoader';
 import Loader from '../components/Loader';
-import PublicAttendanceWarnings from '../components/club/PublicAttendanceWarnings';
+import DashboardAttendanceWarnings from '../components/admin/DashboardAttendanceWarnings';
 import JoinClub from '../components/clubs/JoinClub';
 import {
   PieChart,
@@ -761,18 +761,13 @@ export default function Dashboard() {
           )}
 
           <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4 dark:text-white">Attendance Warnings</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              The following members have missed 3 or more consecutive meetings in their clubs and have been notified:
-            </p>
-
             {userClubIds.length > 0 ? (
               <div className="space-y-6">
                 {selectedClub ? (
-                  <PublicAttendanceWarnings key={selectedClub} clubId={selectedClub} />
+                  <DashboardAttendanceWarnings key={selectedClub} clubId={selectedClub} />
                 ) : (
                   userClubIds.map(clubId => (
-                    <PublicAttendanceWarnings key={clubId} clubId={clubId} />
+                    <DashboardAttendanceWarnings key={clubId} clubId={clubId} />
                   ))
                 )}
               </div>
