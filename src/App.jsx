@@ -28,6 +28,7 @@ import Mavericks from './pages/Mavericks';
 import Info from './components/layout/Info';
 import Panel from './pages/Panel';
 import { useAuth } from './contexts/AuthContext';
+import Invicta from './pages/Invicta';
 
 import './styles/Forms.css';
 
@@ -101,6 +102,8 @@ const App = () => {
               {/* Public Routes */}
               <Route path="/signin" element={<PublicRoute><SignIn /></PublicRoute>} />
               <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+              {/* Truly public route accessible even when logged in */}
+              <Route path="/invicta" element={<Invicta />} />
 
               {/* Protected Routes */}
               <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
