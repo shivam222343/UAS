@@ -42,7 +42,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [selectedClub, setSelectedClub] = useState('');
   const [userClubs, setUserClubs] = useState([]);
-  
+
   const [formData, setFormData] = useState({
     displayName: '',
     email: '',
@@ -66,12 +66,12 @@ const Profile = () => {
       });
       fetchUserClubs();
     }
-    
+
     // Simulate loading delay
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-    
+
     return () => clearTimeout(timer);
   }, [currentUser]);
 
@@ -80,19 +80,19 @@ const Profile = () => {
       // Fetch the clubs the user has joined
       const userDocRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userDocRef);
-      
-      
-      
+
+
+
       if (userDoc.exists() && userDoc.data().clubsJoined) {
         const clubsJoined = userDoc.data().clubsJoined;
         const clubDetails = [];
-        
+
         // Fetch details for each club
         for (const clubId of Object.keys(clubsJoined)) {
           const clubDocRef = doc(db, 'clubs', clubId);
           const clubDoc = await getDoc(clubDocRef);
-          
-          
+
+
 
           if (clubDoc.exists()) {
             clubDetails.push({
@@ -101,9 +101,9 @@ const Profile = () => {
             });
           }
         }
-        
+
         setUserClubs(clubDetails);
-        
+
         // If there's only one club, select it automatically
         if (clubDetails.length === 1) {
           setSelectedClub(clubDetails[0].id);
@@ -150,11 +150,11 @@ const Profile = () => {
   };
 
   console.log(currentUser?.photoURL);
-  
+
 
   if (loading) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="flex flex-col items-center justify-center min-h-[50vh]"
@@ -173,7 +173,7 @@ const Profile = () => {
       className="p-1 lg:p-8"
     >
       <div className="space-y-6">
-        
+
 
         {error && (
           <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
@@ -190,21 +190,19 @@ const Profile = () => {
         {/* Profile Tabs */}
         <div className="flex border-b gap-4  border-gray-200 mb-6">
           <button
-            className={`py-2 px-4 font-medium mb-5 text-sm border-b-2 ${
-              activeTab === 'profile'
-                ? 'dark:text-white hover:text-white hover:bg-gray-400 dark:bg-gray-800 bg-gray-100 text-black' 
-                  : 'dark:text-white hover:text-white hover:bg-gray-400 text-gray-500 dark:bg-gray-800 bg-gray-100'
-            }`}
+            className={`py-2 px-4 font-medium mb-5 text-sm border-b-2 ${activeTab === 'profile'
+                ? 'dark:text-white hover:text-white hover:bg-gray-400 dark:bg-gray-800 bg-gray-100 text-black'
+                : 'dark:text-white hover:text-white hover:bg-gray-400 text-gray-500 dark:bg-gray-800 bg-gray-100'
+              }`}
             onClick={() => setActiveTab('profile')}
           >
             Profile
           </button>
           <button
-            className={`py-2 px-4 font-medium  mb-5 text-sm border-b-2 ${
-              activeTab === 'attendance'
-                ? 'dark:text-white hover:text-white hover:bg-gray-400 dark:bg-gray-800 bg-gray-100 text-black' 
-                  : 'dark:text-white hover:text-white hover:bg-gray-400 text-gray-500 dark:bg-gray-800 bg-gray-100'
-            }`}
+            className={`py-2 px-4 font-medium  mb-5 text-sm border-b-2 ${activeTab === 'attendance'
+                ? 'dark:text-white hover:text-white hover:bg-gray-400 dark:bg-gray-800 bg-gray-100 text-black'
+                : 'dark:text-white hover:text-white hover:bg-gray-400 text-gray-500 dark:bg-gray-800 bg-gray-100'
+              }`}
             onClick={() => setActiveTab('attendance')}
           >
             Attendance
@@ -225,24 +223,24 @@ const Profile = () => {
               className="md:col-span-1"
             >
               <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-card hover:shadow-hover transition-shadow">
-              <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-secondary-900 dark:text-white">
-            My Profile
-          </h1>
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="px-4 flex text-md gap-2 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-          >
-           {
-            isEditing &&  <div className='rotate-45'><Cross/></div>
-           }
-            {
-            
-            !isEditing &&  <Edit/>
-           }
-            <div className='hidden md:block'>{isEditing ? 'Cancel' : 'Edit Profile'}</div>
-          </button>
-        </div>
+                <div className="flex items-center justify-between">
+                  <h1 className="text-2xl font-semibold text-secondary-900 dark:text-white">
+                    My Profile
+                  </h1>
+                  <button
+                    onClick={() => setIsEditing(!isEditing)}
+                    className="px-4 flex text-md gap-2 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                  >
+                    {
+                      isEditing && <div className='rotate-45'><Cross /></div>
+                    }
+                    {
+
+                      !isEditing && <Edit />
+                    }
+                    <div className='hidden md:block'>{isEditing ? 'Cancel' : 'Edit Profile'}</div>
+                  </button>
+                </div>
                 <div className="flex mt-4 flex-col items-center text-center">
                   <div className="relative mb-4">
                     <img
@@ -394,7 +392,7 @@ const Profile = () => {
         {activeTab === 'attendance' && (
           <div>
             <h2 className="text-2xl font-bold mb-6">My Attendance</h2>
-            
+
             {userClubs.length === 0 ? (
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
                 <p className="text-yellow-700">
@@ -416,7 +414,7 @@ const Profile = () => {
                     ))}
                   </select>
                 </div>
-                
+
                 {selectedClub ? (
                   <UserAttendanceStats clubId={selectedClub} />
                 ) : (

@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { collection, getDocs, query, where, orderBy, limit, getDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { fetchWithCache, cacheManager } from '../utils/firestoreOptimizations';
+import { SkeletonStatCard, SkeletonChart, SkeletonMeetingCard } from '../components/common/SkeletonLoader';
 import {
   Calendar,
   Users,
@@ -289,57 +291,62 @@ export default function Dashboard() {
     }
   };
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
-      // Set both loading states to true initially
       setLoading(true);
       setContentLoading(true);
       const clubId = selectedClub;
 
-      // 1. Fetch all meetings for the selected club in one query
-      const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
-      const meetingsSnapshot = await getDocs(meetingsRef);
-      const allMeetings = meetingsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        clubId: clubId,
-        ...doc.data()
-      }));
+      // Use cache to avoid redundant fetches
+      const cacheKey = `dashboard-${clubId}`;
+      const cachedData = await fetchWithCache(cacheKey, async () => {
+        // Fetch meetings and members in parallel
+        const [meetingsSnapshot, membersSnapshot] = await Promise.all([
+          getDocs(collection(db, 'clubs', clubId, 'meetings')),
+          getDocs(collection(db, 'clubs', clubId, 'members'))
+        ]);
 
-      // 2. Fetch all members for the selected club in one query
-      const membersRef = collection(db, 'clubs', clubId, 'members');
-      const membersSnapshot = await getDocs(membersRef);
-      const members = membersSnapshot.docs.map(doc => doc.data());
-      const memberCount = members.length;
+        const allMeetings = meetingsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          clubId: clubId,
+          ...doc.data()
+        }));
+
+        const memberCount = membersSnapshot.size;
+
+        return { allMeetings, memberCount };
+      }, 2 * 60 * 1000); // Cache for 2 minutes
+
+      const { allMeetings, memberCount } = cachedData;
 
       const totalMeetings = allMeetings.length;
       const upcomingMeetings = allMeetings.filter(m => m.status === 'upcoming').length;
       const totalMembers = memberCount;
 
-      let totalAttendance = 0;
-      let attendanceCount = 0;
-
-      // Now, iterate through meetings using the fetched member data (no more queries in the loop)
-      for (const meeting of allMeetings) {
+      // Calculate attendance rate efficiently
+      const attendanceData = allMeetings.reduce((acc, meeting) => {
         if (meeting.attendanceMarked) {
           const attendeeCount = meeting.attendees ? Object.keys(meeting.attendees).length : 0;
           if (memberCount > 0) {
-            totalAttendance += (attendeeCount / memberCount) * 100;
-            attendanceCount++;
+            acc.totalAttendance += (attendeeCount / memberCount) * 100;
+            acc.count++;
           }
         }
-      }
+        return acc;
+      }, { totalAttendance: 0, count: 0 });
 
-      const attendanceRate = attendanceCount > 0
-        ? Math.round(totalAttendance / attendanceCount)
+      const attendanceRate = attendanceData.count > 0
+        ? Math.round(attendanceData.totalAttendance / attendanceData.count)
         : 0;
 
-      allMeetings.sort((a, b) => {
-        const dateA = new Date(`${a.date} ${a.time}`);
-        const dateB = new Date(`${b.date} ${b.time}`);
-        return dateB - dateA;
-      });
-
-      const recentMeetingsList = allMeetings.slice(0, 5);
+      // Sort and slice in one operation
+      const recentMeetingsList = allMeetings
+        .sort((a, b) => {
+          const dateA = new Date(`${a.date} ${a.time}`);
+          const dateB = new Date(`${b.date} ${b.time}`);
+          return dateB - dateA;
+        })
+        .slice(0, 5);
 
       setStats({
         totalMeetings,
@@ -349,7 +356,6 @@ export default function Dashboard() {
       });
       setRecentMeetings(recentMeetingsList);
       setLoading(false);
-      // Set content loading to false after data is fetched
       setContentLoading(false);
     } catch (err) {
       setError('Failed to fetch dashboard data');
@@ -357,7 +363,7 @@ export default function Dashboard() {
       setContentLoading(false);
       console.error(err);
     }
-  };
+  }, [selectedClub]);
 
 
   const fetchApprovedAbsences = async () => {
@@ -415,66 +421,68 @@ export default function Dashboard() {
     }
   };
 
-  const fetchUserAttendanceStats = async () => {
+  const fetchUserAttendanceStats = useCallback(async () => {
     try {
       if (!currentUser || !selectedClub) return;
 
       const clubId = selectedClub;
-      const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
-      const meetingsSnapshot = await getDocs(meetingsRef);
-      const totalMeetings = meetingsSnapshot.size;
+      const cacheKey = `user-attendance-${clubId}-${currentUser.uid}`;
 
-      let attended = 0;
-      let missed = 0;
-      let approved = 0;
-      let unauthorized = 0;
+      const stats = await fetchWithCache(cacheKey, async () => {
+        const meetingsRef = collection(db, 'clubs', clubId, 'meetings');
+        const meetingsSnapshot = await getDocs(meetingsRef);
+        const totalMeetings = meetingsSnapshot.size;
 
-      // Use Promise.all to fetch all necessary absence documents concurrently
-      const absencePromises = meetingsSnapshot.docs.map(async (meetingDoc) => {
-        const meetingId = meetingDoc.id;
-        const meetingData = meetingDoc.data();
+        let attended = 0;
+        let approved = 0;
+        let unauthorized = 0;
 
-        if (meetingData.attendees && meetingData.attendees[currentUser.uid]) {
-          return 'attended';
-        } else {
-          const absenceRef = doc(db, 'clubs', clubId, 'meetings', meetingId, 'absences', currentUser.uid);
-          const absenceDoc = await getDoc(absenceRef);
-          if (absenceDoc.exists() && absenceDoc.data().status === 'approved') {
-            return 'approved';
-          } else {
+        // Process meetings more efficiently
+        const absenceChecks = meetingsSnapshot.docs.map(async (meetingDoc) => {
+          const meetingData = meetingDoc.data();
+
+          if (meetingData.attendees?.[currentUser.uid]) {
+            return 'attended';
+          }
+
+          // Only fetch absence doc if not attended
+          try {
+            const absenceRef = doc(db, 'clubs', clubId, 'meetings', meetingDoc.id, 'absences', currentUser.uid);
+            const absenceDoc = await getDoc(absenceRef);
+            return absenceDoc.exists() && absenceDoc.data().status === 'approved' ? 'approved' : 'unauthorized';
+          } catch {
             return 'unauthorized';
           }
-        }
-      });
+        });
 
-      const results = await Promise.all(absencePromises);
-      results.forEach(status => {
-        if (status === 'attended') attended++;
-        else if (status === 'approved') approved++;
-        else if (status === 'unauthorized') unauthorized++;
-      });
+        const results = await Promise.all(absenceChecks);
+        results.forEach(status => {
+          if (status === 'attended') attended++;
+          else if (status === 'approved') approved++;
+          else unauthorized++;
+        });
 
-      missed = approved + unauthorized;
+        return {
+          totalMeetings,
+          attended,
+          missed: approved + unauthorized,
+          approved,
+          unauthorized
+        };
+      }, 2 * 60 * 1000); // Cache for 2 minutes
 
       const pieChartData = [
-        { name: 'Attended', value: attended },
-        { name: 'Unauthorized Absences', value: unauthorized },
-        { name: 'Approved Absences', value: approved }
+        { name: 'Attended', value: stats.attended },
+        { name: 'Unauthorized Absences', value: stats.unauthorized },
+        { name: 'Approved Absences', value: stats.approved }
       ];
 
-      setUserAttendanceStats({
-        totalMeetings,
-        attended,
-        missed,
-        approved,
-        unauthorized
-      });
-
+      setUserAttendanceStats(stats);
       setAttendancePieData(pieChartData);
     } catch (err) {
       console.error('Error fetching user attendance stats:', err);
     }
-  };
+  }, [currentUser, selectedClub]);
 
   const JoinClubPopup = ({ onClose }) => {
     return (
@@ -523,28 +531,7 @@ export default function Dashboard() {
     );
   };
 
-  // This condition should only check for the initial loading state
-  if (loading && userClubIds.length > 0) {
-    return (
-      <div className="flex flex-col gap-10 items-center justify-center min-h-screen">
-        <Loader />
-        <div className='lg:hidden'><MobileProgressLoader /></div>
-        <div className='hidden lg:block'><AnalyticalLoader size="large" /></div>
-      </div>
-    );
-  }
-
-  // This condition handles the case where the user has no clubs and the popup is not set to "Don't show again"
-  if (loading && userClubIds.length === 0 && !dontShowAgain) {
-    return (
-      <div className="flex flex-col gap-10 items-center justify-center min-h-screen">
-        <Loader />
-        <div className='lg:hidden'><MobileProgressLoader /></div>
-        <div className='hidden lg:block'><AnalyticalLoader size="large" /></div>
-      </div>
-    );
-  }
-
+  // Show error if exists
   if (error) {
     return (
       <div className="p-4 bg-red-100 text-red-700 rounded-md">
@@ -611,70 +598,91 @@ export default function Dashboard() {
         <span className='text-blue-500 font-semibold text-xl'>Dashboard</span>
       </div>
 
+      {/* Stats Cards - Show skeleton while loading */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Link to="/meetings" className="hover:scale-105 transition-transform duration-200">
-          <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-full">
-                <Calendar className="w-6 h-6 text-blue-600" />
+        {loading ? (
+          <>
+            <SkeletonStatCard />
+            <SkeletonStatCard />
+            <SkeletonStatCard />
+            <SkeletonStatCard />
+          </>
+        ) : (
+          <>
+            <Link to="/meetings" className="hover:scale-105 transition-transform duration-200">
+              <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-blue-100 rounded-full">
+                    <Calendar className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm dark:text-white text-gray-500">Total Meetings</p>
+                    <p className="text-2xl font-semibold dark:text-white">{stats.totalMeetings}</p>
+                  </div>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm dark:text-white text-gray-500">Total Meetings</p>
-                <p className="text-2xl font-semibold dark:text-white">{stats.totalMeetings}</p>
-              </div>
-            </div>
-          </div>
-        </Link>
+            </Link>
 
-        <Link to="/meetings" className="hover:scale-105 transition-transform duration-200">
-          <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-full">
-                <Clock className="w-6 h-6 text-green-600" />
+            <Link to="/meetings" className="hover:scale-105 transition-transform duration-200">
+              <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-green-100 rounded-full">
+                    <Clock className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm dark:text-white text-gray-500">Upcoming Meetings</p>
+                    <p className="text-2xl dark:text-white font-semibold">{stats.upcomingMeetings}</p>
+                  </div>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm dark:text-white text-gray-500">Upcoming Meetings</p>
-                <p className="text-2xl dark:text-white font-semibold">{stats.upcomingMeetings}</p>
-              </div>
-            </div>
-          </div>
-        </Link>
+            </Link>
 
-        <Link to="/members" className="hover:scale-105 transition-transform duration-200">
-          <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-full">
-                <Users className="w-6 h-6 text-purple-600" />
+            <Link to="/members" className="hover:scale-105 transition-transform duration-200">
+              <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-purple-100 rounded-full">
+                    <Users className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm dark:text-white text-gray-500">Total Members</p>
+                    <p className="text-2xl dark:text-white font-semibold">{stats.totalMembers}</p>
+                  </div>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm dark:text-white text-gray-500">Total Members</p>
-                <p className="text-2xl dark:text-white font-semibold">{stats.totalMembers}</p>
-              </div>
-            </div>
-          </div>
-        </Link>
+            </Link>
 
-        <Link to="/analytics" className="hover:scale-105 transition-transform duration-200">
-          <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 rounded-full">
-                <TrendingUp className="w-6 h-6 text-yellow-600" />
+            <Link to="/analytics" className="hover:scale-105 transition-transform duration-200">
+              <div className="bg-white dark:bg-gray-800 dark:text-white rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-yellow-100 rounded-full">
+                    <TrendingUp className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm dark:text-white text-gray-500">Attendance Rate</p>
+                    <p className="text-2xl dark:text-white font-semibold">{stats.attendanceRate}%</p>
+                  </div>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm dark:text-white text-gray-500">Attendance Rate</p>
-                <p className="text-2xl dark:text-white font-semibold">{stats.attendanceRate}%</p>
-              </div>
-            </div>
-          </div>
-        </Link>
+            </Link>
+          </>
+        )}
       </div>
-      
-      {/* Conditionally render content below the stats based on contentLoading */}
+
+      {/* Attendance Stats Section - Show skeleton while loading */}
       {contentLoading ? (
-        <div className="flex flex-col gap-10 items-center justify-center min-h-[50vh]">
-          <Loader />
-          <div className='lg:hidden'><MobileProgressLoader /></div>
-          <div className='hidden lg:block'><AnalyticalLoader size="large" /></div>
+        <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-6"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+            </div>
+            <div className="lg:col-span-2">
+              <SkeletonChart height="h-64" />
+            </div>
+          </div>
         </div>
       ) : (
         <>

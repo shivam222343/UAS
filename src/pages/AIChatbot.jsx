@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Send, 
-  Plus, 
-  MessageSquare, 
-  Trash2, 
-  Edit3, 
+import {
+  Send,
+  Plus,
+  MessageSquare,
+  Trash2,
+  Edit3,
   Search,
   Bot,
   User,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ChatService } from '../services/chatService';
-import { geminiService } from '../services/geminiService';
+import { groqService } from '../services/groqService';
 import { toast } from 'react-hot-toast';
 
 /**
@@ -31,7 +31,7 @@ import { toast } from 'react-hot-toast';
  */
 const formatAIResponse = (text) => {
   if (!text) return null;
-  
+
   // Use a unique className for AI text to apply custom color
   const aiTextColor = 'text-green-600 dark:text-teal-400';
 
@@ -61,7 +61,7 @@ const formatAIResponse = (text) => {
 const AIChatbot = () => {
   const { currentUser } = useAuth();
   const [chatService] = useState(() => new ChatService(currentUser?.uid));
-  
+
   // Chat state
   const [chatSessions, setChatSessions] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
@@ -69,21 +69,21 @@ const AIChatbot = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  
+
   // UI state
   // Default to false, rely on Tailwind for md+ visibility
-  const [sidebarOpen, setSidebarOpen] = useState(false); 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [copiedMessageId, setCopiedMessageId] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [showSettings, setShowSettings] = useState(false); 
-  
+  const [showSettings, setShowSettings] = useState(false);
+
   // Refs
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
-  const settingsRef = useRef(null); 
+  const settingsRef = useRef(null);
 
   // Function to toggle dark mode and update localStorage/DOM
   const toggleDarkMode = useCallback(() => {
@@ -120,7 +120,7 @@ const AIChatbot = () => {
     };
   }, [settingsRef]);
 
-  
+
   // Load chat sessions on mount
   useEffect(() => {
     if (currentUser) {
@@ -156,7 +156,7 @@ const AIChatbot = () => {
     try {
       const sessions = await chatService.getChatSessions();
       setChatSessions(sessions);
-      
+
       if (sessions.length > 0 && !currentChatId) {
         setCurrentChatId(sessions[0].id);
       }
@@ -186,7 +186,7 @@ const AIChatbot = () => {
       setMessages([]);
       toast.success('New chat created');
       // Close sidebar on mobile after creating new chat
-      if (window.innerWidth < 768) { 
+      if (window.innerWidth < 768) {
         setSidebarOpen(false);
       }
     } catch (error) {
@@ -200,7 +200,7 @@ const AIChatbot = () => {
 
     const userMessageContent = inputMessage.trim();
     setInputMessage('');
-    
+
     // Add user message to state immediately for faster UI update
     const tempUserMessage = {
       id: Date.now().toString(),
@@ -209,13 +209,13 @@ const AIChatbot = () => {
       timestamp: new Date()
     };
     setMessages(prevMessages => [...prevMessages, tempUserMessage]);
-    
+
     setIsLoading(true);
     setIsTyping(true);
 
     try {
       let chatId = currentChatId;
-      
+
       // Create new chat if none exists
       if (!chatId) {
         chatId = await chatService.createChatSession();
@@ -225,22 +225,22 @@ const AIChatbot = () => {
 
       // Add user message to Firestore
       await chatService.addMessage(chatId, userMessageContent, true);
-      
+
       // Get chat history for context
       const chatHistory = await chatService.getMessages(chatId);
-      
-      // Send to Gemini
-      const response = await geminiService.sendMessage(userMessageContent, chatHistory.slice(-10)); // Last 10 messages for context
-      
+
+      // Send to Groq Llama3
+      const response = await groqService.sendMessage(userMessageContent, chatHistory.slice(-10)); // Last 10 messages for context
+
       setIsTyping(false);
-      
+
       if (response.success) {
         // Add AI response to Firestore
         await chatService.addMessage(chatId, response.message, false);
-        
+
         // Generate title for first message
         if (chatHistory.length === 1) {
-          const title = await geminiService.generateChatTitle(userMessageContent);
+          const title = await groqService.generateChatTitle(userMessageContent);
           await chatService.updateChatTitle(chatId, title);
           await loadChatSessions();
         }
@@ -249,10 +249,10 @@ const AIChatbot = () => {
         await chatService.addMessage(chatId, response.message, false);
         toast.error('AI response error');
       }
-      
+
       // Reload messages to sync with Firestore
       await loadMessages(chatId);
-      
+
     } catch (error) {
       console.error('Error sending message:', error);
       setIsTyping(false);
@@ -266,12 +266,12 @@ const AIChatbot = () => {
     try {
       await chatService.deleteChatSession(chatId);
       await loadChatSessions();
-      
+
       if (currentChatId === chatId) {
         setCurrentChatId(null);
         setMessages([]);
       }
-      
+
       toast.success('Chat deleted');
     } catch (error) {
       console.error('Error deleting chat:', error);
@@ -334,7 +334,7 @@ const AIChatbot = () => {
     session.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     session.lastMessage?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -347,7 +347,7 @@ const AIChatbot = () => {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (date.toDateString() === today.toDateString()) {
       return 'Today';
     } else if (date.toDateString() === yesterday.toDateString()) {
@@ -361,8 +361,8 @@ const AIChatbot = () => {
   const handleChatSelect = (chatId) => {
     setCurrentChatId(chatId);
     // Close sidebar on mobile
-    if (window.innerWidth < 768) { 
-      setSidebarOpen(false); 
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
     }
   };
 
@@ -377,11 +377,11 @@ const AIChatbot = () => {
             exit={{ opacity: 0 }}
             onClick={() => setSidebarOpen(false)}
             // MODIFIED: Hide on md+ as sidebar is part of layout
-            className="md:hidden fixed inset-0 bg-black/50 z-40" 
+            className="md:hidden fixed inset-0 bg-black/50 z-40"
           />
         )}
       </AnimatePresence>
-      
+
       {/* Sidebar */}
       <AnimatePresence>
         {/* MODIFIED: Sidebar is ALWAYS visible on md+ (hidden by default on mobile unless sidebarOpen) */}
@@ -411,7 +411,7 @@ const AIChatbot = () => {
                   <Plus className="w-4 h-4" />
                 </motion.div>
               </div>
-              
+
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -440,12 +440,11 @@ const AIChatbot = () => {
                       key={session.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`p-3 mb-2 rounded-lg cursor-pointer transition-all duration-200 group ${
-                        currentChatId === session.id
-                          ? 'bg-blue-100 dark:bg-blue-900 border-l-4 border-blue-600'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
-                     onClick={() =>  setSidebarOpen(false) || handleChatSelect(session.id)} 
+                      className={`p-3 mb-2 rounded-lg cursor-pointer transition-all duration-200 group ${currentChatId === session.id
+                        ? 'bg-blue-100 dark:bg-blue-900 border-l-4 border-blue-600'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      onClick={() => setSidebarOpen(false) || handleChatSelect(session.id)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
@@ -471,7 +470,7 @@ const AIChatbot = () => {
                             {formatDate(session.updatedAt)}
                           </p>
                         </div>
-                        
+
                         <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <motion.div
                             whileHover={{ scale: 1.1 }}
@@ -508,40 +507,40 @@ const AIChatbot = () => {
             <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3 relative" ref={settingsRef}>
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setShowSettings(!showSettings)}
-                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                        <Settings className="w-5 h-5" />
-                    </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowSettings(!showSettings)}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </motion.div>
 
-                    {/* Settings Dropdown */}
-                    <AnimatePresence>
-                        {showSettings && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 10 }}
-                                className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-2 z-50"
-                            >
-                                <div 
-                                    className="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                                    onClick={toggleDarkMode}
-                                >
-                                    <span className="text-gray-800 dark:text-white text-sm">
-                                        {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                                    </span>
-                                    {isDarkMode ? (
-                                        <Sun className="w-4 h-4 text-amber-500" />
-                                    ) : (
-                                        <Moon className="w-4 h-4 text-blue-500" />
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                  {/* Settings Dropdown */}
+                  <AnimatePresence>
+                    {showSettings && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-2 z-50"
+                      >
+                        <div
+                          className="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          onClick={toggleDarkMode}
+                        >
+                          <span className="text-gray-800 dark:text-white text-sm">
+                            {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                          </span>
+                          {isDarkMode ? (
+                            <Sun className="w-4 h-4 text-amber-500" />
+                          ) : (
+                            <Moon className="w-4 h-4 text-blue-500" />
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -561,7 +560,7 @@ const AIChatbot = () => {
             <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
               <Bot className="w-6 h-6 mr-2 text-blue-600" />
               Eta
-              </h2>
+            </h2>
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -571,7 +570,7 @@ const AIChatbot = () => {
               <Plus className="w-4 h-4" />
             </motion.div>
           </div>
-          
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -596,14 +595,13 @@ const AIChatbot = () => {
           ) : (
             <div className="p-2">
               {filteredSessions.map((session) => (
-                <motion.div 
+                <motion.div
                   key={session.id}
-                  className={`p-3 mb-2 rounded-lg cursor-pointer transition-all duration-200 group ${
-                    currentChatId === session.id
-                      ? 'bg-blue-100 dark:bg-blue-900 border-l-4 border-blue-600'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                onClick={() =>  setSidebarOpen(false) || handleChatSelect(session.id)} 
+                  className={`p-3 mb-2 rounded-lg cursor-pointer transition-all duration-200 group ${currentChatId === session.id
+                    ? 'bg-blue-100 dark:bg-blue-900 border-l-4 border-blue-600'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  onClick={() => setSidebarOpen(false) || handleChatSelect(session.id)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -629,7 +627,7 @@ const AIChatbot = () => {
                         {formatDate(session.updatedAt)}
                       </p>
                     </div>
-                    
+
                     <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <motion.div
                         whileHover={{ scale: 1.1 }}
@@ -666,40 +664,40 @@ const AIChatbot = () => {
         <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3 relative" ref={settingsRef}>
-                <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowSettings(!showSettings)}
-                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                    <Settings className="w-5 h-5" />
-                </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowSettings(!showSettings)}
+                className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <Settings className="w-5 h-5" />
+              </motion.div>
 
-                {/* Settings Dropdown */}
-                <AnimatePresence>
-                    {showSettings && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-2 z-50"
-                        >
-                            <div 
-                                className="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                                onClick={toggleDarkMode}
-                            >
-                                <span className="text-gray-800 dark:text-white text-sm">
-                                    {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                                </span>
-                                {isDarkMode ? (
-                                    <Sun className="w-4 h-4 text-amber-500" />
-                                ) : (
-                                    <Moon className="w-4 h-4 text-blue-500" />
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+              {/* Settings Dropdown */}
+              <AnimatePresence>
+                {showSettings && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-2 z-50"
+                  >
+                    <div
+                      className="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      onClick={toggleDarkMode}
+                    >
+                      <span className="text-gray-800 dark:text-white text-sm">
+                        {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                      </span>
+                      {isDarkMode ? (
+                        <Sun className="w-4 h-4 text-amber-500" />
+                      ) : (
+                        <Moon className="w-4 h-4 text-blue-500" />
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -724,7 +722,7 @@ const AIChatbot = () => {
                   Eta
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Powered by Gemini AI
+                  Powered by Groq Llama3
                 </p>
               </div>
             </div>
@@ -740,7 +738,7 @@ const AIChatbot = () => {
           </div>
 
           <div className="flex items-center space-x-2">
-            {!geminiService.isConfigured() && (
+            {!groqService.isConfigured() && (
               <div className="flex items-center text-amber-600 dark:text-amber-400">
                 <AlertCircle className="w-4 h-4 mr-1" />
                 <span className="text-sm hidden sm:inline">API Key Required</span>
@@ -750,7 +748,7 @@ const AIChatbot = () => {
         </div>
 
         {/* Messages Area - flex-1 and overflow-y-auto ensures it takes all available height and scrolls */}
-        <div   onClick={() => setSidebarOpen(false)}  className="flex-1 overflow-y-auto p-4 space-y-6 md:space-y-4">
+        <div onClick={() => setSidebarOpen(false)} className="flex-1 overflow-y-auto p-4 space-y-6 md:space-y-4">
           {messages.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -766,10 +764,10 @@ const AIChatbot = () => {
               <p className="text-gray-600 dark:text-gray-400 max-w-md">
                 Start a conversation with our AI assistant. Ask questions, get help with tasks, or just chat!
               </p>
-              {!geminiService.isConfigured() && (
+              {!groqService.isConfigured() && (
                 <div className="flex items-center text-amber-600 dark:text-amber-400 mt-4 p-2 border border-amber-600 dark:border-amber-400 rounded-lg">
                   <AlertCircle className="w-5 h-5 mr-2" />
-                  <span className="text-sm font-medium">Gemini API Key not configured. AI responses will not work.</span>
+                  <span className="text-sm font-medium">Groq API Key not configured. AI responses will not work.</span>
                 </div>
               )}
             </motion.div>
@@ -804,36 +802,36 @@ const AIChatbot = () => {
                       </div>
                     </div>
                     <div className='flex gap-2'>
-                    <div className="flex-shrink-0 flex items-center space-x-2 text-xs text-gray-400 dark:text-gray-500 pt-1 md:opacity-0 group-hover:opacity-100 transition-opacity absolute top-1 right-1">
-                          {/* Copy Button */}
-                          <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => copyMessage(message.content)}
-                            className={`p-1 rounded-full ${message.isUser ? 'hover:bg-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-600'} cursor-pointer transition-colors`}
-                            title="Copy message"
-                          >
-                            {copiedMessageId === message.content ? (
-                              <Check className={`w-3 h-3 ${message.isUser ? 'text-green-300' : 'text-green-500'}`} />
-                            ) : (
-                              <Copy className={`w-3 h-3 ${message.isUser ? 'text-blue-300 hover:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`} />
-                            )}
-                          </motion.div>
+                      <div className="flex-shrink-0 flex items-center space-x-2 text-xs text-gray-400 dark:text-gray-500 pt-1 md:opacity-0 group-hover:opacity-100 transition-opacity absolute top-1 right-1">
+                        {/* Copy Button */}
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => copyMessage(message.content)}
+                          className={`p-1 rounded-full ${message.isUser ? 'hover:bg-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-600'} cursor-pointer transition-colors`}
+                          title="Copy message"
+                        >
+                          {copiedMessageId === message.content ? (
+                            <Check className={`w-3 h-3 ${message.isUser ? 'text-green-300' : 'text-green-500'}`} />
+                          ) : (
+                            <Copy className={`w-3 h-3 ${message.isUser ? 'text-blue-300 hover:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`} />
+                          )}
+                        </motion.div>
 
-                          {/* Delete Button (optional - added for full functionality) */}
-                          <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => deleteMessage(message.id)}
-                            className={`p-1 rounded-full ${message.isUser ? 'hover:bg-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-600'} cursor-pointer transition-colors`}
-                            title="Delete message"
-                          >
-                            <Trash2 className={`w-3 h-3 ${message.isUser ? 'text-red-300 hover:text-white' : 'text-red-500'}`} />
-                          </motion.div>
-                        </div>
-                    <div className={`mt-1 text-right text-xs ${message.isUser ? 'text-blue-200 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {/* Delete Button (optional - added for full functionality) */}
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => deleteMessage(message.id)}
+                          className={`p-1 rounded-full ${message.isUser ? 'hover:bg-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-600'} cursor-pointer transition-colors`}
+                          title="Delete message"
+                        >
+                          <Trash2 className={`w-3 h-3 ${message.isUser ? 'text-red-300 hover:text-white' : 'text-red-500'}`} />
+                        </motion.div>
+                      </div>
+                      <div className={`mt-1 text-right text-xs ${message.isUser ? 'text-blue-200 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
                         {formatTime(message.timestamp)}
-                    </div>
+                      </div>
                     </div>
                   </div>
 
@@ -868,7 +866,7 @@ const AIChatbot = () => {
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           <div ref={messagesEndRef} />
         </div>
 

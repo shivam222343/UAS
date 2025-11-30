@@ -6,6 +6,7 @@ class GeminiService {
     this.genAI = null;
     this.model = null;
     this.chat = null;
+    this.initialized = false;
     this.initializeService();
   }
 
@@ -16,36 +17,52 @@ class GeminiService {
     }
 
     try {
+      console.log('Initializing Gemini service with API key:', this.apiKey.substring(0, 10) + '...');
       this.genAI = new GoogleGenerativeAI(this.apiKey);
-      this.model = this.genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.8,
-          topK: 40,
-          maxOutputTokens: 2048,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-        ],
-      });
+
+      // Try multiple model names to find one that works
+      // Note: JS SDK does NOT support -latest aliases
+      const modelNames = [
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-1.0-pro"
+      ];
+
+      let modelCreated = false;
+      for (const modelName of modelNames) {
+        try {
+          console.log(`Trying model: ${modelName}`);
+          this.model = this.genAI.getGenerativeModel({
+            model: modelName
+          });
+          console.log(`Successfully created model: ${modelName}`);
+          modelCreated = true;
+          break;
+        } catch (modelError) {
+          console.warn(`Model ${modelName} failed during creation:`, modelError.message);
+        }
+      }
+
+      if (!modelCreated) {
+        throw new Error('Failed to create any Gemini model');
+      }
+
+      console.log('Gemini service initialized successfully');
+      this.initialized = true;
     } catch (error) {
       console.error('Error initializing Gemini service:', error);
+      this.model = null;
+    }
+  }
+
+  // Wait for initialization to complete
+  async waitForInitialization(timeout = 10000) {
+    const startTime = Date.now();
+    while (!this.initialized && (Date.now() - startTime) < timeout) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    if (!this.initialized) {
+      throw new Error('Gemini service initialization timeout');
     }
   }
 
@@ -196,14 +213,14 @@ As Eta, always remember that you are Eta and ask to help about team mavericks. Y
     try {
       // Prepare history with Team Mavericks context
       let contextualHistory = [];
-      
+
       // Convert existing history to proper format if it exists
       if (history.length > 0) {
         contextualHistory = history.map(msg => ({
           role: msg.isUser ? 'user' : 'model',
           parts: [{ text: msg.content }]
         }));
-        
+
         // Ensure first message is from user
         if (contextualHistory.length > 0 && contextualHistory[0].role !== 'user') {
           contextualHistory.unshift({
@@ -234,6 +251,11 @@ As Eta, always remember that you are Eta and ask to help about team mavericks. Y
 
   // Send a message and get response
   async sendMessage(message, chatHistory = []) {
+    // Wait for initialization if not ready
+    if (!this.initialized) {
+      await this.waitForInitialization();
+    }
+
     if (!this.model) {
       throw new Error('Gemini API key not configured. Please add your API key to the environment variables.');
     }
@@ -261,7 +283,7 @@ As Eta, always remember that you are Eta and ask to help about team mavericks. Y
       };
     } catch (error) {
       console.error('Error sending message to Gemini:', error);
-      
+
       // Handle specific error types
       if (error.message?.includes('API_KEY_INVALID')) {
         return {
@@ -281,6 +303,12 @@ As Eta, always remember that you are Eta and ask to help about team mavericks. Y
           error: 'Content blocked by safety filters.',
           message: 'I cannot provide a response to that request due to safety guidelines. Please try rephrasing your question.'
         };
+      } else if (error.message?.includes('404') || error.message?.includes('not found')) {
+        return {
+          success: false,
+          error: 'Model not found. The Gemini API model may not be available.',
+          message: 'I\'m having trouble connecting to the AI service. The model may not be available with your API key. Please check your API key or try again later.'
+        };
       } else {
         return {
           success: false,
@@ -299,11 +327,11 @@ As Eta, always remember that you are Eta and ask to help about team mavericks. Y
 
     try {
       const prompt = `Generate a short, concise title (maximum 4-5 words) for a chat conversation that starts with this message: "${firstMessage}". Only return the title, nothing else.`;
-      
+
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const title = response.text().trim();
-      
+
       // Clean up the title and ensure it's not too long
       const cleanTitle = title.replace(/['"]/g, '').substring(0, 50);
       return cleanTitle || 'New Chat';
@@ -336,11 +364,11 @@ As Eta, always remember that you are Eta and ask to help about team mavericks. Y
   // Check if message is related to Team Mavericks
   isTeamMavericksQuery(message) {
     const keywords = [
-      'team mavericks', 'mavericks', 'organization', 'club', 'events', 
+      'team mavericks', 'mavericks', 'organization', 'club', 'events',
       'techfest', 'codemavericks', 'innovation', 'community', 'kit college',
       'kolhapur', 'achievements', 'projects', 'domains', 'members'
     ];
-    return keywords.some(keyword => 
+    return keywords.some(keyword =>
       message.toLowerCase().includes(keyword.toLowerCase())
     );
   }
@@ -363,7 +391,7 @@ As Eta, always remember that you are Eta and ask to help about team mavericks. Y
       }
 
       const result = await this.chat.sendMessageStream(enhancedMessage);
-      
+
       for await (const chunk of result.stream) {
         const chunkText = chunk.text();
         if (chunkText) {

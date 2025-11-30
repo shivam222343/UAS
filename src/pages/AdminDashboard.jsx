@@ -285,7 +285,7 @@ const AdminDashboard = () => {
     setMeetingToDelete({ id: meetingId, clubId });
     setShowConfirmModal(true);
     console.log("clicked");
-    
+
   };
 
   // Update meeting status
@@ -1102,7 +1102,7 @@ const AdminDashboard = () => {
         </>
       )}
 
- <AttendanceWarnings/>
+      <AttendanceWarnings />
       {activeTab === 'panels' && <PanelManagement />}
 
       {/* Analytics Section */}
@@ -1160,7 +1160,7 @@ const AdminDashboard = () => {
         />
       )}
 
-      
+
       {
         showConfirmModal && (
           <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">

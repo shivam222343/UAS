@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Calendar, Clock, Users, MapPin, Laptop, FileText, Check, X, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import AbsenceRequestModal from '../components/meetings/AbsenceRequestModal';
 import TaskModal from '../components/meetings/TaskModal';
+import { SkeletonMeetingCard } from '../components/common/SkeletonLoader';
 import Loader from '../components/Loader';
 import html2canvas from 'html2canvas';
 // Add this import for notification (implement sendNotification in your services)
@@ -220,17 +221,7 @@ export default function Meetings() {
         ...doc.data()
       }));
 
-      meetingsList.sort((a, b) => {
-        const dateA = new Date(`${a.date} ${a.time}`);
-        const dateB = new Date(`${b.date} ${b.time}`);
-
-        if (a.status === 'upcoming' && b.status !== 'upcoming') return -1;
-        if (a.status !== 'upcoming' && b.status === 'upcoming') return 1;
-
-        // Sort by date based on sortOrder
-        return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
-      });
-
+      // Sorting is now handled by sortedMeetings useMemo
       setMeetings(meetingsList);
       meetingsList.forEach(meeting => {
         fetchMeetingTasks(meeting.id);
@@ -648,18 +639,98 @@ export default function Meetings() {
         </div>
       )}
 
-      {/* Sort Option */}
-      <div className="flex items-center mb-4">
-        <label className="mr-2 text-sm font-medium text-gray-700 dark:text-gray-300">Sort by:</label>
-        <select
-          value={sortOrder}
-          onChange={e => setSortOrder(e.target.value)}
-          className="p-1 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-sm"
-        >
-          <option value="newest">Newest First</option>
-          <option value="oldest">Oldest First</option>
-        </select>
-      </div>
+      {!selectedClub && userClubs.length > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 text-blue-700 dark:text-blue-300 p-4 mb-6 rounded">
+          <p className="text-sm">
+            Please select a club from the dropdown above to view its meetings.
+          </p>
+        </div>
+      )}
+
+      {selectedClub && (
+        <>
+          {/* Sort Controls */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Meetings</h2>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 dark:text-gray-400">Sort:</label>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Meetings List with Skeleton Loading */}
+          {loading ? (
+            <div className="space-y-4">
+              <SkeletonMeetingCard />
+              <SkeletonMeetingCard />
+              <SkeletonMeetingCard />
+              <SkeletonMeetingCard />
+            </div>
+          ) : sortedMeetings.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gray-50 dark:bg-gray-800 p-8 rounded-lg text-center"
+            >
+              <Calendar className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No Meetings Available</h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                There are no meetings scheduled for this club at the moment. Check back later for updates.
+              </p>
+            </motion.div>
+          ) : (
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Upcoming Meetings</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {meetings.filter(m => m.status === 'upcoming').map(meeting => (
+                    <div
+                      key={meeting.id}
+                      className={`bg-white dark:bg-gray-900 dark:text-white border-bottom border-2 border-gray-500 rounded-lg shadow-md p-6 ${meeting.status === 'cancelled' ? 'border-l-4 border-red-500 bg-red-50' : ''
+                        }`}
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <h2 className="text-xl font-semibold dark:text-white">{meeting.name}</h2>
+                        {/* Admin status change dropdown */}
+                        {userProfile?.role === 'admin' && (
+                          <select
+                            value={meeting.status}
+                            onChange={e => handleMeetingStatusChange(meeting.id, e.target.value)}
+                            className="ml-2 px-2 py-1 border border-gray-300 dark:border-gray-700 rounded text-xs bg-white dark:bg-gray-800"
+                          >
+                            <option value="upcoming">Upcoming</option>
+                            <option value="past">Past</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        )}
+                      </div>
+
+                      <div className="flex items-start text-gray-600 dark:text-gray-300 mb-4">
+                        <FileText className="w-5 h-5 mr-2 mt-1 flex-shrink-0" />
+                        <p className="text-sm whitespace-pre-wrap">{renderFormattedText(meeting.description)}</p>
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center dark:text-white text-gray-600">
+                          <Calendar className="w-5 h-5 mr-2" />
+                          <span>{meeting.date}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       <AnimatePresence>
         {showPendingTasksPopup && (
@@ -757,13 +828,13 @@ export default function Meetings() {
         <div className="flex flex-col mb-5">
           <div className='flex flex-wrap justify-between md:justify-normal items-center gap-4 mb-6'>
             <div className="bg-yellow-100 flex-col h-36 w-40 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded flex items-center">
-            <span className="font-semibold mr-2">All Pending Tasks:</span>
-            <span className="font-bold text-yellow-800/70 dark:text-yellow-200/70 text-7xl mt-2">{pendingTasksCount}</span>
-          </div>
-          <div className="bg-blue-100 flex-col h-36 w-40 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-4 py-2 rounded flex items-center">
-            <span className="font-semibold mr-2">Your Pending Tasks:</span>
-            <span className="font-bold text-blue-800/70 dark:text-blue-200/70 text-7xl mt-2">{userPendingTasksCount}</span>
-          </div>
+              <span className="font-semibold mr-2">All Pending Tasks:</span>
+              <span className="font-bold text-yellow-800/70 dark:text-yellow-200/70 text-7xl mt-2">{pendingTasksCount}</span>
+            </div>
+            <div className="bg-blue-100 flex-col h-36 w-40 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-4 py-2 rounded flex items-center">
+              <span className="font-semibold mr-2">Your Pending Tasks:</span>
+              <span className="font-bold text-blue-800/70 dark:text-blue-200/70 text-7xl mt-2">{userPendingTasksCount}</span>
+            </div>
           </div>
           <button
             onClick={() => setShowPendingTasksPopup(true)}
@@ -887,10 +958,10 @@ export default function Meetings() {
 
                     {userAbsenceRequests[meeting.id] && (
                       <div className={`mt-2 px-3 py-2 rounded-md text-sm ${userAbsenceRequests[meeting.id].status === 'approved'
-                          ? 'bg-green-100 text-green-800'
-                          : userAbsenceRequests[meeting.id].status === 'rejected'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                        ? 'bg-green-100 text-green-800'
+                        : userAbsenceRequests[meeting.id].status === 'rejected'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
                         }`}>
                         <div className="flex items-center">
                           {userAbsenceRequests[meeting.id].status === 'approved'
@@ -983,8 +1054,8 @@ export default function Meetings() {
                                                 !isCompleted
                                               )}
                                               className={`px-2 py-0.5 rounded text-xs ${isCompleted
-                                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                                                 }`}
                                             >
                                               {isCompleted ? 'Completed' : 'Pending'}
@@ -1122,16 +1193,16 @@ export default function Meetings() {
                                                   !isCompleted
                                                 )}
                                                 className={`px-2 py-0.5 rounded text-xs ${isCompleted
-                                                    ? 'bg-green-100 text-green-800 hover:text-white dark:bg-green-900 dark:text-green-200'
-                                                    : 'bg-yellow-100 text-yellow-800 hover:text-white dark:bg-yellow-900 dark:text-yellow-200'
+                                                  ? 'bg-green-100 text-green-800 hover:text-white dark:bg-green-900 dark:text-green-200'
+                                                  : 'bg-yellow-100 text-yellow-800 hover:text-white dark:bg-yellow-900 dark:text-yellow-200'
                                                   }`}
                                               >
                                                 {isCompleted ? 'Completed' : 'Pending'}
                                               </button>
                                             ) : (
                                               <span className={`px-2 py-0.5 rounded text-xs ${isCompleted
-                                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                                                 }`}>
                                                 {isCompleted ? 'Completed' : 'Pending'}
                                               </span>
@@ -1285,119 +1356,119 @@ export default function Meetings() {
                   {meetingTasks[selectedMeetingForTasksPopup.id] ? (
                     Object.values(meetingTasks[selectedMeetingForTasksPopup.id]).length > 0 ? (
                       <ul className="space-y-4">
-                      {Object.values(meetingTasks[selectedMeetingForTasksPopup.id]).map((task) => {
-                        // Get emoji based on task status
-                        let emoji = '📝'; // Default emoji
-                        const assignedToCurrentUser = task.assignedTo?.[currentUser.uid];
-                        const isCompleted = task.completion?.[currentUser.uid];
+                        {Object.values(meetingTasks[selectedMeetingForTasksPopup.id]).map((task) => {
+                          // Get emoji based on task status
+                          let emoji = '📝'; // Default emoji
+                          const assignedToCurrentUser = task.assignedTo?.[currentUser.uid];
+                          const isCompleted = task.completion?.[currentUser.uid];
 
-                        if (assignedToCurrentUser) {
-                          emoji = isCompleted ? '✅' : '⏳';
-                        } else if (Object.values(task.completion || {}).some(c => c)) {
-                          emoji = '👍';
-                        } else if (task.dueDate && new Date(task.dueDate) < new Date()) {
-                          emoji = '⚠️';
-                        }
+                          if (assignedToCurrentUser) {
+                            emoji = isCompleted ? '✅' : '⏳';
+                          } else if (Object.values(task.completion || {}).some(c => c)) {
+                            emoji = '👍';
+                          } else if (task.dueDate && new Date(task.dueDate) < new Date()) {
+                            emoji = '⚠️';
+                          }
 
-                        return (
-                          <motion.li
-                            key={task.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4"
-                          >
-                            <div className="flex items-start">
-                              <span className="text-2xl mr-3">{emoji}</span>
-                              <div className="flex-1">
-                                <div className="flex justify-between items-start">
-                                  <h4 className="font-medium text-lg dark:text-white">{task.title}</h4>
-                                  {task.dueDate && (
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                                      Due: {task.dueDate}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
-                                  {renderFormattedText(task.description)}
-                                </p>
+                          return (
+                            <motion.li
+                              key={task.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4"
+                            >
+                              <div className="flex items-start">
+                                <span className="text-2xl mr-3">{emoji}</span>
+                                <div className="flex-1">
+                                  <div className="flex justify-between items-start">
+                                    <h4 className="font-medium text-lg dark:text-white">{task.title}</h4>
+                                    {task.dueDate && (
+                                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                                        Due: {task.dueDate}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
+                                    {renderFormattedText(task.description)}
+                                  </p>
 
-                                {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
-                                  <div className="mt-3">
-                                    <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                      Assigned Members:
-                                    </h5>
-                                    <ul className="space-y-2">
-                                      {Object.entries(task.assignedTo)
-                                        // Filter out unassigned members
-                                        .filter(([userId, isAssigned]) => isAssigned && clubMembers[userId])
-                                        // Sort members alphabetically by displayName
-                                        .sort(([userIdA], [userIdB]) => {
-                                          const memberA = clubMembers[userIdA];
-                                          const memberB = clubMembers[userIdB];
-                                          return memberA.displayName.localeCompare(memberB.displayName);
-                                        })
-                                        // Map through sorted members
-                                        .map(([userId, isAssigned]) => {
-                                          const member = clubMembers[userId];
-                                          const isAssignedToCurrentUser = userId === currentUser.uid;
-                                          const isCompleted = task.completion?.[userId] || false;
-                                          const memberEmoji = isCompleted ? '✅' : '⌛';
+                                  {task.assignedTo && Object.keys(task.assignedTo).length > 0 && (
+                                    <div className="mt-3">
+                                      <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                        Assigned Members:
+                                      </h5>
+                                      <ul className="space-y-2">
+                                        {Object.entries(task.assignedTo)
+                                          // Filter out unassigned members
+                                          .filter(([userId, isAssigned]) => isAssigned && clubMembers[userId])
+                                          // Sort members alphabetically by displayName
+                                          .sort(([userIdA], [userIdB]) => {
+                                            const memberA = clubMembers[userIdA];
+                                            const memberB = clubMembers[userIdB];
+                                            return memberA.displayName.localeCompare(memberB.displayName);
+                                          })
+                                          // Map through sorted members
+                                          .map(([userId, isAssigned]) => {
+                                            const member = clubMembers[userId];
+                                            const isAssignedToCurrentUser = userId === currentUser.uid;
+                                            const isCompleted = task.completion?.[userId] || false;
+                                            const memberEmoji = isCompleted ? '✅' : '⌛';
 
-                                          return (
-                                            <li key={userId} className="flex items-center justify-between">
-                                              <span className="text-sm dark:text-gray-200">
-                                                {memberEmoji} {member.displayName}
-                                                {userId === currentUser.uid && (
-                                                  <span className="ml-1 text-xs text-blue-500">(You)</span>
-                                                )}
-                                              </span>
-                                              {isAssignedToCurrentUser ? (
-                                                <button
-                                                  onClick={() => handleTaskStatusChange(
-                                                    selectedMeetingForTasksPopup.id,
-                                                    task.id,
-                                                    userId,
-                                                    !isCompleted
+                                            return (
+                                              <li key={userId} className="flex items-center justify-between">
+                                                <span className="text-sm dark:text-gray-200">
+                                                  {memberEmoji} {member.displayName}
+                                                  {userId === currentUser.uid && (
+                                                    <span className="ml-1 text-xs text-blue-500">(You)</span>
                                                   )}
-                                                  className={`px-2 py-0.5 rounded text-xs ${isCompleted
+                                                </span>
+                                                {isAssignedToCurrentUser ? (
+                                                  <button
+                                                    onClick={() => handleTaskStatusChange(
+                                                      selectedMeetingForTasksPopup.id,
+                                                      task.id,
+                                                      userId,
+                                                      !isCompleted
+                                                    )}
+                                                    className={`px-2 py-0.5 rounded text-xs ${isCompleted
                                                       ? 'bg-green-100 text-green-800 hover:text-white dark:bg-green-900 dark:text-green-200'
                                                       : 'bg-yellow-100 text-yellow-800 hover:text-white dark:bg-yellow-900 dark:text-yellow-200'
-                                                    }`}
-                                                >
-                                                  {isCompleted ? 'Completed' : 'Pending'}
-                                                </button>
-                                              ) : (
-                                                <span className={`px-2 py-0.5 rounded text-xs ${isCompleted
+                                                      }`}
+                                                  >
+                                                    {isCompleted ? 'Completed' : 'Pending'}
+                                                  </button>
+                                                ) : (
+                                                  <span className={`px-2 py-0.5 rounded text-xs ${isCompleted
                                                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                                     : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                  }`}>
-                                                  {isCompleted ? 'Completed' : 'Pending'}
-                                                </span>
-                                              )}
-                                            </li>
-                                          );
-                                        })}
-                                    </ul>
-                                  </div>
-                                )}
+                                                    }`}>
+                                                    {isCompleted ? 'Completed' : 'Pending'}
+                                                  </span>
+                                                )}
+                                              </li>
+                                            );
+                                          })}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          </motion.li>
-                        );
-                      })}
-                    </ul>
+                            </motion.li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 dark:text-gray-400">No tasks found for this meeting</p>
+                      </div>
+                    )
                   ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500 dark:text-gray-400">No tasks found for this meeting</p>
+                    <div className="flex justify-center py-8">
+                      <Loader size="medium" />
                     </div>
-                  )
-                ) : (
-                  <div className="flex justify-center py-8">
-                    <Loader size="medium" />
-                  </div>
-                )}
-              </div>
-              {/* Close scroll container */}
+                  )}
+                </div>
+                {/* Close scroll container */}
               </div>
 
               <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">

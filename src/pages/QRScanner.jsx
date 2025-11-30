@@ -15,9 +15,9 @@ const QRScanner = () => {
   const [meetingDetails, setMeetingDetails] = useState(null);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualCode, setManualCode] = useState('');
-  
+
   const { currentUser } = useAuth();
-  
+
   const startScanning = () => {
     setScanning(true);
     setScanResult(null);
@@ -26,7 +26,7 @@ const QRScanner = () => {
     setMeetingDetails(null);
     setShowManualEntry(false);
   };
-  
+
   const resetScanner = () => {
     setScanResult(null);
     setScanStatus(null);
@@ -35,7 +35,7 @@ const QRScanner = () => {
     setManualCode('');
     startScanning();
   };
-  
+
   const stopScanning = () => {
     setScanning(false);
   };
@@ -50,64 +50,68 @@ const QRScanner = () => {
   const processMeetingData = async (qrData) => {
     try {
       setScanStatus('processing');
-      
+
       // Check if QR code has required fields
       if (!qrData.meetingId || !qrData.sessionCode || !qrData.clubId) {
         throw new Error('Invalid QR code format');
       }
-      
+
       // Check if QR code is expired (older than 12 hours)
       const qrTimestamp = qrData.timestamp;
       const currentTime = Date.now();
       const twelveHoursMs = 12 * 60 * 60 * 1000;
-      
+
       if (currentTime - qrTimestamp > twelveHoursMs) {
         throw new Error('QR code has expired');
       }
-      
+
       // Fetch meeting details to verify sessionCode is still active
       const meetingRef = doc(db, 'clubs', qrData.clubId, 'meetings', qrData.meetingId);
       const meetingSnapshot = await getDoc(meetingRef);
-      
+
       if (!meetingSnapshot.exists()) {
         throw new Error('Meeting not found');
       }
-      
+
       const meetingData = meetingSnapshot.data();
-      
-      // Format meeting details for display
+
+      // Format meeting details for display EARLY - show immediately
       const formattedMeeting = {
         ...meetingData,
         id: meetingSnapshot.id,
         clubId: qrData.clubId,
         date: meetingData.date ? new Date(meetingData.date).toLocaleDateString() : 'Unknown date',
       };
-      
+
       setMeetingDetails(formattedMeeting);
-      
+
       // Check if session code matches
       if (meetingData.activeSessionCode !== qrData.sessionCode) {
         throw new Error('Invalid or expired session code');
       }
-      
+
       // Check if user has already marked attendance
-      if (meetingData.attendees && meetingData.attendees[currentUser.uid]) {
-        throw new Error('You have already marked your attendance for this meeting');
+      const alreadyMarked = meetingData.attendees && meetingData.attendees[currentUser.uid];
+
+      if (alreadyMarked) {
+        // Set special status for already marked
+        setScanStatus('already_marked');
+        return; // Exit early - don't throw error
       }
-      
+
       // Get user details
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
       const userData = userDoc.exists() ? userDoc.data() : null;
-      
+
       // Make sure user has joined this club
       if (!userData || !userData.clubsJoined || !userData.clubsJoined[qrData.clubId]) {
         throw new Error('You are not a member of this club');
       }
-      
+
       // Add user to meeting attendees
       const attendeesUpdate = {};
       attendeesUpdate[currentUser.uid] = true;
-      
+
       await updateDoc(meetingRef, {
         [`attendees.${currentUser.uid}`]: true,
         attendanceTimestamps: arrayUnion({
@@ -115,7 +119,7 @@ const QRScanner = () => {
           timestamp: Timestamp.now()
         })
       });
-      
+
       // Update user's attendance record
       const userRef = doc(db, 'users', currentUser.uid);
       await updateDoc(userRef, {
@@ -127,18 +131,18 @@ const QRScanner = () => {
           timestamp: Timestamp.now()
         })
       });
-      
+
       // Also mark the user as present in the club members collection
       const memberRef = doc(db, 'clubs', qrData.clubId, 'members', currentUser.uid);
       const memberDoc = await getDoc(memberRef);
-      
+
       if (memberDoc.exists()) {
         await updateDoc(memberRef, {
           missedMeetingCount: 0,
           warningEmailSent: false
         });
       }
-      
+
       setScanStatus('success');
     } catch (error) {
       console.error('Error processing meeting data:', error);
@@ -146,7 +150,7 @@ const QRScanner = () => {
       setErrorMessage(error.message || 'Failed to process attendance');
     }
   };
-  
+
   const handleScan = async (data) => {
     if (data && data.text && !scanResult) {
       stopScanning();
@@ -173,16 +177,16 @@ const QRScanner = () => {
         sessionCode: manualCode.trim(),
         timestamp: Date.now()
       };
-      
+
       setScanResult(qrData);
-      
+
       // First find the meeting that has this active session code
       const clubsQuery = query(collection(db, 'clubs'));
       const clubsSnapshot = await getDocs(clubsQuery);
-      
+
       let foundMeeting = null;
       let foundClubId = null;
-      
+
       // Search through all clubs and meetings to find one with matching session code
       for (const clubDoc of clubsSnapshot.docs) {
         const clubId = clubDoc.id;
@@ -190,7 +194,7 @@ const QRScanner = () => {
           collection(db, 'clubs', clubId, 'meetings'),
           where('activeSessionCode', '==', manualCode.trim())
         );
-        
+
         const meetingsSnapshot = await getDocs(meetingsQuery);
         if (!meetingsSnapshot.empty) {
           foundMeeting = meetingsSnapshot.docs[0].data();
@@ -199,15 +203,15 @@ const QRScanner = () => {
           break;
         }
       }
-      
+
       if (!foundMeeting || !foundClubId) {
         throw new Error('No active meeting found with this session code');
       }
-      
+
       // Add meetingId and clubId to our qrData
       qrData.meetingId = foundMeeting.id;
       qrData.clubId = foundClubId;
-      
+
       await processMeetingData(qrData);
     } catch (error) {
       console.error('Error processing manual code:', error);
@@ -215,13 +219,13 @@ const QRScanner = () => {
       setErrorMessage(error.message || 'Failed to process session code');
     }
   };
-  
+
   const handleError = (err) => {
     console.error('QR Scanner Error:', err);
     setErrorMessage('Error accessing camera. Please check permissions and try again.');
     setScanStatus('error');
   };
-  
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -229,11 +233,11 @@ const QRScanner = () => {
           Mark Attendance
         </h1>
       </div>
-      
+
       <div className="bg-white dark:bg-gray-700 rounded-xl p-6 shadow-md">
         <AnimatePresence mode="wait">
           {!scanning && !scanResult && !showManualEntry && (
-            <motion.div 
+            <motion.div
               key="start"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -266,9 +270,9 @@ const QRScanner = () => {
               </div>
             </motion.div>
           )}
-          
+
           {showManualEntry && (
-            <motion.div 
+            <motion.div
               key="manual-entry"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -284,7 +288,7 @@ const QRScanner = () => {
               <p className="text-center text-gray-500 dark:text-gray-400 mb-6 max-w-md">
                 Enter the 8-digit session code provided by your admin.
               </p>
-              
+
               <form onSubmit={handleManualSubmit} className="w-full max-w-sm">
                 <div className="mb-4 flex w-full justify-center">
                   <input
@@ -292,7 +296,7 @@ const QRScanner = () => {
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
                     placeholder="Enter session code"
-          className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full md:w-1/2 border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     maxLength="8"
                     pattern="[A-Za-z0-9]{8}"
                     title="8-character alphanumeric code"
@@ -317,9 +321,9 @@ const QRScanner = () => {
               </form>
             </motion.div>
           )}
-          
+
           {scanning && !scanStatus && (
-            <motion.div 
+            <motion.div
               key="scanning"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -333,7 +337,7 @@ const QRScanner = () => {
                   scanDelay={500}
                   className="w-full rounded-lg overflow-hidden"
                   videoStyle={{ objectFit: 'cover' }}
-                  containerStyle={{ 
+                  containerStyle={{
                     borderRadius: '0.5rem',
                     overflow: 'hidden',
                     position: 'relative'
@@ -376,9 +380,9 @@ const QRScanner = () => {
               </div>
             </motion.div>
           )}
-          
+
           {scanStatus === 'processing' && (
-            <motion.div 
+            <motion.div
               key="processing"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -396,9 +400,9 @@ const QRScanner = () => {
               </p>
             </motion.div>
           )}
-          
+
           {scanStatus === 'success' && (
-            <motion.div 
+            <motion.div
               key="success"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -411,7 +415,7 @@ const QRScanner = () => {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                 Attendance Marked Successfully
               </h2>
-              
+
               {meetingDetails && (
                 <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg w-full max-w-md">
                   <h3 className="font-medium text-gray-900 dark:text-white mb-2">
@@ -419,27 +423,27 @@ const QRScanner = () => {
                   </h3>
                   <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-2" /> 
+                      <Calendar className="h-4 w-4 mr-2" />
                       <span>{meetingDetails.date}</span>
                     </div>
                     <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-2" /> 
+                      <Clock className="h-4 w-4 mr-2" />
                       <span>{meetingDetails.time}</span>
                     </div>
                     {meetingDetails.location && (
                       <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-2" /> 
+                        <MapPin className="h-4 w-4 mr-2" />
                         <span>{meetingDetails.location}</span>
                       </div>
                     )}
                   </div>
                 </div>
               )}
-              
+
               <p className="text-center text-gray-500 dark:text-gray-400 mt-4 max-w-md">
                 Your attendance has been recorded successfully. Thank you for attending the meeting!
               </p>
-              
+
               <button
                 onClick={resetScanner}
                 className="mt-6 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors inline-flex items-center"
@@ -449,9 +453,9 @@ const QRScanner = () => {
               </button>
             </motion.div>
           )}
-          
+
           {scanStatus === 'error' && (
-            <motion.div 
+            <motion.div
               key="error"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -472,6 +476,74 @@ const QRScanner = () => {
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
               >
                 Try Again
+              </button>
+            </motion.div>
+          )}
+
+          {scanStatus === 'already_marked' && (
+            <motion.div
+              key="already_marked"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="flex flex-col items-center py-10"
+            >
+              <div className="mb-6 p-4 bg-green-100 text-green-600 dark:text-green-400 dark:bg-green-900/20 rounded-full">
+                <CheckCircle className="h-12 w-12" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Attendance Already Marked
+              </h2>
+
+              {meetingDetails && (
+                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg w-full max-w-md border-2 border-green-200 dark:border-green-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-gray-900 dark:text-white">
+                      {meetingDetails.name}
+                    </h3>
+                    <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      <span>{meetingDetails.date}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 mr-2" />
+                      <span>{meetingDetails.time}</span>
+                    </div>
+                    {meetingDetails.location && (
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 mr-2" />
+                        <span>{meetingDetails.location}</span>
+                      </div>
+                    )}
+                    {meetingDetails.mode && (
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 mr-2" />
+                        <span className="capitalize">{meetingDetails.mode}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <p className="text-sm text-green-600 dark:text-green-400 font-medium flex items-center">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Your attendance is already recorded
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-center text-gray-500 dark:text-gray-400 mt-4 max-w-md">
+                You have already marked your attendance for this meeting. No need to scan again!
+              </p>
+
+              <button
+                onClick={resetScanner}
+                className="mt-6 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors inline-flex items-center"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Scan Another
               </button>
             </motion.div>
           )}

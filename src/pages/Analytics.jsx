@@ -168,8 +168,8 @@ export default function Analytics() {
           const memberId = memberDoc.data().userId || memberDoc.id;
           const userRef = doc(db, 'users', memberId);
           const userDoc = await getDoc(userRef);
-          
-          const displayName = userDoc.exists() 
+
+          const displayName = userDoc.exists()
             ? userDoc.data().displayName || 'Anonymous'
             : memberDoc.data().displayName || 'Anonymous';
 
@@ -412,7 +412,7 @@ export default function Analytics() {
             <Trophy className="mr-2 text-yellow-500" />
             Members Ranking
           </h2>
-          <button 
+          <button
             onClick={() => setShowFullRanking(!showFullRanking)}
             className="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
           >
@@ -433,8 +433,8 @@ export default function Analytics() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
               {(showFullRanking ? allMembersRanking : allMembersRanking.slice(0, 5)).map((member) => (
-                <tr 
-                  key={member.id} 
+                <tr
+                  key={member.id}
                   className={`${member.isCurrentUser ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -474,12 +474,12 @@ export default function Analytics() {
                     <div className="flex items-center">
                       <div className="w-24 mr-2">
                         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full rounded-full" 
-                            style={{ 
+                          <div
+                            className="h-full rounded-full"
+                            style={{
                               width: `${member.attendanceRate}%`,
-                              backgroundColor: member.attendanceRate >= 80 ? '#10B981' : 
-                                             member.attendanceRate >= 50 ? '#F59E0B' : '#EF4444'
+                              backgroundColor: member.attendanceRate >= 80 ? '#10B981' :
+                                member.attendanceRate >= 50 ? '#F59E0B' : '#EF4444'
                             }}
                           ></div>
                         </div>
