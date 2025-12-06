@@ -269,39 +269,6 @@ const MessageInput = ({
                     </div>
                 </div>
 
-                {/* Formatting buttons */}
-                <div className="flex gap-1 items-center mr-1 pb-1">
-                    <button
-                        onClick={() => {
-                            const start = textareaRef.current.selectionStart;
-                            const end = textareaRef.current.selectionEnd;
-                            const selected = message.substring(start, end);
-                            const newMessage = message.substring(0, start) + `**${selected || 'bold'}**` + message.substring(end);
-                            setMessage(newMessage);
-                            textareaRef.current.focus();
-                        }}
-                        className="p-1 px-2 text-xs font-bold text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                        title="Bold"
-                        disabled={disabled || uploading}
-                    >
-                        B
-                    </button>
-                    <button
-                        onClick={() => {
-                            const start = textareaRef.current.selectionStart;
-                            const end = textareaRef.current.selectionEnd;
-                            const selected = message.substring(start, end);
-                            const newMessage = message.substring(0, start) + `*${selected || 'italic'}*` + message.substring(end);
-                            setMessage(newMessage);
-                            textareaRef.current.focus();
-                        }}
-                        className="p-1 px-2 text-xs italic text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                        title="Italic"
-                        disabled={disabled || uploading}
-                    >
-                        I
-                    </button>
-                </div>
 
                 {/* Text input */}
                 <textarea
