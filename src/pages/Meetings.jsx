@@ -156,6 +156,24 @@ export default function Meetings() {
     }
   }, [myTasksList, myTasksFilter, myTasksSort]);
 
+  // Sort meetings based on sortOrder
+  const sortedMeetings = useMemo(() => {
+    if (!meetings || meetings.length === 0) return [];
+
+    const sorted = [...meetings].sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+
+      if (sortOrder === 'newest') {
+        return dateB - dateA; // Newest first
+      } else {
+        return dateA - dateB; // Oldest first
+      }
+    });
+
+    return sorted;
+  }, [meetings, sortOrder]);
+
   const fetchUserClubs = async () => {
     try {
       const userDocRef = doc(db, 'users', currentUser.uid);
@@ -825,7 +843,7 @@ export default function Meetings() {
 
       {/* Pending Tasks Summary Bar */}
       {selectedClub && (
-        <div className="flex flex-col mb-5">
+        <div className="flex flex-col mb-5 mt-10">
           <div className='flex flex-wrap justify-between md:justify-normal items-center gap-4 mb-6'>
             <div className="bg-yellow-100 flex-col h-36 w-40 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded flex items-center">
               <span className="font-semibold mr-2">All Pending Tasks:</span>

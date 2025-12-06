@@ -16,12 +16,12 @@ class ToastService {
   // Process toast queue sequentially
   async processQueue() {
     if (this.isProcessing || this.toastQueue.length === 0) return;
-    
+
     this.isProcessing = true;
-    
+
     while (this.toastQueue.length > 0) {
       const { type, message, options } = this.toastQueue.shift();
-      
+
       // Show toast based on type
       switch (type) {
         case 'success':
@@ -69,21 +69,22 @@ class ToastService {
             ...options
           });
       }
-      
+
       // Wait before processing next toast
       if (this.toastQueue.length > 0) {
         await new Promise(resolve => setTimeout(resolve, this.processDelay));
       }
     }
-    
+
     this.isProcessing = false;
   }
 
-  // Show member online toast
+  // Show member online toast (DISABLED - using OnlineMembersIndicator instead)
   showMemberOnline(memberName, clubName) {
-    this.queueToast('online', `${memberName} is now online in ${clubName}`, {
-      id: `online-${memberName}`,
-    });
+    // Disabled - using visual indicator instead
+    // this.queueToast('online', `${memberName} is now online in ${clubName}`, {
+    //   id: `online-${memberName}`,
+    // });
   }
 
   // Show member offline toast (disabled - only show online notifications)
@@ -94,27 +95,28 @@ class ToastService {
     // });
   }
 
-  // Show bulk online notifications (when user opens app)
+  // Show bulk online notifications (DISABLED - using OnlineMembersIndicator instead)
   showBulkOnlineNotifications(onlineMembers, clubName) {
+    // Disabled - using visual indicator instead
     // Limit to first 5 members to avoid spam
-    const membersToShow = onlineMembers.slice(0, 5);
-    
-    membersToShow.forEach((member, index) => {
-      setTimeout(() => {
-        this.queueToast('online', `${member.displayName} is online in ${clubName}`, {
-          id: `bulk-online-${member.userId}`,
-        });
-      }, index * 1000); // Stagger by 1 second each
-    });
+    // const membersToShow = onlineMembers.slice(0, 5);
+
+    // membersToShow.forEach((member, index) => {
+    //   setTimeout(() => {
+    //     this.queueToast('online', `${member.displayName} is online in ${clubName}`, {
+    //       id: `bulk-online-${member.userId}`,
+    //     });
+    //   }, index * 1000); // Stagger by 1 second each
+    // });
 
     // If there are more than 5, show a summary toast
-    if (onlineMembers.length > 5) {
-      setTimeout(() => {
-        this.queueToast('success', `+${onlineMembers.length - 5} more members are online in ${clubName}`, {
-          id: `bulk-online-summary`,
-        });
-      }, 5000);
-    }
+    // if (onlineMembers.length > 5) {
+    //   setTimeout(() => {
+    //     this.queueToast('success', `+${onlineMembers.length - 5} more members are online in ${clubName}`, {
+    //       id: `bulk-online-summary`,
+    //     });
+    //   }, 5000);
+    // }
   }
 
   // Clear all queued toasts

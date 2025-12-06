@@ -29,8 +29,10 @@ import Info from './components/layout/Info';
 import Panel from './pages/Panel';
 import { useAuth } from './contexts/AuthContext';
 import Invicta from './pages/Invicta';
+import ChatContainer from './components/chat/ChatContainer';
 
 import './styles/Forms.css';
+import './styles/scrollbar.css';
 
 // ✅ Route protection
 const ProtectedRoute = ({ children }) => {
@@ -82,7 +84,7 @@ const App = () => {
   useEffect(() => {
     // Initialize task reminder processor
     const cleanupProcessor = TaskReminderProcessor.startProcessor();
-    
+
     return () => {
       cleanupProcessor && cleanupProcessor();
     };
@@ -93,43 +95,44 @@ const App = () => {
       <ThemeProvider>
         <AuthProvider>
           <PresenceProvider>
-            <GalleryProvider> 
-            {/* ✅ Toast system */}
-            <Toaster position="top-right" />
-            <ToastQueue />
+            <GalleryProvider>
+              {/* ✅ Toast system */}
+              <Toaster position="top-right" />
+              <ToastQueue />
 
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/signin" element={<PublicRoute><SignIn /></PublicRoute>} />
-              <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
-              {/* Truly public route accessible even when logged in */}
-              <Route path="/invicta" element={<Invicta />} />
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/signin" element={<PublicRoute><SignIn /></PublicRoute>} />
+                <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+                {/* Truly public route accessible even when logged in */}
+                <Route path="/invicta" element={<Invicta />} />
 
-              {/* Protected Routes */}
-              <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="members" element={<Members />} />
-                <Route path="meetings" element={<Meetings />} />
-                <Route path="calendar" element={<CalendarView />} />
-                <Route path="task-track" element={<TaskTrack />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="about" element={<Mavericks />} />
-                <Route path="panel" element={<Panel />} />
-                <Route path="info" element={<Info />} />
-                <Route path="teamgallary" element={<TeamGallary />} /> {/* TeamGallary is now inside GalleryProvider */}
-                <Route path="nexus" element={<Nexus />} />
-                <Route path="ai-chat" element={<AIChatbot />} />
-                <Route path="generate-qr" element={<AdminRoute><QRGenerator /></AdminRoute>} />
-                <Route path="scan-qr" element={<QRScanner />} />
-                <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-              </Route>
+                {/* Protected Routes */}
+                <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="members" element={<Members />} />
+                  <Route path="meetings" element={<Meetings />} />
+                  <Route path="calendar" element={<CalendarView />} />
+                  <Route path="task-track" element={<TaskTrack />} />
+                  <Route path="analytics" element={<Analytics />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="about" element={<Mavericks />} />
+                  <Route path="panel" element={<Panel />} />
+                  <Route path="info" element={<Info />} />
+                  <Route path="teamgallary" element={<TeamGallary />} /> {/* TeamGallary is now inside GalleryProvider */}
+                  <Route path="nexus" element={<Nexus />} />
+                  <Route path="ai-chat" element={<AIChatbot />} />
+                  <Route path="messages" element={<ChatContainer />} />
+                  <Route path="generate-qr" element={<AdminRoute><QRGenerator /></AdminRoute>} />
+                  <Route path="scan-qr" element={<QRScanner />} />
+                  <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                </Route>
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
             </GalleryProvider>
           </PresenceProvider>
         </AuthProvider>

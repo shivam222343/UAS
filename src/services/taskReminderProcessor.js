@@ -9,49 +9,55 @@ export class TaskReminderProcessor {
   static async processScheduledReminders() {
     try {
       console.log('Processing scheduled task reminders...');
-      
+
       const now = new Date();
       const currentTimestamp = now.getTime();
-      
-      // Query for reminders that are due (scheduledFor <= now)
+
+      // Query for unsent reminders only (to avoid composite index requirement)
+      // Then filter by scheduledFor in memory
       const remindersRef = collection(db, 'taskReminders');
       const dueRemindersQuery = query(
         remindersRef,
-        where('scheduledFor', '<=', currentTimestamp),
         where('sent', '==', false)
       );
-      
+
       const snapshot = await getDocs(dueRemindersQuery);
-      
-      if (snapshot.empty) {
+
+      // Filter in memory for reminders that are due
+      const dueReminders = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        return data.scheduledFor <= currentTimestamp;
+      });
+
+      if (dueReminders.length === 0) {
         console.log('No due reminders found');
         return;
       }
-      
-      console.log(`Found ${snapshot.size} due reminders to process`);
-      
-      const processPromises = snapshot.docs.map(async (reminderDoc) => {
+
+      console.log(`Found ${dueReminders.length} due reminders to process`);
+
+      const processPromises = dueReminders.map(async (reminderDoc) => {
         const reminderData = reminderDoc.data();
-        
+
         try {
           // Send the notification
           await this.sendReminderNotification(reminderData);
-          
+
           // Mark as sent
           await updateDoc(doc(db, 'taskReminders', reminderDoc.id), {
             sent: true,
             sentAt: currentTimestamp
           });
-          
+
           console.log(`Sent reminder: ${reminderData.type} for task ${reminderData.taskId}`);
-          
+
         } catch (error) {
           console.error(`Failed to send reminder ${reminderDoc.id}:`, error);
-          
+
           // Mark as failed and increment retry count
           const retryCount = (reminderData.retryCount || 0) + 1;
           const maxRetries = 3;
-          
+
           if (retryCount >= maxRetries) {
             // Delete failed reminder after max retries
             await deleteDoc(doc(db, 'taskReminders', reminderDoc.id));
@@ -67,20 +73,20 @@ export class TaskReminderProcessor {
           }
         }
       });
-      
+
       await Promise.all(processPromises);
       console.log('Finished processing scheduled reminders');
-      
+
     } catch (error) {
       console.error('Error processing scheduled reminders:', error);
     }
   }
-  
+
   static async sendReminderNotification(reminderData) {
     const { userId, taskData, type } = reminderData;
-    
+
     let title, message;
-    
+
     switch (type) {
       case '1_day':
         title = '📅 Task Due Tomorrow';
@@ -102,7 +108,7 @@ export class TaskReminderProcessor {
         title = '📋 Task Reminder';
         message = `Don't forget about task "${taskData.title}" from ${taskData.meetingName}`;
     }
-    
+
     // Create notification in user's subcollection
     await addDoc(collection(db, 'users', userId, 'notifications'), {
       title: title,
@@ -122,7 +128,7 @@ export class TaskReminderProcessor {
         reminderType: type
       }
     });
-    
+
     // Also try to send browser notification if supported
     if (typeof window !== 'undefined' && 'Notification' in window) {
       try {
@@ -139,38 +145,38 @@ export class TaskReminderProcessor {
       }
     }
   }
-  
+
   /**
    * Clean up old sent reminders (older than 7 days)
    */
   static async cleanupOldReminders() {
     try {
       const sevenDaysAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
-      
+
       const remindersRef = collection(db, 'taskReminders');
       const oldRemindersQuery = query(
         remindersRef,
         where('sent', '==', true),
         where('sentAt', '<', sevenDaysAgo)
       );
-      
+
       const snapshot = await getDocs(oldRemindersQuery);
-      
-      const deletePromises = snapshot.docs.map(doc => 
+
+      const deletePromises = snapshot.docs.map(doc =>
         deleteDoc(doc.ref)
       );
-      
+
       await Promise.all(deletePromises);
-      
+
       if (snapshot.size > 0) {
         console.log(`Cleaned up ${snapshot.size} old task reminders`);
       }
-      
+
     } catch (error) {
       console.error('Error cleaning up old reminders:', error);
     }
   }
-  
+
   /**
    * Initialize the reminder processor with periodic execution
    * This should be called when the app starts
@@ -178,24 +184,24 @@ export class TaskReminderProcessor {
   static startProcessor() {
     // Only start in browser environment
     if (typeof window === 'undefined') {
-      return () => {}; // Return empty cleanup function for server-side
+      return () => { }; // Return empty cleanup function for server-side
     }
 
     // Process reminders immediately (but don't await to avoid blocking)
     this.processScheduledReminders().catch(console.error);
-    
+
     // Then process every 15 minutes
     const intervalId = setInterval(() => {
       this.processScheduledReminders().catch(console.error);
     }, 15 * 60 * 1000); // 15 minutes
-    
+
     // Clean up old reminders once per day
     const cleanupIntervalId = setInterval(() => {
       this.cleanupOldReminders().catch(console.error);
     }, 24 * 60 * 60 * 1000); // 24 hours
-    
+
     console.log('Task reminder processor started');
-    
+
     // Return cleanup function
     return () => {
       clearInterval(intervalId);

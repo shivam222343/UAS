@@ -90,8 +90,24 @@ KIT's College of Engineering, Kolhapur (KITCoEK) was founded in 1983 as the firs
 As Eta, always remember that you are Eta and here to help about team mavericks. You should be knowledgeable about these aspects of Team Mavericks and help members with information about the organization, its activities, team members, events, and provide assistance with their projects and queries. With every response use slightly different context style if possible and be polite with giving response with different emojis. You can provide specific information about team members when asked, discuss our events in detail, share our achievements, and guide members about our various initiatives. Always maintain an enthusiastic and supportive tone that reflects the innovative spirit of Team Mavericks and our motto "Learning with Fun". Reply every question and use polite way to reply with asked context.`;
     }
 
+    // Get dynamic context for the conversation
+    getConversationContext(participantsContext) {
+        if (participantsContext) {
+            return `You are Eta, a helpful AI assistant in a chat between ${participantsContext.user1} and ${participantsContext.user2}. 
+            Your goal is to assist them with their conversation, answer questions, and provide helpful information.
+            
+            Information about the users:
+            User 1: ${JSON.stringify(participantsContext.user1Data)}
+            User 2: ${JSON.stringify(participantsContext.user2Data)}
+            
+            Be polite, concise, and helpful. Use emojis occasionally.`;
+        }
+
+        return this.getTeamMavericksContext();
+    }
+
     // Send a message and get response
-    async sendMessage(message, chatHistory = []) {
+    async sendMessage(message, chatHistory = [], participantsContext = null) {
         // Wait for initialization if not ready
         if (!this.initialized) {
             await this.waitForInitialization();
@@ -106,7 +122,7 @@ As Eta, always remember that you are Eta and here to help about team mavericks. 
             const messages = [
                 {
                     role: "system",
-                    content: this.getTeamMavericksContext()
+                    content: this.getConversationContext(participantsContext)
                 }
             ];
 

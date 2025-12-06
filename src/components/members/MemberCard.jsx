@@ -1,12 +1,16 @@
 import { motion } from 'framer-motion';
-import { User, Mail, Clock, Wifi, WifiOff, Shield, Award } from 'lucide-react';
+import { User, Mail, Clock, Wifi, WifiOff, Shield, Award, MessageSquare } from 'lucide-react';
 import { usePresence } from '../../contexts/PresenceContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useUnreadFromUser } from '../../hooks/useUnreadFromUser';
 
-const MemberCard = ({ member, onClick, isAdmin, onMarkOffline, clubId }) => {
+const MemberCard = ({ member, onClick, isAdmin, onMarkOffline, onMessage, clubId }) => {
   const { isMemberOnline } = usePresence();
+  const { currentUser } = useAuth();
+  const hasUnread = useUnreadFromUser(currentUser?.uid, member.id, clubId || 'default');
   const formatLastSeen = (lastSeen) => {
     if (!lastSeen) return 'Never';
-    
+
     const date = lastSeen.toDate ? lastSeen.toDate() : new Date(lastSeen.seconds * 1000);
     const now = new Date();
     const diffInMs = now - date;
@@ -18,7 +22,7 @@ const MemberCard = ({ member, onClick, isAdmin, onMarkOffline, clubId }) => {
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInHours < 24) return `${diffInHours}h ago`;
     if (diffInDays < 7) return `${diffInDays}d ago`;
-    
+
     return date.toLocaleDateString();
   };
 
@@ -49,9 +53,8 @@ const MemberCard = ({ member, onClick, isAdmin, onMarkOffline, clubId }) => {
               />
             </div>
             {/* Online status indicator */}
-            <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 ${
-              isMemberOnline(clubId, member.id) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-            }`}></div>
+            <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 ${isMemberOnline(clubId, member.id) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+              }`}></div>
           </div>
 
           <div className="flex-1 min-w-0">
@@ -59,11 +62,17 @@ const MemberCard = ({ member, onClick, isAdmin, onMarkOffline, clubId }) => {
               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                 {member.displayName || 'Unknown User'}
               </p>
+              {/* Unread message indicator */}
+              {hasUnread && (
+                <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse">
+                  New
+                </span>
+              )}
               {member.role === 'admin' && (
                 <Shield className="h-4 w-4 text-yellow-500" title="Admin" />
               )}
             </div>
-            
+
             <div className="flex items-center gap-4 mt-1">
               <div className="flex items-center gap-1">
                 <Mail className="h-3 w-3 text-gray-400" />
@@ -71,7 +80,7 @@ const MemberCard = ({ member, onClick, isAdmin, onMarkOffline, clubId }) => {
                   {member.email || 'No email'}
                 </p>
               </div>
-              
+
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3 text-gray-400" />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -88,11 +97,10 @@ const MemberCard = ({ member, onClick, isAdmin, onMarkOffline, clubId }) => {
 
         <div className="flex items-center gap-2">
           {/* Online/Offline status with icon */}
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-            isMemberOnline(clubId, member.id)
-              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-          }`}>
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${isMemberOnline(clubId, member.id)
+            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+            }`}>
             {isMemberOnline(clubId, member.id) ? (
               <>
                 <Wifi className="h-3 w-3" />
@@ -105,6 +113,23 @@ const MemberCard = ({ member, onClick, isAdmin, onMarkOffline, clubId }) => {
               </>
             )}
           </div>
+
+          {/* Message button */}
+          {onMessage && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMessage(member);
+              }}
+              className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1"
+              title="Send message"
+            >
+              <MessageSquare className="h-3 w-3" />
+              Message
+            </motion.button>
+          )}
 
           {/* Admin actions */}
           {isAdmin && isMemberOnline(clubId, member.id) && (

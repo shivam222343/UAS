@@ -24,12 +24,16 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
+import { useUnreadCount } from '../../hooks/useUnreadCount';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { currentUser, logout, userRole } = useAuth();
-  
+
   const isAdmin = userRole === 'admin' || userRole === 'subadmin';
+
+  // Get unread message count
+  const unreadCount = useUnreadCount(currentUser?.uid, 'default'); // Replace 'default' with actual clubId if available
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -58,7 +62,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   };
 
-  const filteredNavigation = navigation.filter(item => 
+  const filteredNavigation = navigation.filter(item =>
     !item.adminOnly || (item.adminOnly && isAdmin)
   );
 
@@ -77,12 +81,11 @@ const Sidebar = ({ isOpen, onClose }) => {
       </AnimatePresence>
 
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-secondary-800 border-r border-secondary-200 dark:border-secondary-700 transform ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 transition-transform duration-200 ease-in-out`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-secondary-800 border-r border-secondary-200 dark:border-secondary-700 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0 transition-transform duration-200 ease-in-out`}
       >
         <div className="flex flex-col h-full">
-          
+
           {/* Logo and Close Button */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-secondary-200 dark:border-secondary-700">
             <Link to="/" className="flex items-center">
@@ -114,20 +117,25 @@ const Sidebar = ({ isOpen, onClose }) => {
                     key={item.name}
                     to={item.href}
                     onClick={onClose}
-                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-primary-50 border-l-4 border-blue-500 rounded-l-none dark:bg-primary-900/20 text-primary-500 dark:text-primary-400'
-                        : 'text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700/50 hover:text-secondary-900 dark:hover:text-secondary-200'
-                    }`}
+                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${isActive
+                      ? 'bg-primary-50 border-l-4 border-blue-500 rounded-l-none dark:bg-primary-900/20 text-primary-500 dark:text-primary-400'
+                      : 'text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700/50 hover:text-secondary-900 dark:hover:text-secondary-200'
+                      }`}
                   >
                     <item.icon className="h-5 w-5 mr-3" />
                     {item.name}
+                    {/* New message indicator on Members */}
+                    {item.name === 'Members' && unreadCount > 0 && (
+                      <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse">
+                        New
+                      </span>
+                    )}
                     {item.name === 'Panels' && (
                       <div className="ml-2 px-2 py-[2px] bg-green-200 dark:text-white dark:bg-green-700 rounded-lg">
                         New
                       </div>
                     )}
-                     {item.name === 'Gallery' && (
+                    {item.name === 'Gallery' && (
                       <div className="ml-2 px-2 py-[2px] bg-pink-300 dark:text-white dark:bg-pink-700 rounded-lg">
                         New
                       </div>
@@ -142,7 +150,12 @@ const Sidebar = ({ isOpen, onClose }) => {
                         New
                       </div>
                     )}
-                    {item.name === 'AI Chat' && (
+                    {item.name === 'Members' && unreadCount > 0 && (
+                      <div className="ml-auto px-2 py-[2px] bg-red-500 text-white text-xs rounded-full min-w-[20px] text-center">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </div>
+                    )}
+                    {item.name === 'Eta AI' && (
                       <div className="ml-2 px-2 py-[2px] bg-blue-200 dark:text-white dark:bg-blue-700 rounded-lg">
                         New
                       </div>

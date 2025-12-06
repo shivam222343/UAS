@@ -6,10 +6,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePresence } from '../contexts/PresenceContext';
 import { batchGetDocs, fetchWithCache } from '../utils/firestoreOptimizations';
 import { SkeletonMemberCard } from '../components/common/SkeletonLoader';
-import { User, Mail, UserCheck, Calendar, Search, Shield, Users, Eye, X, BarChart2, Award, Clock, Check, XCircle } from 'lucide-react';
+import { User, Mail, UserCheck, Calendar, Search, Shield, Users, Eye, X, BarChart2, Award, Clock, Check, XCircle, MessageSquare } from 'lucide-react';
 import BulkActionsBar from '../components/members/BulkActionsBar';
 import MemberCard from '../components/members/MemberCard';
 import Loader from '../components/Loader';
+import ChatContainer from '../components/chat/ChatContainer';
+import { useUsersWithUnreadMessages } from '../hooks/useUsersWithUnreadMessages';
+import { useLastMessageTimestamps } from '../hooks/useLastMessageTimestamps';
 import {
   BarChart,
   Bar,
@@ -35,6 +38,14 @@ export default function Members() {
   const { currentUser } = useAuth();
   const { getAllMembersForClub, getOnlineCountForClub, isMemberOnline } = usePresence();
   const [userRoleInClub, setUserRoleInClub] = useState(null);
+  const [showChatPanel, setShowChatPanel] = useState(false);
+  const [chatUserId, setChatUserId] = useState(null);
+
+  // Get users with unread messages
+  const usersWithUnread = useUsersWithUnreadMessages(currentUser?.uid, selectedClub || 'default');
+
+  // Get last message timestamps for sorting
+  const lastMessageTimes = useLastMessageTimestamps(currentUser?.uid, selectedClub || 'default');
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -372,13 +383,33 @@ export default function Members() {
     }
   };
 
+  const handleOpenChat = (member) => {
+    setChatUserId(member.id);
+    setShowChatPanel(true);
+  };
+
   const filteredMembers = members.filter(member => {
     const searchTermLower = searchTerm.toLowerCase();
     return (
       (member.displayName && member.displayName.toLowerCase().includes(searchTermLower)) ||
       (member.email && member.email.toLowerCase().includes(searchTermLower))
     );
+  }).sort((a, b) => {
+    // Priority 1: Sort by most recent message timestamp (like WhatsApp)
+    const aLastMessage = lastMessageTimes.get(a.id) || 0;
+    const bLastMessage = lastMessageTimes.get(b.id) || 0;
+
+    // If both have messages, sort by most recent
+    if (aLastMessage > 0 || bLastMessage > 0) {
+      if (aLastMessage !== bLastMessage) {
+        return bLastMessage - aLastMessage; // Most recent first
+      }
+    }
+
+    // Priority 2: Alphabetically by display name (for members with no messages)
+    return (a.displayName || '').localeCompare(b.displayName || '');
   });
+
 
   // Only show full-page loader for initial club fetch
   if (loading && clubs.length === 0) {
@@ -544,6 +575,18 @@ export default function Members() {
                             : 'Offline'
                           : ''}
                       </span>
+
+                      {/* Message button */}
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenChat(member);
+                        }}
+                        className="mt-2 px-3 py-1.5 max-w-[100px] text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <MessageSquare className="h-3 w-3 mt-1" />
+                        Message
+                      </div>
                     </div>
                   </div>
                 </li>
@@ -1121,6 +1164,39 @@ export default function Members() {
                   )}
                 </div>
               </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Chat Panel */}
+      <AnimatePresence>
+        {showChatPanel && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowChatPanel(false)}
+              className="fixed inset-0 bg-black/50 z-40"
+            />
+
+            {/* Chat panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 h-screen w-full md:w-[500px] z-50 shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ChatContainer
+                initialUserId={chatUserId}
+                clubId={selectedClub}
+                onClose={() => setShowChatPanel(false)}
+                isPanel={true}
+              />
             </motion.div>
           </>
         )}

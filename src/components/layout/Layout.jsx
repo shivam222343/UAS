@@ -5,7 +5,9 @@ import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import MobileBottomNav from './MobileBottomNav';
 import NotificationPanel from '../NotificationPanel';
+import OnlineMembersIndicator from '../common/OnlineMembersIndicator';
 import { useAuth } from '../../contexts/AuthContext';
+import { useClubMemberUpdates } from '../../hooks/useClubMemberUpdates';
 
 const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -15,12 +17,15 @@ const Layout = () => {
   const location = useLocation();
   const { currentUser } = useAuth();
 
+  // Auto-reload when new member joins club
+  useClubMemberUpdates('default'); // Replace 'default' with actual clubId if available
+
   // Load theme from localStorage or system preference
   useEffect(() => {
     const loadTheme = () => {
       // Check for saved theme preference
       const savedTheme = localStorage.getItem('theme');
-      
+
       if (savedTheme) {
         // Use the user's saved preference
         setIsDarkMode(savedTheme === 'dark');
@@ -102,7 +107,7 @@ const Layout = () => {
         toggleNotifications={toggleNotifications}
       />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      
+
       <main className="lg:pl-64 pt-16 pb-24 md:pb-0">
         <div className="max-w-7xl mx-[2px] px-[2px] sm:px-6 md:px-2 lg:px-8 py-8">
           <AnimatePresence mode="wait">
@@ -118,17 +123,20 @@ const Layout = () => {
           </AnimatePresence>
         </div>
       </main>
-      
-      <MobileBottomNav 
-        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+
+      <MobileBottomNav
+        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         toggleNotifications={toggleNotifications}
       />
-      
-      <NotificationPanel 
-        isOpen={isNotificationsOpen} 
-        onClose={() => setIsNotificationsOpen(false)} 
+
+      <NotificationPanel
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
         currentUser={currentUser}
       />
+
+      {/* Online Members Indicator */}
+      <OnlineMembersIndicator clubName="Team Mavericks 2025-26" />
     </div>
   );
 };
